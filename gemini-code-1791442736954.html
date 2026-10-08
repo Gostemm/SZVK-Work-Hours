@@ -1,0 +1,1709 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Справи Системника</title>
+
+
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --artem: #8b5cf6;
+      --oleksandr: #10b981;
+      --today-border: #f59e0b;
+      --border: #334155;
+      --note-badge: #38bdf8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 10px;
+    }
+
+    .auth-gate-screen {
+      width: 100%;
+      max-width: 400px;
+      margin-top: 60px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 30px 22px;
+      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.55);
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .auth-icon-wrap {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: rgba(59, 130, 246, 0.15);
+      border: 1px solid rgba(59, 130, 246, 0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      margin: 0 auto;
+    }
+
+    .auth-title { font-size: 20px; font-weight: 800; color: #fff; }
+    .auth-form { display: flex; flex-direction: column; gap: 12px; text-align: left; }
+    .auth-label { font-size: 12px; font-weight: 700; color: var(--text-muted); }
+
+    .auth-input, .debt-input {
+      width: 100%;
+      background: #0f172a;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: #fff;
+      padding: 10px 12px;
+      font-size: 13px;
+    }
+    .auth-input:focus, .debt-input:focus { outline: none; border-color: #3b82f6; }
+
+    .auth-remember-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text-muted);
+      cursor: pointer;
+      user-select: none;
+      margin-top: -2px;
+    }
+    .auth-remember-row input { accent-color: #3b82f6; width: 15px; height: 15px; cursor: pointer; }
+
+    .auth-btn {
+      width: 100%;
+      background: #3b82f6;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 11px;
+      font-size: 14px;
+      font-weight: 800;
+      cursor: pointer;
+      margin-top: 4px;
+    }
+    .auth-btn:hover { background: #2563eb; }
+    .auth-error { font-size: 12px; color: #f87171; text-align: center; display: none; }
+
+    .container {
+      width: 100%;
+      max-width: 980px;
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .top-header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: linear-gradient(135deg, #1e293b 0%, #172033 100%);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 10px 16px;
+      gap: 12px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+    }
+
+    .brand-title { font-size: 15px; font-weight: 800; display: flex; align-items: center; gap: 8px; }
+    .user-profile-widget { display: flex; align-items: center; gap: 10px; }
+
+    .user-avatar-circle {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #3b82f6;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 800;
+      color: #fff;
+      border: 2px solid #10b981;
+    }
+
+    .user-details { display: flex; flex-direction: column; align-items: flex-end; }
+    .user-name-span {
+      font-size: 12px;
+      font-weight: 800;
+      color: #f1f5f9;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .crown-icon { font-size: 12px; vertical-align: middle; }
+    .user-status-span { font-size: 10px; color: #34d399; font-weight: 700; }
+
+    .dashboard {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 10px 16px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 10px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    }
+
+    .stat-card { display: flex; flex-direction: column; gap: 2px; }
+    .stat-title { font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); }
+    .stat-value { font-size: 16px; font-weight: 800; display: flex; align-items: center; gap: 6px; }
+    .badge-artem { color: var(--artem); }
+    .badge-oleksandr { color: var(--oleksandr); }
+
+    .nav-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 8px 12px;
+    }
+
+    .nav-left, .nav-center, .nav-right { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+
+    .btn {
+      background: #334155;
+      color: var(--text);
+      border: none;
+      border-radius: 8px;
+      padding: 7px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .btn:hover { background: #475569; }
+
+    .btn-today {
+      background: rgba(245, 158, 11, 0.2);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.4);
+    }
+
+    .season-label-wrapper { display: flex; align-items: center; gap: 6px; }
+    .season-label { font-size: 14px; font-weight: 800; min-width: 110px; text-align: center; }
+
+    .season-task-badge {
+      background: #f59e0b;
+      color: #000;
+      font-size: 11px;
+      font-weight: 900;
+      padding: 3px 8px;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.6);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .tab-btn {
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 6px 11px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      position: relative;
+    }
+    .tab-btn.active { background: #3b82f6; color: #fff; border-color: #3b82f6; }
+    .tab-btn.notes-tab { border-color: #f59e0b; color: #fbbf24; }
+    .tab-btn.notes-tab.active { background: #f59e0b; color: #000; font-weight: 900; }
+
+    .tab-badge {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      background: #f59e0b;
+      border-radius: 50%;
+      margin-left: 4px;
+      vertical-align: middle;
+      box-shadow: 0 0 6px #f59e0b;
+    }
+
+    .view-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--border);
+    }
+    .section-title { font-size: 15px; font-weight: 800; text-transform: uppercase; }
+
+    .global-month-banner {
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95));
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      border-left: 4px solid #38bdf8;
+      border-radius: 10px;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .global-month-banner.empty {
+      border: 1px dashed #334155;
+      border-left: 4px dashed #64748b;
+      background: rgba(15, 23, 42, 0.4);
+    }
+
+    .global-content { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0; }
+    .global-label { font-size: 11px; font-weight: 800; color: #38bdf8; text-transform: uppercase; }
+    .global-text { font-size: 13.5px; color: #f1f5f9; line-height: 1.4; word-break: break-word; font-weight: 500; }
+    .global-text.placeholder { color: var(--text-muted); font-style: italic; font-size: 12px; }
+
+    .days-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 7px; }
+
+    .day-card {
+      background: #243248;
+      border: 2px solid transparent;
+      border-radius: 10px;
+      padding: 6px 4px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: pointer;
+      position: relative;
+      user-select: none;
+      min-height: 84px;
+      justify-content: space-between;
+      transition: transform 0.15s, opacity 0.2s;
+    }
+    .day-card:hover { transform: translateY(-2px); }
+
+    .day-card.artem { background: #2e1065; border-color: #7c3aed; color: #ede9fe; }
+    .day-card.oleksandr { background: #064e3b; border-color: #059669; color: #d1fae5; }
+    .day-card.past-day { opacity: 0.40; filter: saturate(0.55) brightness(0.8); }
+
+    .day-card.today {
+      border: 2px solid var(--today-border) !important;
+      box-shadow: 0 0 14px rgba(245, 158, 11, 0.5);
+      opacity: 1 !important;
+      padding-top: 15px;
+    }
+    .day-card.has-note { box-shadow: inset 0 0 0 1.5px var(--note-badge), 0 0 8px rgba(56, 189, 248, 0.35); }
+
+    .day-num { font-size: 17px; font-weight: 900; line-height: 1; }
+    .day-weekday { font-size: 10px; font-weight: 700; opacity: 0.85; text-transform: uppercase; }
+    .day-worker { font-size: 11px; font-weight: 800; padding: 1px 5px; border-radius: 5px; background: rgba(0, 0, 0, 0.4); }
+
+    .day-tasks-container {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      margin-top: 3px;
+    }
+
+    .author-chip-badge {
+      font-size: 8.5px;
+      line-height: 1.1;
+      background: rgba(14, 165, 233, 0.25);
+      border: 1px solid rgba(56, 189, 248, 0.5);
+      color: #bae6fd;
+      border-radius: 4px;
+      padding: 1px 4px;
+      max-width: 96%;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-weight: 800;
+    }
+    .author-chip-badge.all-done {
+      background: rgba(100, 116, 139, 0.2);
+      border-color: rgba(100, 116, 139, 0.35);
+      color: #94a3b8;
+      opacity: 0.6;
+    }
+
+    .swap-badge {
+      position: absolute;
+      top: 3px;
+      right: 3px;
+      font-size: 9px;
+      background: #f59e0b;
+      color: #000;
+      font-weight: 900;
+      border-radius: 50%;
+      width: 15px;
+      height: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .today-tag {
+      position: absolute;
+      top: 2px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--today-border);
+      color: #000;
+      font-size: 8px;
+      font-weight: 900;
+      padding: 1px 5px;
+      border-radius: 3px;
+      line-height: 1.1;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+    .modal-overlay.active { opacity: 1; pointer-events: auto; }
+
+    .modal-box {
+      background: #1e293b;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px;
+      max-width: 480px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+    }
+
+    .day-tasks-modal-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 220px;
+      overflow-y: auto;
+    }
+
+    .task-modal-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      background: #0f172a;
+      border: 1px solid var(--border);
+      padding: 6px 10px;
+      border-radius: 8px;
+      font-size: 13px;
+    }
+    .task-modal-item.done { opacity: 0.55; }
+    .task-modal-item.done .task-modal-text { text-decoration: line-through; color: var(--text-muted); }
+    .task-modal-checkbox { width: 17px; height: 17px; accent-color: #10b981; cursor: pointer; }
+    .task-add-form { display: flex; gap: 6px; }
+
+    .debt-container { display: flex; flex-direction: column; gap: 12px; }
+    .debt-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      padding: 10px 14px;
+      border-radius: 10px;
+    }
+    .debt-title { font-size: 14px; font-weight: 800; color: #fbbf24; }
+    .debt-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 12px; }
+
+    .debt-month-box {
+      background: #172033;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .debt-month-title {
+      font-size: 13px;
+      font-weight: 800;
+      color: #38bdf8;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      padding-bottom: 6px;
+    }
+
+    .debt-items-list { display: flex; flex-direction: column; gap: 6px; min-height: 50px; }
+
+    .global-taskbar-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-left: 3px solid #38bdf8;
+      padding: 7px 10px;
+      border-radius: 8px;
+      gap: 8px;
+    }
+    .global-taskbar-item.settled { opacity: 0.5; border-left-color: #64748b; }
+    .global-taskbar-item.settled .taskbar-text { text-decoration: line-through; color: var(--text-muted); }
+
+    .taskbar-text-wrap { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; cursor: pointer; }
+    .taskbar-text { font-size: 12.5px; font-weight: 600; word-break: break-word; }
+
+    .author-badge {
+      font-size: 10px;
+      color: #38bdf8;
+      font-weight: 700;
+      background: rgba(56, 189, 248, 0.15);
+      padding: 2px 6px;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+
+    .month-target-field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      background: rgba(15, 23, 42, 0.5);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      border-radius: 8px;
+      padding: 8px;
+    }
+    .month-target-field label { font-size: 11px; font-weight: 800; color: #38bdf8; }
+
+    .season-overview-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 420px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .overview-group-box {
+      background: #0f172a;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .overview-group-header {
+      font-size: 12px;
+      font-weight: 800;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #fbbf24;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      padding-bottom: 4px;
+    }
+
+    .overview-task-line { display: flex; align-items: center; justify-content: space-between; font-size: 12px; gap: 8px; padding: 3px 0; }
+
+    .admin-user-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #0f172a;
+      border: 1px solid var(--border);
+      padding: 10px 12px;
+      border-radius: 10px;
+      gap: 10px;
+    }
+    .admin-user-card.approved { border-left: 3px solid #10b981; }
+    .admin-user-card.blocked { border-left: 3px solid #ef4444; opacity: 0.8; }
+
+    .new-user-form {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      background: #0f172a;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+    }
+
+    .reset-option-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #0f172a;
+      border: 1px solid var(--border);
+      padding: 12px 14px;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ЕКРАН ВХОДУ -->
+<div class="auth-gate-screen" id="authGateScreen">
+  <div class="auth-icon-wrap">🛡️</div>
+  <div class="auth-title">Службовий вхід</div>
+
+  <form class="auth-form" id="loginForm" method="dialog" autocomplete="on">
+    <div>
+      <label class="auth-label" for="loginInput">Логін</label>
+      <input type="text" id="loginInput" name="username" class="auth-input" placeholder="Введіть логін" autocomplete="username" required>
+    </div>
+    <div>
+      <label class="auth-label" for="passwordInput">Пароль</label>
+      <input type="password" id="passwordInput" name="password" class="auth-input" placeholder="Введіть пароль" autocomplete="current-password" required>
+    </div>
+
+    <label class="auth-remember-row">
+      <input type="checkbox" id="rememberMeCheckbox" checked>
+      <span>Запам'ятати мене на цьому пристрої</span>
+    </label>
+
+    <div class="auth-error" id="loginErrorMessage">Невірний логін або пароль</div>
+    <button type="submit" class="auth-btn">Увійти в систему</button>
+  </form>
+</div>
+
+<!-- ГОЛОВНИЙ ЕКРАН СЕРВІСУ -->
+<div class="container" id="mainAppContainer">
+  <div class="top-header-bar">
+    <div class="brand-title">
+      <span>Справи Системника</span>
+    </div>
+    
+    <div class="user-profile-widget">
+      <button class="btn" id="btnOpenAdminPanel" style="display: none; background: rgba(59, 130, 246, 0.2); color: #60a5fa; font-size: 11px; padding: 6px 10px; border: 1px solid rgba(59, 130, 246, 0.4);">
+        🛡️ Керування користувачами
+      </button>
+
+      <div class="user-avatar-circle" id="headerAvatar">👤</div>
+      <div class="user-details">
+        <span class="user-name-span" id="headerName">-</span>
+        <span class="user-status-span" id="headerStatus">-</span>
+      </div>
+      <button class="btn" id="btnLogoutBtn" style="background: rgba(239, 68, 68, 0.2); color: #f87171; padding: 5px 9px; font-size: 11px;">Вийти</button>
+    </div>
+  </div>
+
+  <div class="dashboard">
+    <div class="stat-card">
+      <span class="stat-title">Сьогоднішня дата</span>
+      <span class="stat-value" id="statTodayDate">-</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-title">Сьогодні на зміні</span>
+      <span class="stat-value" id="statTodayWorker">-</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-title">Змін Артем (сезон)</span>
+      <span class="stat-value badge-artem" id="statCountArtem">0</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-title">Змін Олександр (сезон)</span>
+      <span class="stat-value badge-oleksandr" id="statCountOleksandr">0</span>
+    </div>
+  </div>
+
+  <div class="nav-toolbar">
+    <div class="nav-left">
+      <button class="btn btn-today" id="btnGoToToday">🎯 Сьогодні</button>
+      <button class="btn" id="btnPrevSeason">◀</button>
+      <div class="season-label-wrapper">
+        <div class="season-label" id="currentSeasonLabel">Осінь 2026</div>
+        <span class="season-task-badge" id="seasonTaskBadge" title="Розгорнути завдання сезону" style="display: none;">🔔 0</span>
+      </div>
+      <button class="btn" id="btnNextSeason">▶</button>
+    </div>
+
+    <div class="nav-center" id="monthTabsContainer"></div>
+
+    <div class="nav-right">
+      <button class="tab-btn notes-tab" id="btnTabDebts">
+        <span>📝 Загальні нотатки</span>
+        <span class="tab-badge" id="debtsTabBadge" style="display: none;"></span>
+      </button>
+
+      <button class="btn" id="btnOpenResetModal" style="display: none; background: rgba(239,68,68,0.2); color: #f87171;">
+        Скинути підміни
+      </button>
+    </div>
+  </div>
+
+  <div class="view-card" id="mainCalendarView">
+    <div class="section-header">
+      <div class="section-title" id="currentMonthTitle">Вересень 2026</div>
+    </div>
+
+    <div class="global-month-banner" id="globalMonthBanner">
+      <div class="global-content">
+        <span class="global-label">📌 Головна ціль / Фокус на місяць</span>
+        <div class="global-text" id="globalMonthText">Завдань немає</div>
+      </div>
+      <button class="btn" id="btnEditGlobalNote" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8;">✏️</button>
+    </div>
+
+    <div class="days-grid" id="daysGrid"></div>
+  </div>
+
+  <div class="view-card" id="debtsNotesView" style="display: none;">
+    <div class="section-header">
+      <div class="section-title">📌 Загальні таскбари & нотатки</div>
+      <button class="btn" id="btnCloseDebts">⬅ Назад до графіка</button>
+    </div>
+    <div class="debt-container">
+      <div class="debt-header">
+        <div class="debt-title">Хто кому винен зміну / закупівлі / системні справи місяця</div>
+      </div>
+      <div class="debt-grid" id="debtsGrid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Модальне вікно огляду завдань сезону -->
+<div class="modal-overlay" id="seasonOverviewModal">
+  <div class="modal-box">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <h3 id="seasonOverviewTitle" style="font-size: 16px; font-weight: 800; color: #fbbf24;">🔔 Усі активні завдання сезону</h3>
+      <button class="btn" id="seasonOverviewCloseX" style="padding: 4px 8px;">✕</button>
+    </div>
+    <div class="season-overview-list" id="seasonOverviewList"></div>
+  </div>
+</div>
+
+<!-- Модальне вікно керування користувачами (Адмін) -->
+<div class="modal-overlay" id="adminUsersModal">
+  <div class="modal-box">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <h3 style="font-size: 16px; font-weight: 800; color: #60a5fa;">🛡️ Створення та керування користувачами</h3>
+      <button class="btn" id="adminUsersCloseX" style="padding: 4px 8px;">✕</button>
+    </div>
+
+    <form class="new-user-form" id="createNewUserForm">
+      <div>
+        <label class="auth-label">Логін</label>
+        <input type="text" id="newUsername" class="auth-input" placeholder="user1" required>
+      </div>
+      <div>
+        <label class="auth-label">Пароль</label>
+        <input type="text" id="newPassword" class="auth-input" placeholder="Пароль" required>
+      </div>
+      <div style="grid-column: span 2;">
+        <label class="auth-label">Відображуване ім'я</label>
+        <input type="text" id="newDisplayName" class="auth-input" placeholder="Олександр / Костянтин" required>
+      </div>
+      <button type="submit" class="btn" style="grid-column: span 2; background: #10b981; color: #fff; justify-content: center; padding: 9px;">+ Створити користувача</button>
+    </form>
+
+    <div style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-top: 4px;">Список співробітників:</div>
+    <div id="adminUsersListContainer" style="display: flex; flex-direction: column; gap: 8px; max-height: 240px; overflow-y: auto;"></div>
+  </div>
+</div>
+
+<!-- Модальне вікно скидання підмін -->
+<div class="modal-overlay" id="resetPeriodModal">
+  <div class="modal-box" style="max-width: 440px;">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <h3 style="font-size: 16px; font-weight: 800; color: #f87171;">🗑️ Скидання підмін</h3>
+      <button class="btn" id="resetPeriodCloseX" style="padding: 4px 8px;">✕</button>
+    </div>
+    <p style="font-size: 12px; color: var(--text-muted);">Повернути графік до початкового стану (3 через 3):</p>
+    <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 4px;">
+      <div class="reset-option-card" id="btnResetCurrentMonth">
+        <div><div style="font-size: 13px; font-weight: 800; color: #fff;">Тільки поточний місяць</div></div>
+        <span style="font-size: 16px;">📅</span>
+      </div>
+      <div class="reset-option-card" id="btnResetCurrentSeason">
+        <div><div style="font-size: 13px; font-weight: 800; color: #fff;">Весь поточний сезон</div></div>
+        <span style="font-size: 16px;">🍁</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Модальне вікно фокусу місяця -->
+<div class="modal-overlay" id="globalNoteModal">
+  <div class="modal-box">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <h3 id="globalModalTitle" style="font-size: 16px; font-weight: 800;">Фокус місяця</h3>
+      <button class="btn" id="globalModalCloseX" style="padding: 4px 8px;">✕</button>
+    </div>
+    <div>
+      <textarea id="globalModalInput" class="debt-input" rows="4" maxlength="160" style="resize: vertical; width: 100%;" placeholder="Фокус на місяць..."></textarea>
+    </div>
+    <div style="display: flex; justify-content: flex-end; gap: 8px;">
+      <button class="btn" id="globalModalClearBtn" style="background: rgba(239, 68, 68, 0.2); color: #f87171;">Очистити</button>
+      <button class="btn" id="globalModalSaveBtn" style="background: #3b82f6; color: #fff;">Зберегти</button>
+    </div>
+  </div>
+</div>
+
+<!-- Модальне вікно дня -->
+<div class="modal-overlay" id="dayActionModal">
+  <div class="modal-box">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <h3 id="modalDayTitle" style="font-size: 16px; font-weight: 800;">День</h3>
+      <button class="btn" id="modalDayCloseX" style="padding: 4px 8px;">✕</button>
+    </div>
+    
+    <div style="background: #0f172a; padding: 10px; border-radius: 8px; border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+      <div>
+        <div style="font-size: 11px; color: var(--text-muted);">Зараз чергує:</div>
+        <div id="modalCurrentWorker" style="font-size: 16px; font-weight: 800;">-</div>
+      </div>
+      <button class="btn" id="modalSwapWorkerBtn" style="background: #3b82f6;">⇄ Змінити напарника</button>
+    </div>
+
+    <div>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+        <span style="font-size: 12px; font-weight: 800; color: var(--note-badge);">📋 Завдання на цей день:</span>
+        <span id="modalTasksCount" style="font-size: 11px; color: var(--text-muted);">0 пунктів</span>
+      </div>
+      <div class="day-tasks-modal-list" id="modalDayTasksList"></div>
+    </div>
+
+    <div>
+      <div class="task-add-form">
+        <input type="text" id="modalNewTaskInput" class="debt-input" maxlength="70" placeholder="+ Додати завдання (макс. 70 симв.)">
+        <button class="btn" id="modalAddNewTaskBtn" style="background: #10b981; color: #fff;">+ Додати</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const STORAGE_KEY = "szvk_schedule_local_data";
+  const USERS_STORAGE_KEY = "szvk_custom_users";
+  const SESSION_USER_KEY = "szvk_internal_session";
+  const REMEMBER_CRED_KEY = "szvk_remembered_credentials";
+
+  // ГОЛОВНИЙ АДМІНІСТРАТОР
+  const SUPER_ADMIN = {
+    username: "Artem",
+    password: ",:Mz1N:IyS\\Q4i{",
+    name: "Артем",
+    role: "admin",
+    active: true
+  };
+
+  let currentUser = null;
+  let customUsers = {};
+
+  // Завантаження збережених користувачів
+  try {
+    const rawUsers = localStorage.getItem(USERS_STORAGE_KEY);
+    if (rawUsers) customUsers = JSON.parse(rawUsers);
+  } catch(e) {}
+
+  function saveUsers() {
+    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(customUsers));
+  }
+
+  // Автозаповнення пароля з пам'яті
+  try {
+    const savedCred = localStorage.getItem(REMEMBER_CRED_KEY);
+    if (savedCred) {
+      const parsed = JSON.parse(savedCred);
+      document.getElementById("loginInput").value = parsed.u || "";
+      document.getElementById("passwordInput").value = parsed.p || "";
+    }
+  } catch(e) {}
+
+  // Авторизація
+  const loginForm = document.getElementById("loginForm");
+  const loginError = document.getElementById("loginErrorMessage");
+  const rememberCheckbox = document.getElementById("rememberMeCheckbox");
+
+  loginForm.onsubmit = function(e) {
+    e.preventDefault();
+    const u = document.getElementById("loginInput").value.trim();
+    const p = document.getElementById("passwordInput").value;
+
+    loginError.style.display = "none";
+
+    let authenticatedUser = null;
+
+    if (u === SUPER_ADMIN.username && p === SUPER_ADMIN.password) {
+      authenticatedUser = SUPER_ADMIN;
+    } else {
+      const foundKey = Object.keys(customUsers).find(k => (customUsers[k].username || "").toLowerCase() === u.toLowerCase());
+      if (foundKey) {
+        const foundUser = customUsers[foundKey];
+        if (foundUser.password === p) {
+          if (!foundUser.active) {
+            loginError.textContent = "Акаунт деактивовано";
+            loginError.style.display = "block";
+            return;
+          }
+          authenticatedUser = foundUser;
+        }
+      }
+    }
+
+    if (!authenticatedUser) {
+      loginError.textContent = "Невірний логін або пароль";
+      loginError.style.display = "block";
+      return;
+    }
+
+    currentUser = authenticatedUser;
+    localStorage.setItem(SESSION_USER_KEY, JSON.stringify(currentUser));
+
+    if (rememberCheckbox.checked) {
+      localStorage.setItem(REMEMBER_CRED_KEY, JSON.stringify({ u, p }));
+      if (window.PasswordCredential && navigator.credentials) {
+        try {
+          const cred = new PasswordCredential({ id: u, password: p, name: authenticatedUser.name });
+          navigator.credentials.store(cred).catch(() => {});
+        } catch(e) {}
+      }
+    } else {
+      localStorage.removeItem(REMEMBER_CRED_KEY);
+    }
+
+    applyAccessState();
+  };
+
+  function applyAccessState() {
+    const gateScreen = document.getElementById("authGateScreen");
+    const mainApp = document.getElementById("mainAppContainer");
+    const btnOpenAdmin = document.getElementById("btnOpenAdminPanel");
+    const btnResetModal = document.getElementById("btnOpenResetModal");
+
+    if (!currentUser) {
+      gateScreen.style.display = "flex";
+      mainApp.style.display = "none";
+      return;
+    }
+
+    gateScreen.style.display = "none";
+    mainApp.style.display = "flex";
+
+    const headerName = document.getElementById("headerName");
+    const headerAvatar = document.getElementById("headerAvatar");
+    const headerStatus = document.getElementById("headerStatus");
+
+    const isAdmin = (currentUser.role === "admin");
+
+    if (isAdmin) {
+      headerName.innerHTML = `${currentUser.name} <span class="crown-icon" title="Головний адміністратор">👑</span>`;
+      headerStatus.textContent = "Головний доступ";
+    } else {
+      headerName.textContent = currentUser.name;
+      headerStatus.textContent = "Користувач";
+    }
+
+    headerAvatar.textContent = (currentUser.name || "U")[0].toUpperCase();
+
+    btnOpenAdmin.style.display = isAdmin ? "inline-flex" : "none";
+    btnResetModal.style.display = isAdmin ? "inline-flex" : "none";
+
+    renderApp();
+  }
+
+  document.getElementById("btnLogoutBtn").onclick = function() {
+    currentUser = null;
+    localStorage.removeItem(SESSION_USER_KEY);
+    document.getElementById("passwordInput").value = "";
+    applyAccessState();
+  };
+
+  // Керування користувачами (Адмін)
+  const adminUsersModal = document.getElementById("adminUsersModal");
+  document.getElementById("btnOpenAdminPanel").onclick = function() {
+    renderAdminUsersList();
+    adminUsersModal.classList.add("active");
+  };
+
+  document.getElementById("adminUsersCloseX").onclick = function() {
+    adminUsersModal.classList.remove("active");
+  };
+
+  document.getElementById("createNewUserForm").onsubmit = function(e) {
+    e.preventDefault();
+    const username = document.getElementById("newUsername").value.trim();
+    const password = document.getElementById("newPassword").value;
+    const name = document.getElementById("newDisplayName").value.trim();
+
+    if (username.toLowerCase() === SUPER_ADMIN.username.toLowerCase()) {
+      alert("Логін 'Artem' зарезервовано!");
+      return;
+    }
+
+    const key = username.toLowerCase().replace(/[^a-z0-9_]/g, "_");
+    customUsers[key] = {
+      username: username,
+      password: password,
+      name: name,
+      role: "editor",
+      active: true
+    };
+
+    saveUsers();
+    renderAdminUsersList();
+    this.reset();
+  };
+
+  function renderAdminUsersList() {
+    const list = document.getElementById("adminUsersListContainer");
+    if (!list) return;
+    list.innerHTML = "";
+
+    const keys = Object.keys(customUsers);
+    if (keys.length === 0) {
+      list.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:10px; font-size:12px;">Користувачів ще немає.</div>`;
+      return;
+    }
+
+    keys.forEach(k => {
+      const u = customUsers[k];
+      const card = document.createElement("div");
+      card.className = `admin-user-card ${u.active ? 'approved' : 'blocked'}`;
+      card.innerHTML = `
+        <div>
+          <div style="font-size: 13px; font-weight: 700; color: #fff;">${u.name} (@${u.username})</div>
+          <div style="font-size: 11px; color: var(--text-muted);">Пароль: <code>${u.password}</code> | ${u.active ? 'Активний' : 'Заблоковано'}</div>
+        </div>
+        <div style="display:flex; gap:6px;">
+          <button class="btn btn-toggle" style="font-size: 11px; padding: 4px 8px; background: ${u.active ? 'rgba(239, 68, 68, 0.2)' : 'rgba(16, 185, 129, 0.2)'}; color: ${u.active ? '#f87171' : '#34d399'};">
+            ${u.active ? 'Блокувати' : 'Активувати'}
+          </button>
+          <button class="btn btn-delete" style="font-size: 11px; padding: 4px 8px; background: rgba(239, 68, 68, 0.2); color: #f87171;">✕</button>
+        </div>
+      `;
+
+      card.querySelector(".btn-toggle").onclick = () => {
+        u.active = !u.active;
+        saveUsers();
+        renderAdminUsersList();
+      };
+
+      card.querySelector(".btn-delete").onclick = () => {
+        if (confirm(`Видалити @${u.username}?`)) {
+          delete customUsers[k];
+          saveUsers();
+          renderAdminUsersList();
+        }
+      };
+
+      list.appendChild(card);
+    });
+  }
+
+  // Збереження та завантаження графіка і завдань
+  function loadLocalData() {
+    try {
+      const data = localStorage.getItem(STORAGE_KEY);
+      if (data) return JSON.parse(data);
+    } catch (e) {}
+    return { overrides: {}, dayNotes: {}, monthlyDebts: {}, monthFocusNotes: {} };
+  }
+
+  function saveLocalData() {
+    const payload = {
+      overrides: window.overrides,
+      dayNotes: window.dayNotes,
+      monthlyDebts: window.monthlyDebts,
+      monthFocusNotes: window.monthFocusNotes
+    };
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    } catch (e) {}
+  }
+
+  const initialData = loadLocalData();
+  window.overrides = initialData.overrides || {};
+  window.dayNotes = initialData.dayNotes || {};
+  window.monthlyDebts = initialData.monthlyDebts || {};
+  window.monthFocusNotes = initialData.monthFocusNotes || {};
+
+  const BASE_DATE = new Date(2026, 8, 1);
+  let currentSeasonIndex = 0; 
+  let selectedMonthRelative = 0; 
+  let activeTab = "calendar"; 
+  let activeDayModalTarget = null; 
+
+  const MONTH_NAMES = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
+  const WEEKDAYS = ["Нд", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
+
+  function getDayTasks(dateKey) {
+    if (!window.dayNotes || !window.dayNotes[dateKey]) return [];
+    const raw = window.dayNotes[dateKey];
+    return Array.isArray(raw) ? raw : [];
+  }
+
+  function getSeasonDetails(sIndex) {
+    const startTotalMonths = 8 + sIndex * 3;
+    const startYear = 2026 + Math.floor(startTotalMonths / 12);
+    const startMonth = ((startTotalMonths % 12) + 12) % 12;
+
+    let sName = "Сезон";
+    if (startMonth === 8) sName = `Осінь ${startYear}`;
+    else if (startMonth === 11) sName = `Зима ${startYear}/${startYear + 1}`;
+    else if (startMonth === 2) sName = `Весна ${startYear}`;
+    else if (startMonth === 5) sName = `Літо ${startYear}`;
+
+    const months = [];
+    for (let i = 0; i < 3; i++) {
+      const mTotal = startTotalMonths + i;
+      months.push({
+        year: 2026 + Math.floor(mTotal / 12),
+        month: ((mTotal % 12) + 12) % 12
+      });
+    }
+
+    return { name: sName, months };
+  }
+
+  function formatDateKey(year, month, day) {
+    return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  }
+
+  function formatMonthKey(year, month) {
+    return `${year}-${String(month + 1).padStart(2, "0")}`;
+  }
+
+  function getBaseWorker(date) {
+    const diffDays = Math.floor((date.getTime() - BASE_DATE.getTime()) / (1000 * 60 * 60 * 24));
+    const cycleIndex = Math.floor(diffDays / 3);
+    return (((cycleIndex % 2) + 2) % 2 === 0) ? "Артем" : "Олександр";
+  }
+
+  function getAssignedWorker(year, month, day) {
+    const key = formatDateKey(year, month, day);
+    if (window.overrides && window.overrides[key]) return { worker: window.overrides[key], isEdited: true };
+    return { worker: getBaseWorker(new Date(year, month, day)), isEdited: false };
+  }
+
+  function toggleShift(year, month, day) {
+    const key = formatDateKey(year, month, day);
+    const base = getBaseWorker(new Date(year, month, day));
+    const current = (window.overrides && window.overrides[key]) || base;
+    const nextWorker = current === "Артем" ? "Олександр" : "Артем";
+
+    if (nextWorker === base) delete window.overrides[key];
+    else window.overrides[key] = nextWorker;
+
+    saveLocalData();
+    renderApp();
+  }
+
+  function getMonthActiveTasksCount(year, month) {
+    let count = 0;
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    for (let day = 1; day <= daysInMonth; day++) {
+      count += getDayTasks(formatDateKey(year, month, day)).filter(t => !t.done).length;
+    }
+    const mKey = formatMonthKey(year, month);
+    count += ((window.monthlyDebts && window.monthlyDebts[mKey]) || []).filter(d => !d.settled).length;
+    if (window.monthFocusNotes && window.monthFocusNotes[mKey] && window.monthFocusNotes[mKey].trim() !== '') {
+      count += 1;
+    }
+    return count;
+  }
+
+  function getSeasonActiveTasksCount(season) {
+    return season.months.reduce((acc, m) => acc + getMonthActiveTasksCount(m.year, m.month), 0);
+  }
+
+  function renderModalTasks(tasks, dateKey) {
+    const listEl = document.getElementById("modalDayTasksList");
+    const countEl = document.getElementById("modalTasksCount");
+    if (!listEl || !countEl) return;
+    
+    listEl.innerHTML = "";
+    const activeTasksCount = tasks.filter(t => !t.done).length;
+    countEl.textContent = `${activeTasksCount} активних (з ${tasks.length})`;
+
+    if (tasks.length === 0) {
+      listEl.innerHTML = '<div style="font-size: 12px; color: var(--text-muted); font-style: italic; padding: 6px 0;">Завдань ще немає.</div>';
+      return;
+    }
+
+    tasks.forEach((task, idx) => {
+      const item = document.createElement("div");
+      item.className = `task-modal-item ${task.done ? 'done' : ''}`;
+      const authorText = task.author ? `<span style="font-size: 10px; color: #38bdf8; margin-left: 5px; font-weight: 700;">(${task.author})</span>` : '';
+
+      item.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0;">
+          <input type="checkbox" class="task-modal-checkbox" ${task.done ? 'checked' : ''}>
+          <span class="task-modal-text" style="word-break: break-word;">${task.text}</span>
+          ${authorText}
+        </div>
+        <button class="btn" style="padding: 2px 6px; font-size: 10px; background: rgba(239, 68, 68, 0.2); color: #f87171;">✕</button>
+      `;
+
+      item.querySelector(".task-modal-checkbox").onchange = (e) => {
+        task.done = e.target.checked;
+        window.dayNotes[dateKey] = tasks;
+        saveLocalData();
+        renderModalTasks(tasks, dateKey);
+        renderApp();
+      };
+
+      item.querySelector("button").onclick = () => {
+        tasks.splice(idx, 1);
+        if (tasks.length === 0) delete window.dayNotes[dateKey];
+        else window.dayNotes[dateKey] = tasks;
+        saveLocalData();
+        renderModalTasks(tasks, dateKey);
+        renderApp();
+      };
+
+      listEl.appendChild(item);
+    });
+  }
+
+  function openDayModal(year, month, day) {
+    activeDayModalTarget = { year, month, day };
+    const dateObj = new Date(year, month, day);
+    const dateKey = formatDateKey(year, month, day);
+    const assignment = getAssignedWorker(year, month, day);
+
+    document.getElementById("modalDayTitle").textContent = `${day} ${MONTH_NAMES[month]} ${year} (${WEEKDAYS[dateObj.getDay()]})`;
+    const workerEl = document.getElementById("modalCurrentWorker");
+    workerEl.textContent = assignment.worker + (assignment.isEdited ? " (підміна)" : "");
+    workerEl.style.color = assignment.worker === "Артем" ? "var(--artem)" : "var(--oleksandr)";
+
+    renderModalTasks(getDayTasks(dateKey), dateKey);
+    document.getElementById("modalNewTaskInput").value = "";
+    document.getElementById("dayActionModal").classList.add("active");
+  }
+
+  document.getElementById("modalDayCloseX").onclick = () => {
+    document.getElementById("dayActionModal").classList.remove("active");
+  };
+
+  document.getElementById("modalSwapWorkerBtn").onclick = () => {
+    if (!activeDayModalTarget) return;
+    const { year, month, day } = activeDayModalTarget;
+    toggleShift(year, month, day);
+    const assignment = getAssignedWorker(year, month, day);
+    const workerEl = document.getElementById("modalCurrentWorker");
+    workerEl.textContent = assignment.worker + (assignment.isEdited ? " (підміна)" : "");
+    workerEl.style.color = assignment.worker === "Артем" ? "var(--artem)" : "var(--oleksandr)";
+  };
+
+  const dayInputEl = document.getElementById("modalNewTaskInput");
+  const handleAddNewTask = () => {
+    if (!activeDayModalTarget) return;
+    const val = dayInputEl.value.trim();
+    if (!val) return;
+
+    const { year, month, day } = activeDayModalTarget;
+    const dateKey = formatDateKey(year, month, day);
+    const tasks = getDayTasks(dateKey);
+
+    tasks.push({
+      id: Date.now().toString(),
+      text: val.slice(0, 70),
+      done: false,
+      author: currentUser ? currentUser.name : "Користувач"
+    });
+
+    window.dayNotes[dateKey] = tasks;
+    saveLocalData();
+    dayInputEl.value = "";
+    renderModalTasks(tasks, dateKey);
+    renderApp();
+  };
+
+  document.getElementById("modalAddNewTaskBtn").onclick = handleAddNewTask;
+  dayInputEl.onkeydown = (e) => { if (e.key === "Enter") handleAddNewTask(); };
+
+  function openSeasonOverviewModal() {
+    const season = getSeasonDetails(currentSeasonIndex);
+    const modal = document.getElementById("seasonOverviewModal");
+    const list = document.getElementById("seasonOverviewList");
+    document.getElementById("seasonOverviewTitle").textContent = `🔔 Завдання: ${season.name}`;
+    list.innerHTML = "";
+
+    let hasAnyTask = false;
+
+    season.months.forEach((mObj, mIdx) => {
+      const mKey = formatMonthKey(mObj.year, mObj.month);
+      const daysInMonth = new Date(mObj.year, mObj.month + 1, 0).getDate();
+      const monthLabel = `${MONTH_NAMES[mObj.month]} ${mObj.year}`;
+
+      const globalFocus = (window.monthFocusNotes && window.monthFocusNotes[mKey]) || "";
+      if (globalFocus.trim() !== '') {
+        hasAnyTask = true;
+        const box = document.createElement("div");
+        box.className = "overview-group-box";
+        box.innerHTML = `
+          <div class="overview-group-header">
+            <span>🎯 ${monthLabel} — Головний фокус</span>
+            <button class="btn" style="padding: 2px 7px; font-size: 10px;" onclick="switchMonthAndTab(${mIdx}, 'calendar')">До місяця</button>
+          </div>
+          <div style="font-size: 13px; color: #38bdf8; font-weight: 600;">${globalFocus}</div>
+        `;
+        list.appendChild(box);
+      }
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dateKey = formatDateKey(mObj.year, mObj.month, day);
+        const dayTasks = getDayTasks(dateKey).filter(t => !t.done);
+
+        if (dayTasks.length > 0) {
+          hasAnyTask = true;
+          const assignment = getAssignedWorker(mObj.year, mObj.month, day);
+          const dateObj = new Date(mObj.year, mObj.month, day);
+          const box = document.createElement("div");
+          box.className = "overview-group-box";
+
+          let tasksHtml = dayTasks.map(t => `
+            <div class="overview-task-line">
+              <span style="color: #f1f5f9; display: flex; align-items: center; gap: 6px;">
+                <span style="color: #38bdf8;">•</span> ${t.text}
+              </span>
+              ${t.author ? `<span class="author-badge">${t.author}</span>` : ''}
+            </div>
+          `).join('');
+
+          box.innerHTML = `
+            <div class="overview-group-header">
+              <span>📅 ${day} ${MONTH_NAMES[mObj.month]} (${WEEKDAYS[dateObj.getDay()]}) — Чергує: ${assignment.worker}</span>
+              <button class="btn" style="padding: 2px 7px; font-size: 10px;" onclick="openSpecificDayFromOverview(${mObj.year}, ${mObj.month}, ${day})">Відкрити день</button>
+            </div>
+            ${tasksHtml}
+          `;
+          list.appendChild(box);
+        }
+      }
+
+      const debts = (window.monthlyDebts && window.monthlyDebts[mKey]) || [];
+      const activeDebts = debts.filter(d => !d.settled);
+      if (activeDebts.length > 0) {
+        hasAnyTask = true;
+        const box = document.createElement("div");
+        box.className = "overview-group-box";
+
+        let debtsHtml = activeDebts.map(d => `
+          <div class="overview-task-line">
+            <span style="color: #f1f5f9; display: flex; align-items: center; gap: 6px;">
+              <span style="color: #fbbf24;">⚡</span> ${d.text}
+            </span>
+            ${d.author ? `<span class="author-badge">${d.author}</span>` : ''}
+          </div>
+        `).join('');
+
+        box.innerHTML = `
+          <div class="overview-group-header">
+            <span>📝 ${monthLabel} — Загальні системні справи</span>
+            <button class="btn" style="padding: 2px 7px; font-size: 10px;" onclick="switchMonthAndTab(${mIdx}, 'debts')">До списку</button>
+          </div>
+          ${debtsHtml}
+        `;
+        list.appendChild(box);
+      }
+    });
+
+    if (!hasAnyTask) {
+      list.innerHTML = `<div style="text-align: center; color: var(--text-muted); font-size: 13px; padding: 20px 0;">🎉 Активних завдань немає!</div>`;
+    }
+
+    modal.classList.add("active");
+  }
+
+  window.openSpecificDayFromOverview = (y, m, d) => {
+    document.getElementById("seasonOverviewModal").classList.remove("active");
+    const season = getSeasonDetails(currentSeasonIndex);
+    const mIdx = season.months.findIndex(item => item.year === y && item.month === m);
+    if (mIdx !== -1) selectedMonthRelative = mIdx;
+    activeTab = "calendar";
+    renderApp();
+    openDayModal(y, m, d);
+  };
+
+  window.switchMonthAndTab = (mIdx, tabName) => {
+    document.getElementById("seasonOverviewModal").classList.remove("active");
+    selectedMonthRelative = mIdx;
+    activeTab = tabName;
+    renderApp();
+  };
+
+  document.getElementById("seasonTaskBadge").onclick = openSeasonOverviewModal;
+  document.getElementById("seasonOverviewCloseX").onclick = () => {
+    document.getElementById("seasonOverviewModal").classList.remove("active");
+  };
+
+  function renderApp() {
+    const today = new Date();
+    const todayKey = formatDateKey(today.getFullYear(), today.getMonth(), today.getDate());
+
+    const dd = String(today.getDate()).padStart(2, "0");
+    const mm = String(today.getMonth() + 1).padStart(2, "0");
+    document.getElementById("statTodayDate").textContent = `${dd}.${mm}.${today.getFullYear()}`;
+    const todayAssignment = (window.overrides && window.overrides[todayKey]) || getBaseWorker(today);
+    const todayBadge = document.getElementById("statTodayWorker");
+    todayBadge.textContent = todayAssignment;
+    todayBadge.className = "stat-value " + (todayAssignment === "Артем" ? "badge-artem" : "badge-oleksandr");
+
+    const season = getSeasonDetails(currentSeasonIndex);
+    document.getElementById("currentSeasonLabel").textContent = season.name;
+
+    const seasonActiveCount = getSeasonActiveTasksCount(season);
+    const seasonBadgeEl = document.getElementById("seasonTaskBadge");
+    if (seasonActiveCount > 0) {
+      seasonBadgeEl.textContent = `🔔 ${seasonActiveCount}`;
+      seasonBadgeEl.style.display = "inline-block";
+    } else {
+      seasonBadgeEl.style.display = "none";
+    }
+
+    let seasonArtemCount = 0;
+    let seasonOleksandrCount = 0;
+    season.months.forEach((mObj) => {
+      const daysInMonth = new Date(mObj.year, mObj.month + 1, 0).getDate();
+      for (let day = 1; day <= daysInMonth; day++) {
+        const assignment = getAssignedWorker(mObj.year, mObj.month, day);
+        if (assignment.worker === "Артем") seasonArtemCount++;
+        else seasonOleksandrCount++;
+      }
+    });
+    document.getElementById("statCountArtem").textContent = seasonArtemCount;
+    document.getElementById("statCountOleksandr").textContent = seasonOleksandrCount;
+
+    const calView = document.getElementById("mainCalendarView");
+    const debtsView = document.getElementById("debtsNotesView");
+    const debtsTabBtn = document.getElementById("btnTabDebts");
+
+    if (activeTab === "debts") {
+      calView.style.display = "none";
+      debtsView.style.display = "block";
+      debtsTabBtn.classList.add("active");
+      renderDebts(season);
+    } else {
+      calView.style.display = "flex";
+      debtsView.style.display = "none";
+      debtsTabBtn.classList.remove("active");
+      renderCalendar(season, todayKey);
+    }
+  }
+
+  function renderCalendar(season, todayKey) {
+    const monthTabsContainer = document.getElementById("monthTabsContainer");
+    monthTabsContainer.innerHTML = "";
+
+    season.months.forEach((mObj, idx) => {
+      const daysInMonth = new Date(mObj.year, mObj.month + 1, 0).getDate();
+      const activeCount = getMonthActiveTasksCount(mObj.year, mObj.month);
+
+      const tabBtn = document.createElement("button");
+      tabBtn.className = "tab-btn " + (idx === selectedMonthRelative && activeTab === "calendar" ? "active" : "");
+      tabBtn.innerHTML = `${MONTH_NAMES[mObj.month]} (${daysInMonth})${activeCount > 0 ? '<span class="tab-badge"></span>' : ''}`;
+      tabBtn.onclick = () => {
+        activeTab = "calendar";
+        selectedMonthRelative = idx;
+        renderApp();
+      };
+      monthTabsContainer.appendChild(tabBtn);
+    });
+
+    const activeMonthObj = season.months[selectedMonthRelative];
+    document.getElementById("currentMonthTitle").textContent = `${MONTH_NAMES[activeMonthObj.month]} ${activeMonthObj.year}`;
+
+    const activeMonthKey = formatMonthKey(activeMonthObj.year, activeMonthObj.month);
+    const globalBanner = document.getElementById("globalMonthBanner");
+    const globalTextEl = document.getElementById("globalMonthText");
+    const currentGlobalNote = (window.monthFocusNotes && window.monthFocusNotes[activeMonthKey]) || "";
+
+    if (currentGlobalNote.trim() !== "") {
+      globalBanner.className = "global-month-banner";
+      globalTextEl.textContent = currentGlobalNote;
+      globalTextEl.className = "global-text";
+    } else {
+      globalBanner.className = "global-month-banner empty";
+      globalTextEl.textContent = "Немає фокусу на цей місяць. Натисніть олівець.";
+      globalTextEl.className = "global-text placeholder";
+    }
+
+    document.getElementById("btnEditGlobalNote").onclick = () => {
+      document.getElementById("globalModalInput").value = currentGlobalNote;
+      document.getElementById("globalNoteModal").classList.add("active");
+    };
+
+    const daysGrid = document.getElementById("daysGrid");
+    daysGrid.innerHTML = "";
+
+    const daysInMonth = new Date(activeMonthObj.year, activeMonthObj.month + 1, 0).getDate();
+    const now = new Date();
+    const todayObjMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateObj = new Date(activeMonthObj.year, activeMonthObj.month, day);
+      const dateKey = formatDateKey(activeMonthObj.year, activeMonthObj.month, day);
+      const isToday = (dateKey === todayKey);
+      const isPast = (dateObj < todayObjMidnight);
+      const assignment = getAssignedWorker(activeMonthObj.year, activeMonthObj.month, day);
+      const tasks = getDayTasks(dateKey);
+
+      const hasActiveTasks = tasks.some(t => !t.done);
+
+      const card = document.createElement("div");
+      card.className = `day-card ${assignment.worker === "Артем" ? "artem" : "oleksandr"} ${isToday ? "today" : ""} ${isPast ? "past-day" : ""} ${hasActiveTasks ? "has-note" : ""}`;
+      card.onclick = () => openDayModal(activeMonthObj.year, activeMonthObj.month, day);
+
+      let inner = "";
+      if (isToday) inner += `<span class="today-tag">СЬОГОДНІ</span>`;
+      if (assignment.isEdited) inner += `<span class="swap-badge">⇄</span>`;
+      
+      inner += `
+        <div class="day-num">${day}</div>
+        <div class="day-weekday">${WEEKDAYS[dateObj.getDay()]}</div>
+        <div class="day-worker">${assignment.worker}</div>
+      `;
+
+      if (tasks.length > 0) {
+        inner += `<div class="day-tasks-container">`;
+        const authorsMap = {};
+        tasks.forEach(t => {
+          const auth = t.author || 'Завдання';
+          if (!authorsMap[auth]) authorsMap[auth] = { hasActive: false };
+          if (!t.done) authorsMap[auth].hasActive = true;
+        });
+
+        const authorsList = Object.keys(authorsMap).slice(0, 2);
+        authorsList.forEach(authName => {
+          const info = authorsMap[authName];
+          const badgeClass = info.hasActive ? '' : 'all-done';
+          const icon = info.hasActive ? '📝' : '✓';
+          inner += `
+            <div class="author-chip-badge ${badgeClass}" title="Завдання залишив: ${authName}">
+              <span>${icon} ${authName}</span>
+            </div>
+          `;
+        });
+        inner += `</div>`;
+      }
+
+      card.innerHTML = inner;
+      daysGrid.appendChild(card);
+    }
+  }
+
+  function renderDebts(season) {
+    const grid = document.getElementById("debtsGrid");
+    grid.innerHTML = "";
+
+    season.months.forEach((mObj) => {
+      const mKey = formatMonthKey(mObj.year, mObj.month);
+      const items = (window.monthlyDebts && window.monthlyDebts[mKey]) || [];
+      const globalNote = (window.monthFocusNotes && window.monthFocusNotes[mKey]) || "";
+
+      const box = document.createElement("div");
+      box.className = "debt-month-box";
+      const activeCount = items.filter(i => !i.settled).length;
+
+      box.innerHTML = `
+        <div class="debt-month-title">
+          <span>📅 ${MONTH_NAMES[mObj.month]} ${mObj.year}</span>
+          <span style="font-size:11px; color:#fbbf24; font-weight:800;">${activeCount} активних</span>
+        </div>
+        <div class="month-target-field">
+          <label>🎯 Головний фокус місяця:</label>
+          <div style="font-size: 12px; color: ${globalNote ? '#fff' : 'var(--text-muted)'};">${globalNote || 'Не задано'}</div>
+        </div>
+      `;
+
+      const list = document.createElement("div");
+      list.className = "debt-items-list";
+
+      items.forEach((item, idx) => {
+        const row = document.createElement("div");
+        row.className = `global-taskbar-item ${item.settled ? "settled" : ""}`;
+        row.innerHTML = `
+          <div class="taskbar-text-wrap">
+            <input type="checkbox" class="task-modal-checkbox" ${item.settled ? "checked" : ""}>
+            <span class="taskbar-text">${item.text}</span>
+            <span class="author-badge">${item.author || ''}</span>
+          </div>
+          <button class="btn" style="padding: 2px 6px; font-size: 10px; background: rgba(239,68,68,0.2); color:#f87171;">✕</button>
+        `;
+
+        row.querySelector(".task-modal-checkbox").onchange = (e) => {
+          item.settled = e.target.checked;
+          saveLocalData();
+          renderDebts(season);
+        };
+
+        row.querySelector("button").onclick = () => {
+          items.splice(idx, 1);
+          saveLocalData();
+          renderDebts(season);
+        };
+
+        list.appendChild(row);
+      });
+
+      box.appendChild(list);
+
+      const addForm = document.createElement("div");
+      addForm.className = "task-add-form";
+      addForm.innerHTML = `
+        <input type="text" class="debt-input" maxlength="90" placeholder="+ Додати таскбар">
+        <button class="btn" style="background: #10b981; color: #fff;">+</button>
+      `;
+
+      const input = addForm.querySelector("input");
+      const addFn = () => {
+        const v = input.value.trim();
+        if (!v) return;
+        if (!window.monthlyDebts[mKey]) window.monthlyDebts[mKey] = [];
+        window.monthlyDebts[mKey].push({
+          id: Date.now().toString(),
+          text: v,
+          settled: false,
+          author: currentUser ? currentUser.name : "Артем"
+        });
+        saveLocalData();
+        renderDebts(season);
+      };
+
+      addForm.querySelector("button").onclick = addFn;
+      input.onkeydown = (e) => { if (e.key === "Enter") addFn(); };
+
+      box.appendChild(addForm);
+      grid.appendChild(box);
+    });
+  }
+
+  // Фокус місяця
+  document.getElementById("globalModalSaveBtn").onclick = () => {
+    const activeMonthObj = getSeasonDetails(currentSeasonIndex).months[selectedMonthRelative];
+    const activeMonthKey = formatMonthKey(activeMonthObj.year, activeMonthObj.month);
+    const val = document.getElementById("globalModalInput").value.trim();
+    if (val) window.monthFocusNotes[activeMonthKey] = val;
+    else delete window.monthFocusNotes[activeMonthKey];
+    saveLocalData();
+    document.getElementById("globalNoteModal").classList.remove("active");
+    renderApp();
+  };
+
+  document.getElementById("globalModalClearBtn").onclick = () => {
+    const activeMonthObj = getSeasonDetails(currentSeasonIndex).months[selectedMonthRelative];
+    const activeMonthKey = formatMonthKey(activeMonthObj.year, activeMonthObj.month);
+    delete window.monthFocusNotes[activeMonthKey];
+    saveLocalData();
+    document.getElementById("globalNoteModal").classList.remove("active");
+    renderApp();
+  };
+
+  document.getElementById("globalModalCloseX").onclick = () => {
+    document.getElementById("globalNoteModal").classList.remove("active");
+  };
+
+  // Скидання підмін (Адмін)
+  document.getElementById("btnOpenResetModal").onclick = () => {
+    document.getElementById("resetPeriodModal").classList.add("active");
+  };
+  document.getElementById("resetPeriodCloseX").onclick = () => {
+    document.getElementById("resetPeriodModal").classList.remove("active");
+  };
+
+  document.getElementById("btnResetCurrentMonth").onclick = () => {
+    const activeMonthObj = getSeasonDetails(currentSeasonIndex).months[selectedMonthRelative];
+    const prefix = formatMonthKey(activeMonthObj.year, activeMonthObj.month);
+    Object.keys(window.overrides || {}).forEach(k => {
+      if (k.startsWith(prefix)) delete window.overrides[k];
+    });
+    saveLocalData();
+    document.getElementById("resetPeriodModal").classList.remove("active");
+    renderApp();
+  };
+
+  document.getElementById("btnResetCurrentSeason").onclick = () => {
+    const season = getSeasonDetails(currentSeasonIndex);
+    const prefixes = season.months.map(m => formatMonthKey(m.year, m.month));
+    Object.keys(window.overrides || {}).forEach(k => {
+      if (prefixes.some(p => k.startsWith(p))) delete window.overrides[k];
+    });
+    saveLocalData();
+    document.getElementById("resetPeriodModal").classList.remove("active");
+    renderApp();
+  };
+
+  document.getElementById("btnPrevSeason").onclick = () => { currentSeasonIndex--; renderApp(); };
+  document.getElementById("btnNextSeason").onclick = () => { currentSeasonIndex++; renderApp(); };
+  document.getElementById("btnTabDebts").onclick = () => { activeTab = (activeTab === "debts") ? "calendar" : "debts"; renderApp(); };
+  document.getElementById("btnCloseDebts").onclick = () => { activeTab = "calendar"; renderApp(); };
+
+  document.getElementById("btnGoToToday").onclick = () => {
+    const today = new Date();
+    const currentTotalMonths = today.getFullYear() * 12 + today.getMonth();
+    const diffMonths = currentTotalMonths - (2026 * 12 + 8);
+    currentSeasonIndex = diffMonths >= 0 ? Math.floor(diffMonths / 3) : 0;
+    selectedMonthRelative = diffMonths >= 0 ? diffMonths % 3 : 0;
+    activeTab = "calendar";
+    renderApp();
+  };
+
+  [
+    document.getElementById("dayActionModal"),
+    document.getElementById("globalNoteModal"),
+    document.getElementById("seasonOverviewModal"),
+    document.getElementById("adminUsersModal"),
+    document.getElementById("resetPeriodModal")
+  ].forEach(modal => {
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) modal.classList.remove("active");
+    });
+  });
+
+  try {
+    const rawSaved = localStorage.getItem(SESSION_USER_KEY);
+    if (rawSaved) currentUser = JSON.parse(rawSaved);
+  } catch(e) {}
+
+  applyAccessState();
+  document.getElementById("btnGoToToday").click();
+});
+</script>
+
+</body>
+</html>
