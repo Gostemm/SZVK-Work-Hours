@@ -746,6 +746,13 @@
 
     <div style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-top: 4px;">Список співробітників:</div>
     <div id="adminUsersListContainer" style="display: flex; flex-direction: column; gap: 8px; max-height: 240px; overflow-y: auto;"></div>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.08);">
+      <button type="button" class="btn" id="btnForcePushUsers" style="background: rgba(16, 185, 129, 0.2); color: #34d399; font-size: 11px; padding: 6px 12px; border: 1px solid rgba(16, 185, 129, 0.4);">
+        ☁️ Відправити акаунти в хмару зараз
+      </button>
+      <span id="forcePushUsersStatus" style="font-size: 11px; font-weight: 600;"></span>
+    </div>
   </div>
 </div>
 
@@ -840,7 +847,7 @@ document.addEventListener("DOMContentLoaded", function () {
   let customUsers = {};
 
   // СИНХРОНІЗАЦІЯ З ХМАРОЮ (Netlify Blobs)
-  const SYNC_API_URL = "/api/sync";
+  const SYNC_API_URL = "/.netlify/functions/sync";
   let saveDebounceTimer = null;
 
   function updateSyncIndicator(state, text) {
@@ -876,7 +883,10 @@ document.addEventListener("DOMContentLoaded", function () {
     }
     try {
       updateSyncIndicator("syncing", "Оновлення...");
-      const res = await fetch(SYNC_API_URL, { cache: "no-store" });
+      let res = await fetch(SYNC_API_URL, { cache: "no-store" });
+      if (!res.ok) {
+        res = await fetch("/api/sync", { cache: "no-store" });
+      }
       if (!res.ok) throw new Error("HTTP " + res.status);
       const data = await res.json();
       updateSyncIndicator("synced", "Хмара");
@@ -889,19 +899,28 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   async function pushCloudData(payload) {
-    if (!window.location.protocol.startsWith("http")) return;
+    if (!window.location.protocol.startsWith("http")) return false;
     try {
       updateSyncIndicator("syncing", "Збереження...");
-      const res = await fetch(SYNC_API_URL, {
+      let res = await fetch(SYNC_API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
+      if (!res.ok) {
+        res = await fetch("/api/sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+      }
       if (!res.ok) throw new Error("HTTP " + res.status);
       updateSyncIndicator("synced", "Хмара");
+      return true;
     } catch (e) {
       console.warn("Помилка запису в хмару:", e);
       updateSyncIndicator("error", "Офлайн");
+      return false;
     }
   }
 
@@ -940,18 +959,23 @@ document.addEventListener("DOMContentLoaded", function () {
 
     let authenticatedUser = null;
 
-    if (u === SUPER_ADMIN.username && p === SUPER_ADMIN.password) {
+    if (u.toLowerCase() === SUPER_ADMIN.username.toLowerCase() && p === SUPER_ADMIN.password) {
       authenticatedUser = SUPER_ADMIN;
+      // Якщо головний адмін увійшов — гарантовано вивантажуємо наявних користувачів у хмару Netlify
+      if (Object.keys(customUsers).length > 0) {
+        pushCloudData({ customUsers: customUsers });
+      }
     } else {
-      let foundKey = Object.keys(customUsers).find(k => (customUsers[k].username || "").toLowerCase() === u.toLowerCase());
+      // Спочатку шукаємо серед відомих користувачів
+      let foundKey = Object.keys(customUsers).find(k => (customUsers[k].username || "").trim().toLowerCase() === u.toLowerCase());
 
-      // Якщо користувача не знайдено або пароль не зійшовся, спочатку перевіряємо свіжі дані з хмари
-      if ((!foundKey || customUsers[foundKey].password !== p) && window.location.protocol.startsWith("http")) {
+      // Якщо користувача немає або пароль не збігся — робимо свіжий запит до хмари Netlify
+      if (window.location.protocol.startsWith("http")) {
         const cloudData = await fetchCloudData();
-        if (cloudData && cloudData.customUsers) {
+        if (cloudData && cloudData.customUsers && typeof cloudData.customUsers === "object") {
           customUsers = cloudData.customUsers;
           localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(customUsers));
-          foundKey = Object.keys(customUsers).find(k => (customUsers[k].username || "").toLowerCase() === u.toLowerCase());
+          foundKey = Object.keys(customUsers).find(k => (customUsers[k].username || "").trim().toLowerCase() === u.toLowerCase());
         }
       }
 
@@ -959,7 +983,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const foundUser = customUsers[foundKey];
         if (foundUser.password === p) {
           if (!foundUser.active) {
-            loginError.textContent = "Акаунт деактивовано";
+            loginError.textContent = "Акаунт деактивовано адміністратором";
             loginError.style.display = "block";
             return;
           }
@@ -969,7 +993,12 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     if (!authenticatedUser) {
-      loginError.textContent = "Невірний логін або пароль";
+      const count = Object.keys(customUsers).length;
+      if (count === 0 && window.location.protocol.startsWith("http")) {
+        loginError.innerHTML = "Невірний логін або пароль.<br><span style='font-size:11px; font-weight:normal; color:#cbd5e1;'>⚠️ У хмарі ще немає створених акаунтів. Увійдіть спочатку як <b>Artem</b> на комп'ютері та створіть або синхронізуйте користувача.</span>";
+      } else {
+        loginError.textContent = "Невірний логін або пароль";
+      }
       loginError.style.display = "block";
       return;
     }
@@ -1046,6 +1075,28 @@ document.addEventListener("DOMContentLoaded", function () {
   document.getElementById("adminUsersCloseX").onclick = function() {
     adminUsersModal.classList.remove("active");
   };
+
+  const btnForcePush = document.getElementById("btnForcePushUsers");
+  const forceStatus = document.getElementById("forcePushUsersStatus");
+  if (btnForcePush) {
+    btnForcePush.onclick = async function() {
+      if (forceStatus) {
+        forceStatus.style.color = "#f59e0b";
+        forceStatus.textContent = "⏳ Відправка в хмару...";
+      }
+      const ok = await pushCloudData({ customUsers: customUsers });
+      if (forceStatus) {
+        if (ok) {
+          forceStatus.style.color = "#34d399";
+          forceStatus.textContent = `✅ Успішно! Збережено ${Object.keys(customUsers).length} акаунтів`;
+        } else {
+          forceStatus.style.color = "#f87171";
+          forceStatus.textContent = "❌ Помилка з'єднання з сервером";
+        }
+        setTimeout(() => { if (forceStatus) forceStatus.textContent = ""; }, 5000);
+      }
+    };
+  }
 
   document.getElementById("createNewUserForm").onsubmit = function(e) {
     e.preventDefault();
@@ -1154,34 +1205,45 @@ document.addEventListener("DOMContentLoaded", function () {
 
     let scheduleUpdated = false;
 
-    // Синхронізуємо користувачів
-    if (data.customUsers && typeof data.customUsers === "object") {
-      const keys = Object.keys(data.customUsers);
-      if (keys.length > 0) {
-        customUsers = data.customUsers;
-        localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(customUsers));
-        renderAdminUsersList();
-      } else if (Object.keys(customUsers).length > 0) {
-        pushCloudData({ customUsers: customUsers });
-      }
+    // СИНХРОНІЗУЄМО КОРИСТУВАЧІВ:
+    const cloudUsers = (data && data.customUsers && typeof data.customUsers === "object") ? data.customUsers : null;
+    const cloudUsersCount = cloudUsers ? Object.keys(cloudUsers).length : 0;
+    const localUsersCount = Object.keys(customUsers || {}).length;
+
+    if (cloudUsersCount > 0) {
+      customUsers = cloudUsers;
+      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(customUsers));
+      renderAdminUsersList();
+    } else if (localUsersCount > 0) {
+      // КРИТИЧНО: Якщо в хмарі ще немає акаунтів, але вони є на поточному пристрої — вивантажуємо в хмару!
+      console.log("Автоматичне вивантаження створених акаунтів у хмару Netlify:", customUsers);
+      pushCloudData({ customUsers: customUsers });
     }
 
-    // Синхронізуємо розклад
-    if (data.schedule && typeof data.schedule === "object") {
-      window.overrides = data.schedule.overrides || {};
-      window.dayNotes = data.schedule.dayNotes || {};
-      window.monthlyDebts = data.schedule.monthlyDebts || {};
-      window.monthFocusNotes = data.schedule.monthFocusNotes || {};
+    // СИНХРОНІЗУЄМО РОЗКЛАД:
+    const cloudSchedule = (data && data.schedule && typeof data.schedule === "object") ? data.schedule : null;
+    const cloudScheduleCount = cloudSchedule ? Object.keys(cloudSchedule.overrides || {}).length + Object.keys(cloudSchedule.dayNotes || {}).length : 0;
+    const hasLocalSchedule = (window.overrides && Object.keys(window.overrides).length > 0) ||
+                             (window.dayNotes && Object.keys(window.dayNotes).length > 0);
+
+    if (cloudSchedule && cloudScheduleCount > 0) {
+      window.overrides = cloudSchedule.overrides || {};
+      window.dayNotes = cloudSchedule.dayNotes || {};
+      window.monthlyDebts = cloudSchedule.monthlyDebts || {};
+      window.monthFocusNotes = cloudSchedule.monthFocusNotes || {};
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data.schedule));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(cloudSchedule));
       } catch(e) {}
       scheduleUpdated = true;
-    } else {
-      const hasLocalSchedule = (window.overrides && Object.keys(window.overrides).length > 0) ||
-                               (window.dayNotes && Object.keys(window.dayNotes).length > 0);
-      if (hasLocalSchedule) {
-        saveLocalData();
-      }
+    } else if (hasLocalSchedule) {
+      pushCloudData({
+        schedule: {
+          overrides: window.overrides,
+          dayNotes: window.dayNotes,
+          monthlyDebts: window.monthlyDebts,
+          monthFocusNotes: window.monthFocusNotes
+        }
+      });
     }
 
     if (scheduleUpdated) {
