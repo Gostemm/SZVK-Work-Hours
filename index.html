@@ -5,6 +5,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Справи Системника</title>
 
+  <script>
+    // Init theme as early as possible to prevent flash
+    (function() {
+      try {
+        var saved = localStorage.getItem('szvk_ui_theme') || 'dark';
+        var effective = saved;
+        if (saved === 'system') {
+          effective = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        document.documentElement.setAttribute('data-theme', effective);
+      } catch (e) {}
+    })();
+  </script>
 
   <style>
     :root {
@@ -17,6 +30,251 @@
       --today-border: #f59e0b;
       --border: #334155;
       --note-badge: #38bdf8;
+      --accent: #3b82f6;
+    }
+
+    /* LIGHT THEME */
+    [data-theme="light"] {
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #0f172a;
+      --text-muted: #475569;
+      --artem: #7c3aed;
+      --oleksandr: #059669;
+      --today-border: #d97706;
+      --border: #cbd5e1;
+      --note-badge: #0284c7;
+      --accent: #2563eb;
+    }
+
+    /* THEME SWITCHER WIDGET */
+    .theme-switch-group {
+      display: inline-flex;
+      align-items: center;
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 2px;
+      gap: 2px;
+    }
+    .theme-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      border-radius: 7px;
+      padding: 5px 8px;
+      font-size: 13px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+      line-height: 1;
+      user-select: none;
+    }
+    .theme-btn:hover {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.08);
+    }
+    .theme-btn.active {
+      background: var(--accent);
+      color: #ffffff;
+      border-color: var(--accent);
+      box-shadow: 0 1px 6px rgba(0, 0, 0, 0.25);
+    }
+    [data-theme="light"] .theme-switch-group {
+      background: #f1f5f9;
+      border-color: #cbd5e1;
+    }
+    [data-theme="light"] .theme-btn:hover {
+      background: rgba(0, 0, 0, 0.06);
+    }
+    [data-theme="light"] .theme-btn.active {
+      background: var(--accent);
+      color: #ffffff;
+    }
+
+    /* Light Theme Overrides */
+    [data-theme="light"] .top-header-bar {
+      background: #ffffff;
+      border-color: #cbd5e1;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    }
+    [data-theme="light"] .brand-title {
+      color: #0f172a;
+    }
+    [data-theme="light"] .user-name-span {
+      color: #0f172a;
+      font-weight: 800;
+    }
+    [data-theme="light"] .auth-gate-screen {
+      background: #ffffff;
+      border-color: #cbd5e1;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+    [data-theme="light"] .auth-title {
+      color: #0f172a;
+    }
+    [data-theme="light"] .auth-input {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+      color: #0f172a;
+    }
+    [data-theme="light"] .auth-input:focus {
+      border-color: #2563eb;
+      background: #ffffff;
+    }
+    [data-theme="light"] .auth-remember-row {
+      color: #334155;
+    }
+    [data-theme="light"] .dashboard {
+      background: #ffffff;
+      border-color: #cbd5e1;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    }
+    [data-theme="light"] .stat-card {
+      color: #0f172a;
+    }
+    [data-theme="light"] .stat-title {
+      color: #475569;
+      font-weight: 800;
+    }
+    [data-theme="light"] .stat-value {
+      color: #0f172a;
+      font-weight: 900;
+    }
+    [data-theme="light"] .badge-artem {
+      color: #6b21a8;
+      font-weight: 900;
+    }
+    [data-theme="light"] .badge-oleksandr {
+      color: #047857;
+      font-weight: 900;
+    }
+    [data-theme="light"] .view-card {
+      background: #ffffff;
+      border-color: #cbd5e1;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    }
+    [data-theme="light"] .section-title {
+      color: #0f172a;
+    }
+    [data-theme="light"] .season-label {
+      color: #0f172a;
+    }
+    [data-theme="light"] .tab-btn {
+      color: #334155;
+      border-color: #cbd5e1;
+      background: #f8fafc;
+    }
+    [data-theme="light"] .tab-btn:hover {
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+    [data-theme="light"] .tab-btn.active {
+      background: #2563eb;
+      color: #ffffff;
+      border-color: #2563eb;
+    }
+    [data-theme="light"] .tab-btn.notes-tab {
+      border-color: #d97706;
+      color: #b45309;
+    }
+    [data-theme="light"] .tab-btn.notes-tab.active {
+      background: #f59e0b;
+      color: #000000;
+    }
+    [data-theme="light"] .global-month-banner {
+      background: #ffffff;
+      border: 1px solid #7dd3fc;
+      border-left: 4px solid #0284c7;
+    }
+    [data-theme="light"] .global-month-banner.empty {
+      background: #f8fafc;
+      border: 1px dashed #cbd5e1;
+      border-left: 4px dashed #94a3b8;
+    }
+    [data-theme="light"] .global-label {
+      color: #0284c7;
+      font-weight: 800;
+    }
+    [data-theme="light"] .global-text {
+      color: #0f172a;
+      font-weight: 600;
+    }
+
+    /* Day cards calendar in light mode */
+    [data-theme="light"] .day-card {
+      background: #f8fafc;
+      border: 1.5px solid #cbd5e1;
+      color: #0f172a;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+    }
+    [data-theme="light"] .day-card.artem {
+      background: #ede9fe !important;
+      border-color: #8b5cf6 !important;
+      color: #4c1d95 !important;
+    }
+    [data-theme="light"] .day-card.oleksandr {
+      background: #d1fae5 !important;
+      border-color: #10b981 !important;
+      color: #064e3b !important;
+    }
+    [data-theme="light"] .day-card.today {
+      border: 2.5px solid #d97706 !important;
+      box-shadow: 0 0 14px rgba(217, 119, 6, 0.45);
+    }
+    [data-theme="light"] .day-worker {
+      background: rgba(0, 0, 0, 0.08);
+      color: inherit;
+      font-weight: 800;
+    }
+    [data-theme="light"] .author-chip-badge {
+      background: #e0f2fe;
+      border-color: #7dd3fc;
+      color: #0369a1;
+      font-weight: 700;
+    }
+    [data-theme="light"] .today-tag {
+      background: #d97706;
+      color: #ffffff;
+      font-weight: 900;
+    }
+    [data-theme="light"] .swap-badge {
+      background: #d97706;
+      color: #ffffff;
+    }
+
+    [data-theme="light"] .btn {
+      background: #f1f5f9;
+      color: #0f172a;
+      border: 1px solid #cbd5e1;
+    }
+    [data-theme="light"] .btn:hover {
+      background: #e2e8f0;
+    }
+    [data-theme="light"] .btn-today {
+      background: #fef3c7;
+      color: #b45309;
+      border-color: #fcd34d;
+      font-weight: 800;
+    }
+    [data-theme="light"] .modal-box {
+      background: #ffffff;
+      border-color: #cbd5e1;
+      color: #0f172a;
+      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.15);
+    }
+    [data-theme="light"] .task-modal-item {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+      color: #0f172a;
+    }
+    [data-theme="light"] .new-user-form,
+    [data-theme="light"] .reset-option-card {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+      color: #0f172a;
     }
 
     * {
@@ -620,6 +878,13 @@
       <div id="cloudSyncStatus" style="font-size: 11px; display: inline-flex; align-items: center; gap: 5px; padding: 4px 8px; border-radius: 6px; background: rgba(16, 185, 129, 0.15); color: #34d399; font-weight: 600; border: 1px solid rgba(16, 185, 129, 0.25);" title="Статус синхронізації з Netlify">
         <span id="cloudSyncDot" style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#10b981;"></span>
         <span id="cloudSyncText">Хмара</span>
+      </div>
+
+      <!-- Theme Switcher Segmented Control -->
+      <div class="theme-switch-group" id="themeSwitchGroup" title="Тема оформлення: Темна / Світла / Системна">
+        <button type="button" class="theme-btn active" data-theme-val="dark" title="Темна тема" aria-label="Темна тема">🌙</button>
+        <button type="button" class="theme-btn" data-theme-val="light" title="Світла тема" aria-label="Світла тема">☀️</button>
+        <button type="button" class="theme-btn" data-theme-val="system" title="Системна тема" aria-label="Системна тема">💻</button>
       </div>
 
       <a href="trackers.html" class="btn" style="background: rgba(139, 92, 246, 0.2); color: #c084fc; font-size: 11px; padding: 5px 9px; border: 1px solid rgba(139, 92, 246, 0.4); text-decoration: none;" title="Відкрити журнал ремонту трекерів">
@@ -1902,6 +2167,45 @@ document.addEventListener("DOMContentLoaded", function () {
 
   applyAccessState();
   document.getElementById("btnGoToToday").click();
+
+  // Theme Switching Logic
+  const THEME_STORAGE_KEY = 'szvk_ui_theme';
+  const themeButtons = document.querySelectorAll('.theme-btn');
+  const mediaDark = window.matchMedia('(prefers-color-scheme: dark)');
+
+  function applyTheme(themeChoice) {
+    let effective = themeChoice;
+    if (themeChoice === 'system') {
+      effective = mediaDark.matches ? 'dark' : 'light';
+    }
+    document.documentElement.setAttribute('data-theme', effective);
+    themeButtons.forEach(btn => {
+      btn.classList.toggle('active', btn.getAttribute('data-theme-val') === themeChoice);
+    });
+  }
+
+  function setTheme(themeChoice) {
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, themeChoice);
+    } catch (e) {}
+    applyTheme(themeChoice);
+  }
+
+  themeButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      setTheme(btn.getAttribute('data-theme-val'));
+    });
+  });
+
+  try {
+    mediaDark.addEventListener('change', () => {
+      const current = localStorage.getItem(THEME_STORAGE_KEY) || 'dark';
+      if (current === 'system') applyTheme('system');
+    });
+  } catch (e) {}
+
+  const currentSavedTheme = localStorage.getItem(THEME_STORAGE_KEY) || 'dark';
+  applyTheme(currentSavedTheme);
 
   // Запуск хмарної синхронізації
   syncAppFromCloud();
