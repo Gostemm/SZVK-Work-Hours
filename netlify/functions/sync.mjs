@@ -65,6 +65,7 @@ export default async (req, context) => {
         ...incoming,
         customUsers: incoming.customUsers !== undefined ? incoming.customUsers : (existing.customUsers || {}),
         schedule: incoming.schedule !== undefined ? incoming.schedule : (existing.schedule || {}),
+        trackersData: incoming.trackersData !== undefined ? incoming.trackersData : (existing.trackersData || null),
         updatedAt: Date.now()
       };
 

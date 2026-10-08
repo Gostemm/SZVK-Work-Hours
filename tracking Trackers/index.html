@@ -1,0 +1,3980 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>🛰️ Ремонт трекерів | SZVK</title>
+
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --card-hover: #26354a;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --border: #334155;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --artem: #8b5cf6;
+      --oleksandr: #10b981;
+      --today-border: #f59e0b;
+      --danger: #ef4444;
+      --sky: #38bdf8;
+      --warning: #f59e0b;
+      --success: #10b981;
+      --badge-carrier: #334155;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 8px 12px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1840px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    @media (min-width: 1920px) {
+      .container {
+        max-width: 98vw;
+      }
+    }
+
+    /* Top Header Bar */
+    .top-header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: linear-gradient(135deg, #1e293b 0%, #172033 100%);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 10px 16px;
+      gap: 12px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+      flex-wrap: wrap;
+    }
+
+    .brand-title {
+      font-size: 16px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      letter-spacing: -0.2px;
+    }
+
+    .brand-badge {
+      font-size: 10px;
+      font-weight: 800;
+      background: rgba(59, 130, 246, 0.2);
+      color: #60a5fa;
+      border: 1px solid rgba(59, 130, 246, 0.4);
+      padding: 2px 7px;
+      border-radius: 6px;
+      text-transform: uppercase;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      background: #334155;
+      color: var(--text);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      padding: 7px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      text-decoration: none;
+      white-space: nowrap;
+      user-select: none;
+    }
+    .btn:hover { background: #475569; transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      color: #fff;
+      border: 1px solid #3b82f6;
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
+    }
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.5);
+    }
+
+    .btn-secondary {
+      background: rgba(139, 92, 246, 0.15);
+      color: #c084fc;
+      border: 1px solid rgba(139, 92, 246, 0.35);
+    }
+    .btn-secondary:hover { background: rgba(139, 92, 246, 0.25); }
+
+    .btn-amber {
+      background: rgba(245, 158, 11, 0.15);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.35);
+    }
+    .btn-amber:hover { background: rgba(245, 158, 11, 0.25); }
+
+    .btn-sky {
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.35);
+    }
+    .btn-sky:hover { background: rgba(56, 189, 248, 0.25); }
+
+    .cloud-status {
+      font-size: 11px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 9px;
+      border-radius: 6px;
+      background: rgba(16, 185, 129, 0.12);
+      color: #34d399;
+      font-weight: 700;
+      border: 1px solid rgba(16, 185, 129, 0.25);
+    }
+    .status-dot {
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 6px #10b981;
+    }
+    .status-dot.syncing {
+      background: #f59e0b;
+      box-shadow: 0 0 6px #f59e0b;
+      animation: pulse 1s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.3); }
+    }
+
+    /* Dashboard Stats */
+    .dashboard {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px 16px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 10px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    }
+
+    .stat-card {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding: 6px 10px;
+      border-radius: 8px;
+      transition: all 0.15s ease;
+      cursor: pointer;
+    }
+    .stat-card:hover {
+      background: rgba(255, 255, 255, 0.04);
+      transform: translateY(-1px);
+    }
+    .stat-title {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      letter-spacing: 0.3px;
+    }
+    .stat-value {
+      font-size: 18px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .badge-artem { color: var(--artem); }
+    .badge-oleksandr { color: var(--oleksandr); }
+    .badge-tracker { color: var(--sky); }
+    .badge-pending { color: #f59e0b; }
+    .badge-office { color: #34d399; }
+    .badge-bill { color: #fbbf24; }
+
+    /* Nav Toolbar & Tabs */
+    .nav-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 9px 12px;
+    }
+
+    .nav-left {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .main-tab-btn {
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 7px 13px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s;
+    }
+    .main-tab-btn:hover {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.05);
+    }
+    .main-tab-btn.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+      box-shadow: 0 2px 10px rgba(59, 130, 246, 0.4);
+    }
+    .main-tab-btn.inventory-tab.active {
+      background: #10b981;
+      border-color: #10b981;
+      box-shadow: 0 2px 10px rgba(16, 185, 129, 0.4);
+    }
+    .main-tab-btn.at-tab.active {
+      background: #f59e0b;
+      border-color: #f59e0b;
+      color: #000;
+      box-shadow: 0 2px 10px rgba(245, 158, 11, 0.4);
+    }
+
+    .tab-counter {
+      font-size: 10px;
+      font-weight: 900;
+      padding: 1px 6px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.2);
+    }
+    .main-tab-btn.at-tab.active .tab-counter {
+      background: rgba(0, 0, 0, 0.3);
+      color: #fff;
+    }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    /* Search Box */
+    .search-wrap {
+      position: relative;
+      min-width: 260px;
+    }
+    .search-input {
+      width: 100%;
+      background: #0f172a;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: #fff;
+      padding: 7px 28px 7px 30px;
+      font-size: 12px;
+      font-weight: 500;
+      transition: border-color 0.15s;
+    }
+    .search-input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    }
+    .search-icon {
+      position: absolute;
+      left: 9px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 12px;
+      opacity: 0.6;
+      pointer-events: none;
+    }
+    .search-clear {
+      position: absolute;
+      right: 7px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 12px;
+      display: none;
+    }
+
+    /* Filter Chips Bar */
+    .filter-chips-bar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 12px;
+    }
+
+    .filter-chip {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: #1e293b;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s;
+      user-select: none;
+    }
+    .filter-chip:hover {
+      color: #fff;
+      border-color: #475569;
+    }
+    .filter-chip.active {
+      background: #3b82f6;
+      border-color: #3b82f6;
+      color: #fff;
+    }
+    .filter-chip.chip-pending {
+      border-color: rgba(245, 158, 11, 0.4);
+      color: #fbbf24;
+    }
+    .filter-chip.chip-pending.active {
+      background: #f59e0b;
+      border-color: #f59e0b;
+      color: #000;
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+    }
+    .filter-chip.chip-artem.active {
+      background: #8b5cf6;
+      border-color: #8b5cf6;
+      color: #fff;
+    }
+    .filter-chip.chip-oleksandr.active {
+      background: #10b981;
+      border-color: #10b981;
+      color: #fff;
+    }
+    .filter-chip.chip-bill.active {
+      background: #eab308;
+      border-color: #eab308;
+      color: #000;
+    }
+
+    .filter-select {
+      background: #0f172a;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: #fff;
+      padding: 4px 8px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .filter-select:focus { outline: none; border-color: var(--accent); }
+
+    /* Content Card */
+    .view-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .card-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .card-title {
+      font-size: 14px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Table Styles */
+    .table-container {
+      width: 100%;
+      overflow-x: auto;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #162032;
+    }
+
+    .repair-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11.5px;
+      text-align: left;
+    }
+
+    .repair-table thead {
+      background: #0f172a;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .repair-table th {
+      padding: 7px 8px;
+      font-size: 10.5px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    .sortable-th {
+      cursor: pointer;
+      transition: color 0.15s;
+    }
+    .sortable-th:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.05);
+    }
+    .sort-indicator {
+      display: inline-block;
+      margin-left: 3px;
+      color: #60a5fa;
+      font-size: 10px;
+      font-weight: 800;
+    }
+
+    .repair-table td {
+      padding: 6px 8px;
+      border-bottom: 1px solid rgba(51, 65, 85, 0.6);
+      vertical-align: middle;
+      font-weight: 500;
+    }
+
+    .repair-table tr:hover {
+      background: rgba(255, 255, 255, 0.025);
+    }
+
+    /* VISUAL HIGHLIGHT FOR "В РОБОТІ" (IN-PROGRESS REPAIRS) */
+    .repair-table tr.row-pending {
+      background: linear-gradient(90deg, rgba(245, 158, 11, 0.22) 0%, rgba(245, 158, 11, 0.09) 35%, rgba(30, 41, 59, 0.6) 100%) !important;
+      box-shadow: inset 0 0 16px rgba(245, 158, 11, 0.14);
+    }
+    .repair-table tr.row-pending td:first-child {
+      border-left: 5px solid #f59e0b !important;
+    }
+
+    /* VISUAL HIGHLIGHT FOR IN-STOCK TRACKERS (WAREHOUSE) */
+    .repair-table tr.row-office-stock {
+      background: rgba(16, 185, 129, 0.04);
+    }
+    .repair-table tr.row-office-stock td:first-child {
+      border-left: 3px solid #10b981 !important;
+    }
+
+    .badge-pending-pulsing {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(245, 158, 11, 0.22);
+      border: 1px solid rgba(245, 158, 11, 0.6);
+      color: #fbbf24;
+      font-size: 10px;
+      font-weight: 900;
+      padding: 2px 6px;
+      border-radius: 5px;
+      letter-spacing: 0.2px;
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
+      white-space: nowrap;
+    }
+
+    .pulsing-amber-dot {
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #f59e0b;
+      box-shadow: 0 0 6px #f59e0b;
+      animation: pulse-dot 1.2s infinite ease-in-out;
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.5); opacity: 0.4; }
+    }
+
+    .btn-finish-repair {
+      background: rgba(245, 158, 11, 0.2);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.5);
+      font-size: 10px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 5px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: 4px;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .btn-finish-repair:hover {
+      background: #f59e0b;
+      color: #000;
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+      transform: translateY(-1px);
+    }
+
+    .vehicle-pill {
+      font-weight: 800;
+      font-family: ui-monospace, monospace;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      padding: 2px 7px;
+      border-radius: 5px;
+      color: #fff;
+      display: inline-block;
+      white-space: nowrap;
+    }
+
+    .carrier-tag {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 6px;
+      background: #253347;
+      color: #e2e8f0;
+      display: inline-block;
+      white-space: nowrap;
+    }
+
+    .carrier-tet { background: rgba(59, 130, 246, 0.2); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.3); }
+    .carrier-vodo { background: rgba(14, 165, 233, 0.2); color: #7dd3fc; border: 1px solid rgba(14, 165, 233, 0.3); }
+    .carrier-mat { background: rgba(168, 85, 247, 0.2); color: #d8b4fe; border: 1px solid rgba(168, 85, 247, 0.3); }
+    .carrier-etalon { background: rgba(234, 179, 8, 0.2); color: #fde047; border: 1px solid rgba(234, 179, 8, 0.3); }
+    .carrier-lagish { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.3); }
+
+    .tech-badge {
+      font-size: 11px;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+    }
+    .tech-artem {
+      background: rgba(139, 92, 246, 0.2);
+      color: #c084fc;
+      border: 1px solid rgba(139, 92, 246, 0.35);
+    }
+    .tech-oleksandr {
+      background: rgba(16, 185, 129, 0.2);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.35);
+    }
+    .tech-tracker {
+      background: rgba(56, 189, 248, 0.2);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.35);
+    }
+    .tech-pending {
+      background: rgba(245, 158, 11, 0.15);
+      color: #fbbf24;
+      border: 1px dashed rgba(245, 158, 11, 0.4);
+    }
+    .tech-other {
+      background: rgba(148, 163, 184, 0.15);
+      color: #cbd5e1;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+    }
+
+    .status-badge-pill {
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.2px;
+      white-space: nowrap;
+    }
+    .status-done { background: rgba(16, 185, 129, 0.18); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .status-open { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); }
+    .status-replace { background: rgba(168, 85, 247, 0.18); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3); }
+    .status-invoice { background: rgba(234, 179, 8, 0.2); color: #fde047; border: 1px solid rgba(234, 179, 8, 0.3); }
+
+    .serial-box {
+      font-family: ui-monospace, monospace;
+      font-size: 11px;
+      color: #cbd5e1;
+      white-space: nowrap;
+    }
+    .serial-replace-arrow {
+      color: #c084fc;
+      font-weight: 800;
+      margin: 0 3px;
+    }
+
+    .issue-text {
+      color: #f1f5f9;
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+      line-height: 1.35;
+      font-size: 11.5px;
+    }
+    .solution-text {
+      color: #cbd5e1;
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+      line-height: 1.35;
+      font-size: 11.5px;
+    }
+    .notes-text {
+      color: #94a3b8;
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+      line-height: 1.35;
+      font-size: 11px;
+    }
+    .phone-copy {
+      color: #38bdf8;
+      cursor: pointer;
+      text-decoration: underline;
+      text-decoration-style: dotted;
+    }
+    .phone-copy:hover { color: #7dd3fc; }
+
+    /* Action buttons in table */
+    .row-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .action-icon-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      border-radius: 6px;
+      width: 26px;
+      height: 26px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.15s;
+    }
+    .action-icon-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+      border-color: var(--border);
+    }
+    .action-icon-btn.delete-btn:hover {
+      background: rgba(239, 68, 68, 0.2);
+      color: #f87171;
+      border-color: rgba(239, 68, 68, 0.35);
+    }
+
+    /* Cards Grid View */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 10px;
+    }
+
+    .repair-card-item {
+      background: #172236;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: transform 0.15s, border-color 0.15s;
+      cursor: pointer;
+    }
+    .repair-card-item:hover {
+      transform: translateY(-2px);
+      border-color: #475569;
+      background: #1b2840;
+    }
+    .repair-card-item.card-pending {
+      border: 2px solid #f59e0b !important;
+      background: linear-gradient(135deg, #1e293b 0%, rgba(245, 158, 11, 0.14) 100%) !important;
+      box-shadow: 0 0 20px rgba(245, 158, 11, 0.25) !important;
+    }
+
+    .repair-card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .card-vehicle-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .card-vehicle-num {
+      font-size: 15px;
+      font-weight: 800;
+      color: #fff;
+    }
+    .card-date {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .card-body {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      font-size: 12px;
+    }
+    .card-issue {
+      color: #f87171;
+      font-weight: 600;
+    }
+    .card-solution {
+      color: #cbd5e1;
+      background: rgba(0, 0, 0, 0.25);
+      border-radius: 6px;
+      padding: 5px 8px;
+      font-size: 11.5px;
+    }
+    .card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+      padding-top: 6px;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      margin-top: auto;
+    }
+
+    /* Inventory View */
+    .inventory-banner {
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(16, 185, 129, 0.1));
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-left: 4px solid #10b981;
+      border-radius: 12px;
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .inv-stats-box {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .inv-stat-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .inv-stat-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+    .inv-stat-count {
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    .office-sn-chips {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .sn-chip-badge {
+      font-family: ui-monospace, monospace;
+      font-size: 11px;
+      font-weight: 800;
+      background: rgba(16, 185, 129, 0.2);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      padding: 2px 7px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .sn-chip-badge:hover {
+      background: rgba(16, 185, 129, 0.35);
+      transform: translateY(-1px);
+    }
+
+    /* AT Commands Section */
+    .at-intro-card {
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(245, 158, 11, 0.08));
+      border: 1px solid rgba(245, 158, 11, 0.25);
+      border-left: 4px solid #f59e0b;
+      border-radius: 12px;
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .at-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 10px;
+    }
+
+    .at-card {
+      background: #172236;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: transform 0.15s, border-color 0.15s;
+    }
+    .at-card:hover {
+      border-color: #475569;
+      transform: translateY(-2px);
+    }
+    .at-card.is-primary {
+      border: 2px solid #f59e0b !important;
+      background: linear-gradient(135deg, #1b263b 0%, rgba(245, 158, 11, 0.12) 100%) !important;
+      box-shadow: 0 4px 18px rgba(245, 158, 11, 0.22) !important;
+    }
+    .at-card.is-primary:hover {
+      border-color: #fbbf24 !important;
+      box-shadow: 0 6px 24px rgba(245, 158, 11, 0.35) !important;
+      transform: translateY(-2px);
+    }
+    .badge-primary-star {
+      font-size: 10px;
+      font-weight: 900;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: rgba(245, 158, 11, 0.25);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.6);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .at-section-header {
+      grid-column: 1 / -1;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0 2px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      margin-bottom: 4px;
+    }
+    .at-section-title {
+      font-size: 13px;
+      font-weight: 800;
+      color: #fbbf24;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      letter-spacing: 0.3px;
+    }
+    .at-section-pill {
+      font-size: 10px;
+      font-weight: 800;
+      background: rgba(245, 158, 11, 0.2);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      padding: 2px 7px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+    .at-section-pill-muted {
+      font-size: 10px;
+      font-weight: 700;
+      background: rgba(148, 163, 184, 0.15);
+      color: #94a3b8;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      padding: 2px 7px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+    .at-dual-subcard {
+      background: #090e1a;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      padding: 8px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      margin-top: 5px;
+      transition: all 0.15s;
+      cursor: pointer;
+    }
+    .at-dual-subcard:hover {
+      border-color: #f59e0b;
+      background: #0f182c;
+    }
+    .at-dual-subcard-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .at-card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .at-category-tag {
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: rgba(59, 130, 246, 0.15);
+      color: #60a5fa;
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      text-transform: uppercase;
+    }
+
+    .at-code-box {
+      background: #0b1120;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      padding: 8px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      cursor: pointer;
+    }
+    .at-code-box:hover {
+      border-color: var(--accent);
+    }
+
+    .at-code-text {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #38bdf8;
+      word-break: break-all;
+    }
+
+    .at-desc {
+      font-size: 12px;
+      color: #f1f5f9;
+      line-height: 1.4;
+    }
+
+    .at-notes {
+      font-size: 11px;
+      color: var(--text-muted);
+      line-height: 1.35;
+      background: rgba(255, 255, 255, 0.02);
+      border-radius: 6px;
+      padding: 6px 8px;
+    }
+
+    .firmware-summary-box {
+      background: #0f172a;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+    .fw-item {
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border);
+    }
+    .fw-title { font-size: 11px; font-weight: 800; text-transform: uppercase; margin-bottom: 3px; }
+    .fw-black { color: #cbd5e1; }
+    .fw-blue { color: #60a5fa; }
+    .fw-grey { color: #94a3b8; }
+
+    /* Modals */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-box {
+      background: #1e293b;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      width: 100%;
+      max-width: 590px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.6);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 10px;
+    }
+    .modal-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .form-col-2 {
+      grid-column: span 2;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      position: relative;
+    }
+    .form-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .form-input, .form-select, .form-textarea {
+      background: #0f172a;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: #fff;
+      padding: 9px 12px;
+      font-size: 13px;
+      font-weight: 500;
+      width: 100%;
+      transition: border-color 0.15s;
+    }
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    }
+    .form-textarea {
+      min-height: 70px;
+      resize: vertical;
+    }
+
+    /* CUSTOM DATEPICKER WIDGET & CALENDAR POPOVER */
+    .datepicker-wrap {
+      position: relative;
+      width: 100%;
+    }
+    .date-input-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      width: 100%;
+    }
+    .date-input-group .form-input {
+      flex: 1;
+    }
+    .date-btn-addon {
+      background: #334155;
+      border: 1px solid var(--border);
+      color: #cbd5e1;
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+      transition: all 0.15s;
+    }
+    .date-btn-addon:hover {
+      background: #475569;
+      color: #fff;
+      border-color: #64748b;
+    }
+    .date-btn-today {
+      background: rgba(245, 158, 11, 0.18);
+      color: #fbbf24;
+      border-color: rgba(245, 158, 11, 0.4);
+    }
+    .date-btn-today:hover {
+      background: rgba(245, 158, 11, 0.35);
+      color: #fff;
+    }
+
+    .calendar-popover {
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      z-index: 250;
+      background: #0f172a;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px;
+      width: 295px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.85);
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+      user-select: none;
+      animation: fadeInDown 0.15s ease-out;
+    }
+    .calendar-popover.active {
+      display: flex;
+    }
+
+    @keyframes fadeInDown {
+      from { opacity: 0; transform: translateY(-6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .cal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .cal-title {
+      font-size: 13px;
+      font-weight: 800;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .cal-nav-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--border);
+      color: #cbd5e1;
+      border-radius: 6px;
+      width: 26px;
+      height: 26px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 11px;
+    }
+    .cal-nav-btn:hover {
+      background: rgba(255, 255, 255, 0.18);
+      color: #fff;
+    }
+
+    .cal-weekdays {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      text-align: center;
+      font-size: 10px;
+      font-weight: 800;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .cal-days-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+    }
+
+    .cal-day-cell {
+      aspect-ratio: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #cbd5e1;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.12s;
+      background: rgba(255, 255, 255, 0.03);
+    }
+    .cal-day-cell:hover {
+      background: rgba(59, 130, 246, 0.35);
+      color: #fff;
+    }
+    .cal-day-cell.other-month {
+      opacity: 0.25;
+    }
+    .cal-day-cell.is-today {
+      border: 2px solid #f59e0b !important;
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+      color: #fbbf24 !important;
+      font-weight: 900;
+      background: rgba(245, 158, 11, 0.18);
+    }
+    .cal-day-cell.is-today::after {
+      content: '';
+      position: absolute;
+      bottom: 2px;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: #f59e0b;
+    }
+    .cal-day-cell.is-selected {
+      background: #3b82f6 !important;
+      color: #fff !important;
+      font-weight: 800;
+      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+    }
+
+    .cal-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid var(--border);
+      padding-top: 8px;
+      gap: 6px;
+    }
+    .cal-footer-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border);
+      color: #cbd5e1;
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .cal-footer-btn:hover {
+      background: rgba(255, 255, 255, 0.15);
+      color: #fff;
+    }
+    .cal-footer-btn.today-btn {
+      background: rgba(245, 158, 11, 0.2);
+      color: #fbbf24;
+      border-color: rgba(245, 158, 11, 0.4);
+    }
+
+    .quick-templates-wrap {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      flex-wrap: wrap;
+      margin-top: 4px;
+    }
+    .quick-tmpl-btn {
+      font-size: 10px;
+      font-weight: 700;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #cbd5e1;
+      padding: 2px 7px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .quick-tmpl-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: #fff;
+    }
+
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 8px;
+      border-top: 1px solid var(--border);
+      padding-top: 12px;
+      margin-top: 6px;
+    }
+
+    /* Toast Notification */
+    .toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 999;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+    .toast {
+      background: #1e293b;
+      color: #fff;
+      border: 1px solid #3b82f6;
+      border-radius: 8px;
+      padding: 10px 16px;
+      font-size: 12.5px;
+      font-weight: 700;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.25s ease;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Pagination */
+    .pagination-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text-muted);
+      padding: 4px 2px;
+    }
+    .pagination-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    @media (max-width: 768px) {
+      .top-header-bar { flex-direction: column; align-items: stretch; }
+      .header-actions { justify-content: space-between; }
+      .nav-toolbar { flex-direction: column; align-items: stretch; }
+      .search-wrap { width: 100%; min-width: auto; }
+      .form-grid { grid-template-columns: 1fr; }
+      .form-col-2 { grid-column: span 1; }
+      .dashboard { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Top Header Bar -->
+  <div class="top-header-bar">
+    <div class="brand-title">
+      <span>🛰️ SZVK Tracker Hub</span>
+      <span class="brand-badge">Сервіс</span>
+    </div>
+
+    <div class="header-actions">
+      <div class="cloud-status" id="cloudSyncStatus" title="Статус синхронізації з хмарою">
+        <span class="status-dot" id="cloudSyncDot"></span>
+        <span id="cloudSyncText">Локально</span>
+      </div>
+
+      <a href="index.html" class="btn btn-secondary" title="Повернутися до графіка роботи системних адміністраторів">
+        📅 Графік роботи
+      </a>
+
+      <button class="btn btn-amber" id="btnOpenExportModal" title="Експорт / Резервна копія">
+        💾 Бекап / Експорт
+      </button>
+
+      <button class="btn btn-primary" id="btnOpenAddModal">
+        ➕ Новий запис ремонту
+      </button>
+    </div>
+  </div>
+
+  <!-- Dashboard KPIs -->
+  <div class="dashboard">
+    <div class="stat-card" id="statCardAll" title="Показати всі записи">
+      <span class="stat-title">Всього заявок</span>
+      <span class="stat-value" id="statCountTotal">0</span>
+    </div>
+
+    <div class="stat-card" id="statCardPending" title="Фільтр: заявки, які ще не відремонтовані (В роботі)">
+      <span class="stat-title">В роботі / Відкрито</span>
+      <span class="stat-value badge-pending" id="statCountPending">0</span>
+    </div>
+
+    <div class="stat-card" id="statCardArtem" title="Фільтр: ремонти Артема">
+      <span class="stat-title">Артем (Fix)</span>
+      <span class="stat-value badge-artem" id="statCountArtem">0</span>
+    </div>
+
+    <div class="stat-card" id="statCardOleksandr" title="Фільтр: ремонти Олександра (jun + old)">
+      <span class="stat-title">Саша (Fix)</span>
+      <span class="stat-value badge-oleksandr" id="statCountOleksandr">0</span>
+    </div>
+
+    <div class="stat-card" id="statCardSelfFixed" title="Фільтр: ожили самі">
+      <span class="stat-title">Ожив сам (трекер)</span>
+      <span class="stat-value badge-tracker" id="statCountTracker">0</span>
+    </div>
+
+    <div class="stat-card" id="statCardOffice" title="Відкрити склад: вільні трекери в офісі">
+      <span class="stat-title">Нові трекери (Офіс)</span>
+      <span class="stat-value badge-office" id="statCountOffice">0</span>
+    </div>
+
+    <div class="stat-card" id="statCardInvoice" title="Фільтр: де треба виставити рахунок">
+      <span class="stat-title">Рахунки (billing)</span>
+      <span class="stat-value badge-bill" id="statCountInvoice">0</span>
+    </div>
+  </div>
+
+  <!-- Navigation Toolbar & Tabs -->
+  <div class="nav-toolbar">
+    <div class="nav-left">
+      <button class="main-tab-btn active" id="tabBtnJournal">
+        <span>📋 Журнал ремонтів</span>
+        <span class="tab-counter" id="tabCounterJournal">0</span>
+      </button>
+
+      <button class="main-tab-btn inventory-tab" id="tabBtnInventory">
+        <span>📦 Нові трекери (Склад)</span>
+        <span class="tab-counter" id="tabCounterInventory">0</span>
+      </button>
+
+      <button class="main-tab-btn at-tab" id="tabBtnAtCommands">
+        <span>⚡ АТ Команди (Ремайндер)</span>
+        <span class="tab-counter" id="tabCounterAt">56</span>
+      </button>
+    </div>
+
+    <div class="nav-right">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" class="search-input" id="globalSearchInput" placeholder="Пошук (номер авто, S/N, перевізник, проблема...)" autocomplete="off">
+        <button class="search-clear" id="searchClearBtn">✕</button>
+      </div>
+
+      <button class="btn" id="btnToggleViewMode" title="Перемкнути Таблиця / Картки">
+        <span id="viewModeIcon">📑</span>
+        <span id="viewModeLabel">Таблиця</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- VIEW 1: REPAIRS JOURNAL -->
+  <div class="view-card" id="viewJournal">
+    <div class="card-header-row">
+      <div class="card-title">
+        <span>📋 Журнал ремонту трекерів</span>
+        <span id="filteredCountBadge" style="font-size: 11px; color: var(--text-muted); font-weight: 700;">(показано: 0)</span>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <select class="filter-select" id="filterCarrierSelect">
+          <option value="">🏢 Всі перевізники</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Quick filter chips -->
+    <div class="filter-chips-bar" id="filterChipsContainer">
+      <span class="filter-chip active" data-filter="all">Всі</span>
+      <span class="filter-chip chip-pending" data-filter="pending">⏳ В роботі</span>
+      <span class="filter-chip chip-bill" data-filter="invoice">💳 Виставити рахунок</span>
+    </div>
+
+    <!-- Table Mode -->
+    <div class="table-container" id="tableModeContainer">
+      <table class="repair-table">
+        <thead>
+          <tr>
+            <th style="width: 82px;" class="sortable-th" id="thSortDate" title="Сортування по даті (клікніть щоб змінити)">
+              📅 Дата <span class="sort-indicator" id="sortDateIcon">▼</span>
+            </th>
+            <th style="width: 100px;">Перевізник</th>
+            <th style="width: 85px;">Номер т/з</th>
+            <th style="width: 100px;">S/N трекера</th>
+            <th style="min-width: 140px;">Проблема / Опис</th>
+            <th style="width: 110px;">Дата рем. / Статус</th>
+            <th style="width: 100px;">Fix</th>
+            <th style="min-width: 140px;">Рішення спеціаліста</th>
+            <th style="min-width: 125px;">Нотатки</th>
+            <th style="width: 65px; text-align: center;">Дії</th>
+          </tr>
+        </thead>
+        <tbody id="repairTableBody">
+          <!-- Filled by JS -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Cards Mode -->
+    <div class="cards-grid" id="cardsModeContainer" style="display: none;">
+      <!-- Filled by JS -->
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination-bar">
+      <div id="paginationInfo">Показано 1 - 50 із 175</div>
+      <div class="pagination-controls">
+        <label style="font-size: 11px;">Рядків:</label>
+        <select class="filter-select" id="pageSizeSelect">
+          <option value="25">25</option>
+          <option value="50" selected>50</option>
+          <option value="100">100</option>
+          <option value="all">Всі</option>
+        </select>
+        <button class="btn" id="btnPrevPage" style="padding: 4px 8px;">◀</button>
+        <span id="pageCurrentLabel" style="font-weight: 700; color: #fff;">1 / 4</span>
+        <button class="btn" id="btnNextPage" style="padding: 4px 8px;">▶</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- VIEW 2: NEW TRACKERS (WAREHOUSE & INSTALLED) -->
+  <div class="view-card" id="viewInventory" style="display: none;">
+    <div class="inventory-banner">
+      <div class="inv-stats-box">
+        <div class="inv-stat-item">
+          <span class="inv-stat-label">🏢 Вільні на складі (Офіс)</span>
+          <span class="inv-stat-count" id="invCountOffice" style="color: #34d399;">6 шт</span>
+        </div>
+        <div class="inv-stat-item">
+          <span class="inv-stat-label">🚌 Встановлено на маршрути</span>
+          <span class="inv-stat-count" id="invCountInstalled" style="color: #f87171;">19 шт</span>
+        </div>
+        <div class="inv-stat-item">
+          <span class="inv-stat-label">📦 Всього нових трекерів</span>
+          <span class="inv-stat-count" id="invCountTotal">25 шт</span>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <button class="btn btn-primary" id="btnOpenBulkInventoryModal" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-color: #059669; font-weight: 800;">
+          📦 Масове додавання трекерів
+        </button>
+        <button class="btn" id="btnOpenAddInventoryModal">
+          ➕ Додати один
+        </button>
+      </div>
+    </div>
+
+    <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px;">
+      <div style="font-size: 11px; font-weight: 800; color: #34d399; text-transform: uppercase; margin-bottom: 6px;">
+        ⚡ Вільні трекери в офісі (клікніть для використання в ремонті):
+      </div>
+      <div class="office-sn-chips" id="officeSnChipsContainer">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+
+    <div class="card-header-row">
+      <div class="card-title">
+        <span>📦 Повний перелік нових трекерів</span>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <button class="filter-chip active" id="invFilterAll">Всі</button>
+        <button class="filter-chip" id="invFilterOffice">🏢 Тільки в офісі</button>
+        <button class="filter-chip" id="invFilterInstalled">🚌 Встановлені</button>
+      </div>
+    </div>
+
+    <div class="table-container">
+      <table class="repair-table">
+        <thead>
+          <tr>
+            <th style="width: 120px;">Дата отримання</th>
+            <th style="width: 140px;">Серійний номер</th>
+            <th style="width: 160px;">Поточний стан <span style="font-size: 10px; color: #34d399; font-weight: 800;" title="В наявності спочатку">(В наявності ▼)</span></th>
+            <th>Кому встановлено / Де знаходиться</th>
+            <th style="width: 150px; text-align: center;">Дії</th>
+          </tr>
+        </thead>
+        <tbody id="inventoryTableBody">
+          <!-- Filled by JS -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- VIEW 3: AT COMMANDS REMINDER -->
+  <div class="view-card" id="viewAtCommands" style="display: none;">
+    <div class="at-intro-card">
+      <div>
+        <div style="font-size: 14px; font-weight: 800; color: #fbbf24; margin-bottom: 3px;">
+          ⚡ Шпаргалка / Ремайндер AT команд для трекерів
+        </div>
+        <div style="font-size: 12px; color: #cbd5e1;">
+          Зручний довідник команд для налаштування Smartico / SIM800, GSM/GPRS, прошивок, CAN та ACC запалювання. Натисніть на будь-яку команду, щоб скопіювати.
+        </div>
+      </div>
+
+      <div class="search-wrap" style="min-width: 240px;">
+        <span class="search-icon">🔍</span>
+        <input type="text" class="search-input" id="atSearchInput" placeholder="Пошук команди, опису або синтаксису...">
+      </div>
+    </div>
+
+    <!-- Firmware quick bar -->
+    <div class="firmware-summary-box">
+      <div class="fw-item">
+        <div class="fw-title fw-black">🖤 Чорні трекери</div>
+        <div style="font-size: 13px; font-weight: 700; color: #fff;">SW 2.66 / HW 6.30</div>
+        <div style="font-size: 11px; color: var(--text-muted);">Актуальна версія прошивки</div>
+      </div>
+      <div class="fw-item">
+        <div class="fw-title fw-blue">💙 Сині трекери (8U2GX)</div>
+        <div style="font-size: 13px; font-weight: 700; color: #60a5fa;">SW 2.72 / HW 8.02</div>
+        <div style="font-size: 11px; color: var(--text-muted);">Актуальна версія прошивки</div>
+      </div>
+      <div class="fw-item">
+        <div class="fw-title fw-grey">🩶 Сірі трекери</div>
+        <div style="font-size: 13px; font-weight: 700; color: #e2e8f0;">SW 2.80 (2.79) / HW 11.10</div>
+        <div style="font-size: 11px; color: var(--text-muted);">Актуальна версія прошивки</div>
+      </div>
+    </div>
+
+    <!-- AT Commands Grid -->
+    <div class="at-grid" id="atCommandsGrid">
+      <!-- Filled by JS -->
+    </div>
+  </div>
+
+</div>
+
+<!-- MODAL: ADD / EDIT REPAIR ENTRY -->
+<div class="modal-overlay" id="repairModalOverlay">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 class="modal-title" id="repairModalTitle">
+        <span>➕ Новий запис ремонту трекера</span>
+      </h3>
+      <button class="action-icon-btn" id="closeRepairModalBtn">✕</button>
+    </div>
+
+    <form id="repairForm">
+      <input type="hidden" id="editRecordId">
+
+      <div class="form-grid">
+        <!-- Date with Interactive Calendar -->
+        <div class="form-group">
+          <label class="form-label">Дата заявки</label>
+          <div class="datepicker-wrap" id="wrapDate">
+            <div class="date-input-group">
+              <input type="text" class="form-input" id="inputDate" placeholder="ДД.ММ.РРРР" required autocomplete="off">
+              <button type="button" class="date-btn-addon" id="btnCalDate" title="Відкрити календар">📅</button>
+              <button type="button" class="date-btn-addon date-btn-today" id="btnTodayDate" title="Встановити сьогодні">🎯 Сьогодні</button>
+            </div>
+            <div class="calendar-popover" id="popoverDate"></div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Перевізник</label>
+          <input type="text" class="form-input" id="inputCarrier" list="carrierDatalist" placeholder="ТЕТ, Водоканал, МАТ..." required>
+          <datalist id="carrierDatalist"></datalist>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Хто звертався</label>
+          <input type="text" class="form-input" id="inputReportedBy" placeholder="Дисп, Водій, Власник...">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Номер авто (т/з)</label>
+          <input type="text" class="form-input" id="inputVehicle" placeholder="8256, ВО 5406 НВ..." required>
+        </div>
+
+        <div class="form-group form-col-2">
+          <label class="form-label">S/N трекера</label>
+          <input type="text" class="form-input" id="inputSerial" placeholder="Наприклад: 009676 або 006163 ➜ 023048">
+          <div class="quick-templates-wrap" id="modalOfficeSnWrap" style="display: none;">
+            <span style="font-size: 10px; color: var(--text-muted);">Підставити новий з офісу:</span>
+            <!-- Chips inserted by JS -->
+          </div>
+        </div>
+
+        <div class="form-group form-col-2">
+          <label class="form-label">Чому / Проблема</label>
+          <textarea class="form-textarea" id="inputIssue" placeholder="Опис несправності (наприклад: Немає GPRS 3д, переривається GPS...)" required></textarea>
+          <div class="quick-templates-wrap">
+            <span class="quick-tmpl-btn" onclick="addIssueTemplate('Немає GPRS')">📶 Немає GPRS</span>
+            <span class="quick-tmpl-btn" onclick="addIssueTemplate('Пропадає GPS')">🛰️ Пропадає GPS</span>
+            <span class="quick-tmpl-btn" onclick="addIssueTemplate('Новий автобус')">🚌 Новий автобус</span>
+            <span class="quick-tmpl-btn" onclick="addIssueTemplate('Згорів запобіжник')">⚡ Згорів запобіжник</span>
+            <span class="quick-tmpl-btn" onclick="addIssueTemplate('Немає живлення')">🔌 Немає живлення</span>
+            <span class="quick-tmpl-btn" onclick="addIssueTemplate('Завис')">⚠️ Завис</span>
+          </div>
+        </div>
+
+        <!-- Repair Date with Interactive Calendar -->
+        <div class="form-group">
+          <label class="form-label">Дата ремонту (залишіть порожнім якщо в процесі)</label>
+          <div class="datepicker-wrap" id="wrapRepairDate">
+            <div class="date-input-group">
+              <input type="text" class="form-input" id="inputRepairDate" placeholder="ДД.ММ.РРРР (якщо виконано)" autocomplete="off">
+              <button type="button" class="date-btn-addon" id="btnCalRepairDate" title="Відкрити календар">📅</button>
+              <button type="button" class="date-btn-addon date-btn-today" id="btnTodayRepairDate" title="Встановити сьогодні">🎯 Сьогодні</button>
+            </div>
+            <div class="calendar-popover" id="popoverRepairDate"></div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Fix (Спеціаліст)</label>
+          <select class="form-select" id="inputSpecialist">
+            <option value="">-- В процесі (майстра ще не призначено) --</option>
+            <option value="Артем">Артем</option>
+            <option value="Саша_jun">Саша_jun</option>
+            <option value="Саша_old">Саша_old</option>
+            <option value="Саша_old + Саша_jun">Саша_old + Саша_jun</option>
+            <option value="Артем + Саша_jun">Артем + Саша_jun</option>
+            <option value="трекер">трекер (сам ожив)</option>
+            <option value="водій/перевізник">водій/перевізник</option>
+          </select>
+        </div>
+
+        <div class="form-group form-col-2">
+          <label class="form-label">Рішення спеціаліста</label>
+          <textarea class="form-textarea" id="inputSolution" placeholder="Що було зроблено: заміна сімки, антени, запобіжника, оновлення..."></textarea>
+          <div class="quick-templates-wrap">
+            <span class="quick-tmpl-btn" onclick="addSolutionTemplate('Дригнув сімку')">Дригнув сімку</span>
+            <span class="quick-tmpl-btn" onclick="addSolutionTemplate('Замінив сімку')">Замінив сімку</span>
+            <span class="quick-tmpl-btn" onclick="addSolutionTemplate('Замінив GPS антену')">Замінив GPS антену</span>
+            <span class="quick-tmpl-btn" onclick="addSolutionTemplate('Замінив GSM антену')">Замінив GSM антену</span>
+            <span class="quick-tmpl-btn" onclick="addSolutionTemplate('Замінив запобіжник')">Замінив запобіжник</span>
+            <span class="quick-tmpl-btn" onclick="addSolutionTemplate('Встановлено новий трекер')">Новий трекер</span>
+          </div>
+        </div>
+
+        <div class="form-group form-col-2">
+          <label class="form-label">Нотатки / Додатково</label>
+          <input type="text" class="form-input" id="inputNotes" placeholder="Номер телефону сімки, де встановлено, тощо">
+          <div style="display: flex; align-items: center; gap: 8px; margin-top: 6px;">
+            <label style="font-size: 12px; color: #fbbf24; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
+              <input type="checkbox" id="checkboxInvoice" style="accent-color: #f59e0b; width: 16px; height: 16px;">
+              Потрібно виставити рахунок перевізнику 💳
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn" id="btnCancelRepairModal">Скасувати</button>
+        <button type="submit" class="btn btn-primary" id="btnSaveRepairModal">💾 Зберегти запис</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: ADD INVENTORY TRACKER -->
+<div class="modal-overlay" id="inventoryModalOverlay">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 class="modal-title">
+        <span>📦 Додати трекер на склад / облік</span>
+      </h3>
+      <button class="action-icon-btn" id="closeInventoryModalBtn">✕</button>
+    </div>
+
+    <form id="inventoryForm">
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Дата отримання</label>
+          <input type="text" class="form-input" id="invInputDate" placeholder="ДД.ММ.РРРР" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Серійний номер (S/N)</label>
+          <input type="text" class="form-input" id="invInputSerial" placeholder="023040" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Поточний стан</label>
+          <select class="form-select" id="invInputStatus">
+            <option value="Офіс" selected>Офіс (на складі)</option>
+            <option value="Встановлено">Встановлено на авто</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Кому / Куди встановлено</label>
+          <input type="text" class="form-input" id="invInputAssigned" placeholder="ТЕТ, Водоканал, номер авто...">
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn" id="btnCancelInvModal">Скасувати</button>
+        <button type="submit" class="btn btn-primary">Зберегти на складі</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: BULK ADD INVENTORY TRACKERS -->
+<div class="modal-overlay" id="bulkInventoryModalOverlay">
+  <div class="modal-box" style="max-width: 660px;">
+    <div class="modal-header">
+      <h3 class="modal-title">
+        <span>📦 Масове додавання трекерів на склад</span>
+      </h3>
+      <button class="action-icon-btn" id="closeBulkInventoryModalBtn">✕</button>
+    </div>
+
+    <form id="bulkInventoryForm">
+      <!-- Parameters for the batch -->
+      <div class="form-grid">
+        <!-- Date received with Interactive Calendar -->
+        <div class="form-group">
+          <label class="form-label">Дата отримання партії</label>
+          <div class="datepicker-wrap" id="wrapBulkDate">
+            <div class="date-input-group">
+              <input type="text" class="form-input" id="bulkInputDate" placeholder="ДД.ММ.РРРР" required autocomplete="off">
+              <button type="button" class="date-btn-addon" id="btnCalBulkDate" title="Відкрити календар">📅</button>
+              <button type="button" class="date-btn-addon date-btn-today" id="btnTodayBulkDate" title="Встановити сьогодні">🎯 Сьогодні</button>
+            </div>
+            <div class="calendar-popover" id="popoverBulkDate"></div>
+          </div>
+        </div>
+
+        <!-- Status -->
+        <div class="form-group">
+          <label class="form-label">Початковий статус</label>
+          <select class="form-select" id="bulkInputStatus">
+            <option value="Офіс" selected>🏢 Офіс (вільні на складі)</option>
+            <option value="Встановлено">🚌 Встановлено на маршрути</option>
+          </select>
+        </div>
+
+        <div class="form-group form-col-2">
+          <label class="form-label">Кому призначено / Примітка до партії (необов'язково)</label>
+          <input type="text" class="form-input" id="bulkInputAssigned" placeholder="Наприклад: Нова поставка, партія з заводу або ТЕТ, Водоканал...">
+        </div>
+      </div>
+
+      <!-- Quick Range Generator Box -->
+      <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; margin-top: 10px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <span style="font-size: 11px; font-weight: 800; color: #38bdf8; text-transform: uppercase;">
+            ⚡ Швидкий генератор діапазону (за порядком):
+          </span>
+          <span style="font-size: 10.5px; color: var(--text-muted);">якщо номери йдуть підряд</span>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; align-items: center;">
+          <input type="text" class="form-input" id="genStartSerial" placeholder="Перший S/N (напр. 023020)" style="font-size: 12px;">
+          <input type="number" class="form-input" id="genCount" placeholder="Кількість (напр. 20)" min="1" max="500" style="font-size: 12px;">
+          <button type="button" class="btn btn-sky" id="btnRunGenerator" style="padding: 7px 12px; font-size: 11px; white-space: nowrap;">
+            ➕ Згенерувати
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Textarea for Serials -->
+      <div class="form-group" style="margin-top: 12px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+          <label class="form-label" style="margin-bottom: 0;">
+            Список серійних номерів (вставте з Excel або введіть списком):
+          </label>
+          <span id="bulkCountBadge" style="font-size: 11px; font-weight: 800; color: #10b981; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); padding: 2px 8px; border-radius: 4px;">
+            Введено: 0 шт
+          </span>
+        </div>
+        <textarea class="form-textarea" id="bulkInputSerials" placeholder="Вставте стовпчик номерів з Excel або введіть вручну:
+023020
+023021
+023022
+(розділювачі: новий рядок, кома, пробіл або крапка з комою)" style="height: 140px; font-family: ui-monospace, monospace; font-size: 12.5px; line-height: 1.45;" required></textarea>
+      </div>
+
+      <!-- Live Preview Chips & Duplicates Warning -->
+      <div id="bulkPreviewSection" style="display: none; margin-top: 8px;">
+        <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;" id="bulkPreviewTitle">
+          Розпізнані номери для додавання:
+        </div>
+        <div id="bulkPreviewChips" style="max-height: 85px; overflow-y: auto; display: flex; flex-wrap: wrap; gap: 4px; padding: 6px; background: rgba(0, 0, 0, 0.25); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.05);">
+          <!-- chips inserted by JS -->
+        </div>
+        <div id="bulkWarningDuplicates" style="display: none; margin-top: 6px; font-size: 11px; color: #f59e0b; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); padding: 6px 10px; border-radius: 6px;">
+          <!-- warning inserted by JS -->
+        </div>
+      </div>
+
+      <div class="modal-footer" style="margin-top: 14px;">
+        <button type="button" class="btn" id="btnCancelBulkInvModal">Скасувати</button>
+        <button type="submit" class="btn btn-primary" id="btnSubmitBulkInv" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-color: #059669; font-weight: 800;">
+          💾 Додати партію на склад
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: BACKUP & EXPORT -->
+<div class="modal-overlay" id="exportModalOverlay">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 class="modal-title">
+        <span>💾 Резервна копія та Експорт даних</span>
+      </h3>
+      <button class="action-icon-btn" id="closeExportModalBtn">✕</button>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px; font-size: 13px;">
+      <p style="color: var(--text-muted); line-height: 1.4;">
+        Усі дані надійно зберігаються у вашому браузері та синхронізуються через хмару Netlify. Тут ви можете завантажити повну копію у форматі JSON або CSV (для Excel).
+      </p>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+        <button class="btn btn-primary" id="btnDownloadJson">
+          📥 Завантажити JSON (Повний бекап)
+        </button>
+
+        <button class="btn btn-secondary" id="btnDownloadCsv">
+          📊 Завантажити CSV (Для Excel)
+        </button>
+      </div>
+
+      <div style="border-top: 1px solid var(--border); padding-top: 12px; margin-top: 6px;">
+        <div style="font-size: 11px; font-weight: 800; color: #fbbf24; text-transform: uppercase; margin-bottom: 6px;">
+          Відновлення з бекапу:
+        </div>
+        <input type="file" id="importJsonFileInput" accept=".json" style="font-size: 12px; color: var(--text-muted); width: 100%;">
+      </div>
+
+      <div style="border-top: 1px solid var(--border); padding-top: 12px; display: flex; justify-content: space-between; align-items: center;">
+        <button class="btn" id="btnResetToDefaults" style="background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3);">
+          ⚠️ Скинути до початкових даних
+        </button>
+
+        <button class="btn" id="btnCloseExportModal">Закрити</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Load base data -->
+<script src="tracker_data.js"></script>
+
+<script>
+/**
+ * SZVK Tracker Hub Application Logic
+ */
+(function() {
+  'use strict';
+
+  const STORAGE_KEY = 'szvk_trackers_data';
+  const NETLIFY_SYNC_URL = '/.netlify/functions/sync';
+
+  // Application State
+  let appData = {
+    repairs: [],
+    inventory: [],
+    atCommands: []
+  };
+
+  let activeTab = 'journal'; // 'journal' | 'inventory' | 'at'
+  let viewMode = 'table'; // 'table' | 'cards'
+  let activeFilterChip = 'all';
+  let searchQuery = '';
+  let carrierFilter = '';
+  let specialistFilter = '';
+  let monthFilter = '';
+  let currentPage = 1;
+  let pageSize = 50;
+
+  // SORTING STATE: Default is by date DESC (newest first!)
+  let sortField = 'date';
+  let sortDirection = 'desc';
+
+  let inventoryFilter = 'all'; // 'all' | 'office' | 'installed'
+
+  // Elements
+  const viewJournal = document.getElementById('viewJournal');
+  const viewInventory = document.getElementById('viewInventory');
+  const viewAtCommands = document.getElementById('viewAtCommands');
+
+  const tabBtnJournal = document.getElementById('tabBtnJournal');
+  const tabBtnInventory = document.getElementById('tabBtnInventory');
+  const tabBtnAtCommands = document.getElementById('tabBtnAtCommands');
+
+  const tableModeContainer = document.getElementById('tableModeContainer');
+  const cardsModeContainer = document.getElementById('cardsModeContainer');
+  const btnToggleViewMode = document.getElementById('btnToggleViewMode');
+  const viewModeIcon = document.getElementById('viewModeIcon');
+  const viewModeLabel = document.getElementById('viewModeLabel');
+
+  const repairTableBody = document.getElementById('repairTableBody');
+  const globalSearchInput = document.getElementById('globalSearchInput');
+  const searchClearBtn = document.getElementById('searchClearBtn');
+
+  const filterCarrierSelect = document.getElementById('filterCarrierSelect');
+  const filterChipsContainer = document.getElementById('filterChipsContainer');
+
+  const filteredCountBadge = document.getElementById('filteredCountBadge');
+  const paginationInfo = document.getElementById('paginationInfo');
+  const pageSizeSelect = document.getElementById('pageSizeSelect');
+  const btnPrevPage = document.getElementById('btnPrevPage');
+  const btnNextPage = document.getElementById('btnNextPage');
+  const pageCurrentLabel = document.getElementById('pageCurrentLabel');
+
+  const thSortDate = document.getElementById('thSortDate');
+  const sortDateIcon = document.getElementById('sortDateIcon');
+
+  // Modal elements
+  const repairModalOverlay = document.getElementById('repairModalOverlay');
+  const repairForm = document.getElementById('repairForm');
+  const btnOpenAddModal = document.getElementById('btnOpenAddModal');
+  const closeRepairModalBtn = document.getElementById('closeRepairModalBtn');
+  const btnCancelRepairModal = document.getElementById('btnCancelRepairModal');
+  const repairModalTitle = document.getElementById('repairModalTitle');
+
+  const inventoryModalOverlay = document.getElementById('inventoryModalOverlay');
+  const inventoryForm = document.getElementById('inventoryForm');
+  const btnOpenAddInventoryModal = document.getElementById('btnOpenAddInventoryModal');
+  const closeInventoryModalBtn = document.getElementById('closeInventoryModalBtn');
+  const btnCancelInvModal = document.getElementById('btnCancelInvModal');
+
+  const bulkInventoryModalOverlay = document.getElementById('bulkInventoryModalOverlay');
+  const bulkInventoryForm = document.getElementById('bulkInventoryForm');
+  const btnOpenBulkInventoryModal = document.getElementById('btnOpenBulkInventoryModal');
+  const closeBulkInventoryModalBtn = document.getElementById('closeBulkInventoryModalBtn');
+  const btnCancelBulkInvModal = document.getElementById('btnCancelBulkInvModal');
+  const bulkInputSerials = document.getElementById('bulkInputSerials');
+  const bulkCountBadge = document.getElementById('bulkCountBadge');
+  const bulkPreviewSection = document.getElementById('bulkPreviewSection');
+  const bulkPreviewChips = document.getElementById('bulkPreviewChips');
+  const bulkWarningDuplicates = document.getElementById('bulkWarningDuplicates');
+  const btnRunGenerator = document.getElementById('btnRunGenerator');
+  const genStartSerial = document.getElementById('genStartSerial');
+  const genCount = document.getElementById('genCount');
+
+  const exportModalOverlay = document.getElementById('exportModalOverlay');
+  const btnOpenExportModal = document.getElementById('btnOpenExportModal');
+  const closeExportModalBtn = document.getElementById('closeExportModalBtn');
+  const btnCloseExportModal = document.getElementById('btnCloseExportModal');
+  const btnDownloadJson = document.getElementById('btnDownloadJson');
+  const btnDownloadCsv = document.getElementById('btnDownloadCsv');
+  const importJsonFileInput = document.getElementById('importJsonFileInput');
+  const btnResetToDefaults = document.getElementById('btnResetToDefaults');
+
+  // Cloud status elements
+  const cloudSyncDot = document.getElementById('cloudSyncDot');
+  const cloudSyncText = document.getElementById('cloudSyncText');
+
+  // Today Date helper
+  function getTodayString() {
+    const now = new Date();
+    const d = String(now.getDate()).padStart(2, '0');
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const y = now.getFullYear();
+    return `${d}.${m}.${y}`;
+  }
+
+  // Toast Helper
+  function showToast(msg, isSuccess = true) {
+    const container = document.getElementById('toastContainer');
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.innerHTML = `<span>${isSuccess ? '✅' : 'ℹ️'}</span><span>${msg}</span>`;
+    container.appendChild(toast);
+    setTimeout(() => toast.classList.add('show'), 10);
+    setTimeout(() => {
+      toast.classList.remove('show');
+      setTimeout(() => toast.remove(), 300);
+    }, 2800);
+  }
+
+  // Clipboard copy
+  window.copyToClipboard = function(text, label = 'Команду') {
+    if (!text) return;
+    navigator.clipboard.writeText(text).then(() => {
+      showToast(`${label} скопійовано!`);
+    }).catch(() => {
+      showToast(`Скопійовано: ${text}`);
+    });
+  };
+
+  // Quick templates for form
+  window.addIssueTemplate = function(text) {
+    const input = document.getElementById('inputIssue');
+    if (input.value) input.value += ', ' + text;
+    else input.value = text;
+  };
+
+  window.addSolutionTemplate = function(text) {
+    const input = document.getElementById('inputSolution');
+    if (input.value) input.value += ', ' + text;
+    else input.value = text;
+  };
+
+  // Date parsing helper for strict chronologic sorting
+  function parseDateToTimestamp(str) {
+    if (!str) return 0;
+    const parts = str.trim().split('.');
+    if (parts.length === 3) {
+      const d = parseInt(parts[0], 10);
+      const m = parseInt(parts[1], 10) - 1;
+      let y = parseInt(parts[2], 10);
+      if (y < 100) y += 2000;
+      if (!isNaN(d) && !isNaN(m) && !isNaN(y)) {
+        return new Date(y, m, d).getTime();
+      }
+    }
+    const dashParts = str.trim().split('-');
+    if (dashParts.length === 3) {
+      return new Date(str).getTime() || 0;
+    }
+    return 0;
+  }
+
+  // Check if a repair is currently "В роботі" (Pending)
+  function isRepairPending(item) {
+    const hasRepairDate = item.repairDate && item.repairDate.trim() && item.repairDate.trim() !== '—' && !item.repairDate.toLowerCase().includes('процес');
+    const hasSpecialist = item.specialist && item.specialist.trim() && item.specialist.trim() !== '—' && item.specialist.trim() !== '\u200B';
+    return !hasRepairDate || !hasSpecialist;
+  }
+
+  /**
+   * CUSTOM CALENDAR PICKER CLASS
+   * Provides a popup calendar with today highlighted in gold amber!
+   */
+  class CalendarPicker {
+    constructor(wrapId, inputId, btnCalId, btnTodayId, popoverId) {
+      this.wrap = document.getElementById(wrapId);
+      this.input = document.getElementById(inputId);
+      this.btnCal = document.getElementById(btnCalId);
+      this.btnToday = document.getElementById(btnTodayId);
+      this.popover = document.getElementById(popoverId);
+
+      const now = new Date();
+      this.currentYear = now.getFullYear();
+      this.currentMonth = now.getMonth(); // 0-11
+
+      this.initEvents();
+    }
+
+    initEvents() {
+      this.btnCal.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.togglePopover();
+      });
+
+      this.input.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (!this.popover.classList.contains('active')) {
+          this.openPopover();
+        }
+      });
+
+      this.btnToday.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.setDate(new Date());
+        this.closePopover();
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!this.wrap.contains(e.target)) {
+          this.closePopover();
+        }
+      });
+    }
+
+    openPopover() {
+      const val = this.input.value.trim();
+      if (val) {
+        const parts = val.split('.');
+        if (parts.length === 3) {
+          const y = parseInt(parts[2], 10);
+          const m = parseInt(parts[1], 10) - 1;
+          if (!isNaN(y) && !isNaN(m)) {
+            this.currentYear = y < 100 ? 2000 + y : y;
+            this.currentMonth = m;
+          }
+        }
+      }
+      document.querySelectorAll('.calendar-popover').forEach(p => p.classList.remove('active'));
+      this.render();
+      this.popover.classList.add('active');
+    }
+
+    closePopover() {
+      this.popover.classList.remove('active');
+    }
+
+    togglePopover() {
+      if (this.popover.classList.contains('active')) {
+        this.closePopover();
+      } else {
+        this.openPopover();
+      }
+    }
+
+    setDate(dateObj) {
+      const d = String(dateObj.getDate()).padStart(2, '0');
+      const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const y = dateObj.getFullYear();
+      this.input.value = `${d}.${m}.${y}`;
+      showToast(`Встановлено дату: ${d}.${m}.${y}`);
+    }
+
+    render() {
+      const monthNames = [
+        'Січень', 'Лютий', 'Березень', 'Квітень', 'Травень', 'Червень',
+        'Липень', 'Серпень', 'Вересень', 'Жовтень', 'Листопад', 'Грудень'
+      ];
+      const today = new Date();
+      const todayY = today.getFullYear();
+      const todayM = today.getMonth();
+      const todayD = today.getDate();
+
+      let selY = null, selM = null, selD = null;
+      const curVal = this.input.value.trim();
+      if (curVal) {
+        const p = curVal.split('.');
+        if (p.length === 3) {
+          selD = parseInt(p[0], 10);
+          selM = parseInt(p[1], 10) - 1;
+          selY = parseInt(p[2], 10);
+          if (selY < 100) selY += 2000;
+        }
+      }
+
+      let html = `
+        <div class="cal-header">
+          <button type="button" class="cal-nav-btn" id="${this.popover.id}_prev">◀</button>
+          <div class="cal-title">📅 ${monthNames[this.currentMonth]} ${this.currentYear}</div>
+          <button type="button" class="cal-nav-btn" id="${this.popover.id}_next">▶</button>
+        </div>
+        <div class="cal-weekdays">
+          <div>Пн</div><div>Вт</div><div>Ср</div><div>Чт</div><div>Пт</div><div>Сб</div><div>Нд</div>
+        </div>
+        <div class="cal-days-grid">
+      `;
+
+      const firstDay = new Date(this.currentYear, this.currentMonth, 1);
+      let startDayOfWeek = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
+
+      const daysInMonth = new Date(this.currentYear, this.currentMonth + 1, 0).getDate();
+      const daysInPrevMonth = new Date(this.currentYear, this.currentMonth, 0).getDate();
+
+      for (let i = startDayOfWeek - 1; i >= 0; i--) {
+        const dNum = daysInPrevMonth - i;
+        html += `<div class="cal-day-cell other-month">${dNum}</div>`;
+      }
+
+      for (let d = 1; d <= daysInMonth; d++) {
+        const isToday = (this.currentYear === todayY && this.currentMonth === todayM && d === todayD);
+        const isSelected = (this.currentYear === selY && this.currentMonth === selM && d === selD);
+
+        let classes = 'cal-day-cell';
+        if (isToday) classes += ' is-today';
+        if (isSelected) classes += ' is-selected';
+
+        html += `<div class="${classes}" data-day="${d}" title="${isToday ? 'Сьогодні!' : ''}">${d}</div>`;
+      }
+
+      const totalCells = startDayOfWeek + daysInMonth;
+      const nextPadding = (7 - (totalCells % 7)) % 7;
+      for (let d = 1; d <= nextPadding; d++) {
+        html += `<div class="cal-day-cell other-month">${d}</div>`;
+      }
+
+      html += `
+        </div>
+        <div class="cal-footer">
+          <button type="button" class="cal-footer-btn today-btn" id="${this.popover.id}_btnToday">🎯 Сьогодні</button>
+          <button type="button" class="cal-footer-btn" id="${this.popover.id}_btnYest">⏪ Вчора</button>
+          <button type="button" class="cal-footer-btn" id="${this.popover.id}_btnClear">✕ Очистити</button>
+        </div>
+      `;
+
+      this.popover.innerHTML = html;
+
+      document.getElementById(`${this.popover.id}_prev`).addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.currentMonth--;
+        if (this.currentMonth < 0) {
+          this.currentMonth = 11;
+          this.currentYear--;
+        }
+        this.render();
+      });
+
+      document.getElementById(`${this.popover.id}_next`).addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.currentMonth++;
+        if (this.currentMonth > 11) {
+          this.currentMonth = 0;
+          this.currentYear++;
+        }
+        this.render();
+      });
+
+      document.getElementById(`${this.popover.id}_btnToday`).addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.setDate(new Date());
+        this.closePopover();
+      });
+
+      document.getElementById(`${this.popover.id}_btnYest`).addEventListener('click', (e) => {
+        e.stopPropagation();
+        const yest = new Date();
+        yest.setDate(yest.getDate() - 1);
+        this.setDate(yest);
+        this.closePopover();
+      });
+
+      document.getElementById(`${this.popover.id}_btnClear`).addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.input.value = '';
+        this.closePopover();
+      });
+
+      this.popover.querySelectorAll('.cal-day-cell[data-day]').forEach(cell => {
+        cell.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const d = parseInt(cell.getAttribute('data-day'), 10);
+          const pickedDate = new Date(this.currentYear, this.currentMonth, d);
+          this.setDate(pickedDate);
+          this.closePopover();
+        });
+      });
+    }
+  }
+
+  // Initialize Datepickers
+  const datePickerRequest = new CalendarPicker('wrapDate', 'inputDate', 'btnCalDate', 'btnTodayDate', 'popoverDate');
+  const datePickerRepair = new CalendarPicker('wrapRepairDate', 'inputRepairDate', 'btnCalRepairDate', 'btnTodayRepairDate', 'popoverRepairDate');
+  const datePickerBulk = new CalendarPicker('wrapBulkDate', 'bulkInputDate', 'btnCalBulkDate', 'btnTodayBulkDate', 'popoverBulkDate');
+
+  // Initialize Data
+  function initData() {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.repairs && parsed.repairs.length > 0) {
+          // Clean out any ghost empty rows (from old templates)
+          appData.repairs = parsed.repairs.filter(r => (r.date && r.date.match(/\d/)) || (r.vehicle && r.vehicle.match(/\d/)));
+          appData.inventory = parsed.inventory || [];
+          appData.atCommands = parsed.atCommands || (window.TRACKER_INITIAL_DATA ? window.TRACKER_INITIAL_DATA.atCommandsRaw : []);
+        } else {
+          loadDefaults();
+        }
+      } catch (e) {
+        console.error('Failed to parse localStorage data', e);
+        loadDefaults();
+      }
+    } else {
+      loadDefaults();
+    }
+
+    populateCarriersDatalist();
+    populateCarriersFilter();
+    updateDashboardStats();
+    renderRepairs();
+    renderInventory();
+    renderAtCommands();
+
+    // Try cloud sync on boot
+    fetchCloudData();
+  }
+
+  function loadDefaults() {
+    if (window.TRACKER_INITIAL_DATA) {
+      const raw = window.TRACKER_INITIAL_DATA.repairs || [];
+      appData.repairs = JSON.parse(JSON.stringify(raw.filter(r => (r.date && r.date.match(/\d/)) || (r.vehicle && r.vehicle.match(/\d/)))));
+      appData.inventory = JSON.parse(JSON.stringify(window.TRACKER_INITIAL_DATA.inventory || []));
+      appData.atCommands = JSON.parse(JSON.stringify(window.TRACKER_INITIAL_DATA.atCommandsRaw || []));
+    } else {
+      appData.repairs = [];
+      appData.inventory = [];
+      appData.atCommands = [];
+    }
+    saveLocalData();
+  }
+
+  function saveLocalData(triggerCloud = true) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+    updateDashboardStats();
+    if (triggerCloud) {
+      syncWithCloud();
+    }
+  }
+
+  // Cloud Sync Logic
+  async function fetchCloudData() {
+    try {
+      cloudSyncDot.className = 'status-dot syncing';
+      cloudSyncText.textContent = 'З\'єднання...';
+
+      const res = await fetch(NETLIFY_SYNC_URL);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.trackersData && data.trackersData.repairs && data.trackersData.repairs.length > 0) {
+          appData.repairs = data.trackersData.repairs.filter(r => (r.date && r.date.match(/\d/)) || (r.vehicle && r.vehicle.match(/\d/)));
+          if (data.trackersData.inventory) appData.inventory = data.trackersData.inventory;
+          if (data.trackersData.atCommands) appData.atCommands = data.trackersData.atCommands;
+          saveLocalData(false);
+          renderRepairs();
+          renderInventory();
+          updateDashboardStats();
+        }
+        cloudSyncDot.className = 'status-dot';
+        cloudSyncText.textContent = 'Хмара Netlify';
+      } else {
+        cloudSyncDot.className = 'status-dot';
+        cloudSyncText.textContent = 'Локально';
+      }
+    } catch (e) {
+      cloudSyncDot.className = 'status-dot';
+      cloudSyncText.textContent = 'Локально';
+    }
+  }
+
+  async function syncWithCloud() {
+    try {
+      cloudSyncDot.className = 'status-dot syncing';
+      cloudSyncText.textContent = 'Синхронізація...';
+
+      const payload = {
+        trackersData: {
+          repairs: appData.repairs,
+          inventory: appData.inventory,
+          atCommands: appData.atCommands,
+          updatedAt: Date.now()
+        }
+      };
+
+      const res = await fetch(NETLIFY_SYNC_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        cloudSyncDot.className = 'status-dot';
+        cloudSyncText.textContent = 'Хмара Netlify';
+      } else {
+        cloudSyncDot.className = 'status-dot';
+        cloudSyncText.textContent = 'Локально';
+      }
+    } catch (e) {
+      cloudSyncDot.className = 'status-dot';
+      cloudSyncText.textContent = 'Локально';
+    }
+  }
+
+  // Populate Carriers Select & Datalist
+  function populateCarriersDatalist() {
+    const datalist = document.getElementById('carrierDatalist');
+    const carriers = new Set();
+    appData.repairs.forEach(r => { if (r.carrier) carriers.add(r.carrier); });
+    appData.inventory.forEach(i => { if (i.assignedTo) carriers.add(i.assignedTo); });
+
+    datalist.innerHTML = '';
+    carriers.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c;
+      datalist.appendChild(opt);
+    });
+  }
+
+  function populateCarriersFilter() {
+    const carriers = new Set();
+    appData.repairs.forEach(r => { if (r.carrier) carriers.add(r.carrier); });
+
+    filterCarrierSelect.innerHTML = '<option value="">🏢 Всі перевізники</option>';
+    Array.from(carriers).sort().forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c;
+      opt.textContent = c;
+      filterCarrierSelect.appendChild(opt);
+    });
+  }
+
+  // Update Stats in Dashboard
+  function updateDashboardStats() {
+    const total = appData.repairs.length;
+    let pending = 0;
+    let artem = 0;
+    let oleksandr = 0;
+    let tracker = 0;
+    let invoice = 0;
+
+    appData.repairs.forEach(r => {
+      const spec = (r.specialist || '').toLowerCase();
+      const sol = (r.solution || '').toLowerCase();
+      const notes = (r.notes || '').toLowerCase();
+
+      if (isRepairPending(r)) pending++;
+      if (spec.includes('артем')) artem++;
+      if (spec.includes('саша')) oleksandr++;
+      if (spec.includes('трекер')) tracker++;
+      if (notes.includes('рахунок') || sol.includes('рахунок')) invoice++;
+    });
+
+    const officeTrackers = appData.inventory.filter(i => (i.status || '').toLowerCase().includes('офіс')).length;
+
+    document.getElementById('statCountTotal').textContent = total;
+    document.getElementById('statCountPending').textContent = pending;
+    document.getElementById('statCountArtem').textContent = artem;
+    document.getElementById('statCountOleksandr').textContent = oleksandr;
+    document.getElementById('statCountTracker').textContent = tracker;
+    document.getElementById('statCountOffice').textContent = officeTrackers;
+    document.getElementById('statCountInvoice').textContent = invoice;
+
+    document.getElementById('tabCounterJournal').textContent = total;
+    document.getElementById('tabCounterInventory').textContent = `${officeTrackers} в оф.`;
+
+    // Highlight stat pending card if there are pending items
+    const statCardPending = document.getElementById('statCardPending');
+    if (pending > 0) {
+      statCardPending.style.border = '1px solid rgba(245, 158, 11, 0.4)';
+      statCardPending.style.background = 'rgba(245, 158, 11, 0.08)';
+    } else {
+      statCardPending.style.border = 'none';
+      statCardPending.style.background = 'none';
+    }
+
+    // Update filter chips for pending and invoice
+    const chipPending = document.querySelector('#filterChipsContainer [data-filter="pending"]');
+    if (chipPending) {
+      chipPending.textContent = `⏳ В роботі (${pending})`;
+    }
+    const chipInvoice = document.querySelector('#filterChipsContainer [data-filter="invoice"]');
+    if (chipInvoice) {
+      chipInvoice.textContent = `💳 Виставити рахунок (${invoice})`;
+    }
+  }
+
+  // Format Carrier Badge Class
+  function getCarrierClass(carrier) {
+    const c = (carrier || '').toLowerCase();
+    if (c.includes('тет')) return 'carrier-tet';
+    if (c.includes('водоканал')) return 'carrier-vodo';
+    if (c.includes('мат')) return 'carrier-mat';
+    if (c.includes('еталон')) return 'carrier-etalon';
+    if (c.includes('лагіш') || c.includes('ттс') || c.includes('на-тр')) return 'carrier-lagish';
+    return '';
+  }
+
+  // Format Tech Badge
+  function getTechBadgeHtml(specialist) {
+    if (!specialist || specialist === '\u200B') return '<span class="tech-badge tech-pending">⏳ Очікує майстра</span>';
+    const s = specialist.toLowerCase();
+    if (s.includes('артем')) return `<span class="tech-badge tech-artem">🟣 ${escapeHtml(specialist)}</span>`;
+    if (s.includes('саша')) return `<span class="tech-badge tech-oleksandr">🟢 ${escapeHtml(specialist)}</span>`;
+    if (s.includes('трекер')) return `<span class="tech-badge tech-tracker">🤖 ${escapeHtml(specialist)}</span>`;
+    return `<span class="tech-badge tech-other">👤 ${escapeHtml(specialist)}</span>`;
+  }
+
+  // Escape HTML helper
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  // Format notes with clickable phone numbers
+  function formatNotesHtml(notes) {
+    if (!notes) return '<span style="color: rgba(255,255,255,0.2);">—</span>';
+    const escaped = escapeHtml(notes);
+    const formatted = escaped.replace(/(\+?3?8?0\d{9})/g, function(match) {
+      return `<span class="phone-copy" onclick="copyToClipboard('${match}', 'Телефон')" title="Клікніть щоб скопіювати">${match}</span>`;
+    });
+
+    if (escaped.toLowerCase().includes('рахунок')) {
+      return `${formatted} <span class="status-badge-pill status-invoice" title="Потребує виставлення рахунку">💳 РАХУНОК</span>`;
+    }
+    return formatted;
+  }
+
+  // Format Serial Number (Highlight replace arrow ➜)
+  function formatSerialHtml(serial) {
+    if (!serial) return '<span style="color: rgba(255,255,255,0.2);">—</span>';
+    const clean = escapeHtml(serial);
+    if (clean.includes('➜') || clean.includes('to') || clean.includes('->')) {
+      const parts = clean.replace(/to|->/g, '➜').split('➜');
+      return `<span class="serial-box">${parts[0].trim()} <span class="serial-replace-arrow">➜</span> <strong style="color: #60a5fa;">${parts[1] ? parts[1].trim() : ''}</strong></span>`;
+    }
+    return `<span class="serial-box">${clean}</span>`;
+  }
+
+  // Filtering & Sorting Logic
+  function getFilteredRepairs() {
+    let list = appData.repairs.slice();
+
+    // Global Search
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase().trim();
+      list = list.filter(r => {
+        return (r.vehicle && r.vehicle.toLowerCase().includes(q)) ||
+               (r.serial && r.serial.toLowerCase().includes(q)) ||
+               (r.carrier && r.carrier.toLowerCase().includes(q)) ||
+               (r.reportedBy && r.reportedBy.toLowerCase().includes(q)) ||
+               (r.issue && r.issue.toLowerCase().includes(q)) ||
+               (r.solution && r.solution.toLowerCase().includes(q)) ||
+               (r.notes && r.notes.toLowerCase().includes(q)) ||
+               (r.specialist && r.specialist.toLowerCase().includes(q)) ||
+               (r.date && r.date.toLowerCase().includes(q));
+      });
+    }
+
+    // Carrier Dropdown
+    if (carrierFilter) {
+      list = list.filter(r => r.carrier === carrierFilter);
+    }
+
+    // Specialist Dropdown
+    if (specialistFilter) {
+      list = list.filter(r => (r.specialist || '').toLowerCase().includes(specialistFilter.toLowerCase()));
+    }
+
+    // Month Dropdown
+    if (monthFilter) {
+      list = list.filter(r => (r.date || '').includes(monthFilter));
+    }
+
+    // Filter Chips
+    if (activeFilterChip === 'pending') {
+      list = list.filter(r => isRepairPending(r));
+    } else if (activeFilterChip === 'invoice') {
+      list = list.filter(r => {
+        const n = (r.notes || '').toLowerCase();
+        const s = (r.solution || '').toLowerCase();
+        return n.includes('рахунок') || s.includes('рахунок');
+      });
+    } else if (activeFilterChip === 'artem') {
+      list = list.filter(r => (r.specialist || '').toLowerCase().includes('артем'));
+    } else if (activeFilterChip === 'oleksandr') {
+      list = list.filter(r => (r.specialist || '').toLowerCase().includes('саша'));
+    } else if (activeFilterChip === 'tracker') {
+      list = list.filter(r => (r.specialist || '').toLowerCase().includes('трекер'));
+    }
+
+    // SORT BY DATE (Default: newest first!)
+    list.sort((a, b) => {
+      if (sortField === 'date') {
+        const tA = parseDateToTimestamp(a.date);
+        const tB = parseDateToTimestamp(b.date);
+        if (tA !== tB) {
+          return sortDirection === 'desc' ? tB - tA : tA - tB;
+        }
+        return sortDirection === 'desc' ? (b.id - a.id) : (a.id - b.id);
+      }
+      return (b.id - a.id);
+    });
+
+    return list;
+  }
+
+  // Render Repairs Table & Cards
+  function renderRepairs() {
+    const filtered = getFilteredRepairs();
+    const totalCount = filtered.length;
+    filteredCountBadge.textContent = `(показано: ${totalCount})`;
+
+    // Pagination calculations
+    let effectivePageSize = pageSize === 'all' ? totalCount : parseInt(pageSize, 10);
+    if (!effectivePageSize || effectivePageSize <= 0) effectivePageSize = totalCount || 1;
+    const totalPages = Math.ceil(totalCount / effectivePageSize) || 1;
+    if (currentPage > totalPages) currentPage = totalPages;
+    if (currentPage < 1) currentPage = 1;
+
+    const startIdx = (currentPage - 1) * effectivePageSize;
+    const endIdx = pageSize === 'all' ? totalCount : Math.min(startIdx + effectivePageSize, totalCount);
+    const pageItems = filtered.slice(startIdx, endIdx);
+
+    paginationInfo.textContent = totalCount === 0 ? 'Записів не знайдено' : `Показано ${startIdx + 1} - ${endIdx} із ${totalCount}`;
+    pageCurrentLabel.textContent = `${currentPage} / ${totalPages}`;
+    btnPrevPage.disabled = currentPage <= 1;
+    btnNextPage.disabled = currentPage >= totalPages;
+
+    // Render Table
+    if (pageItems.length === 0) {
+      repairTableBody.innerHTML = `<tr><td colspan="10" style="text-align: center; padding: 35px; color: var(--text-muted);">Записів за вашим запитом не знайдено</td></tr>`;
+    } else {
+      let rowsHtml = '';
+      pageItems.forEach(item => {
+        const isPending = isRepairPending(item);
+        const rowClass = isPending ? 'row-pending' : '';
+        const carrierTagClass = getCarrierClass(item.carrier);
+
+        rowsHtml += `
+          <tr class="${rowClass}">
+            <td style="font-weight: 700; color: #fff;">
+              ${escapeHtml(item.date)}
+            </td>
+            <td>
+              <span class="carrier-tag ${carrierTagClass}">${escapeHtml(item.carrier || '—')}</span>
+              ${item.reportedBy ? `<div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">від: ${escapeHtml(item.reportedBy)}</div>` : ''}
+            </td>
+            <td>
+              <span class="vehicle-pill">${escapeHtml(item.vehicle || '—')}</span>
+            </td>
+            <td>${formatSerialHtml(item.serial)}</td>
+            <td>
+              <div class="issue-text" title="${escapeHtml(item.issue)}" style="${isPending ? 'color: #fca5a5; font-weight: 700;' : ''}">
+                ${isPending ? '⚠️ ' : ''}${escapeHtml(item.issue || '—')}
+              </div>
+            </td>
+            <td>
+              ${isPending ? `
+                <div>
+                  <span class="badge-pending-pulsing">
+                    <span class="pulsing-amber-dot"></span> ⏳ В РОБОТІ
+                  </span>
+                  <div>
+                    <button class="btn-finish-repair" onclick="window.finishRepair(${item.id})" title="Завершити ремонт авто ${escapeHtml(item.vehicle)}">
+                      ⚡ Закрити ремонт
+                    </button>
+                  </div>
+                </div>
+              ` : `
+                <div style="color: #cbd5e1; font-weight: 700;">
+                  ${escapeHtml(item.repairDate || '—')}
+                </div>
+                <div style="font-size: 10px; color: #34d399; font-weight: 700;">
+                  ✅ Виконано
+                </div>
+              `}
+            </td>
+            <td>${getTechBadgeHtml(item.specialist)}</td>
+            <td>
+              <div class="solution-text" title="${escapeHtml(item.solution)}">
+                ${item.solution ? escapeHtml(item.solution) : (isPending ? '<span style="color: #f59e0b; font-style: italic;">Очікує виконання...</span>' : '—')}
+              </div>
+            </td>
+            <td>
+              <div class="notes-text" title="${escapeHtml(item.notes)}">${formatNotesHtml(item.notes)}</div>
+            </td>
+            <td>
+              <div class="row-actions">
+                <button class="action-icon-btn" onclick="window.editRepair(${item.id})" title="Редагувати запис">✏️</button>
+                <button class="action-icon-btn" onclick="window.duplicateRepair(${item.id})" title="Дублювати для нового запису">📋</button>
+                <button class="action-icon-btn delete-btn" onclick="window.deleteRepair(${item.id})" title="Видалити запис">🗑️</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      });
+      repairTableBody.innerHTML = rowsHtml;
+    }
+
+    // Render Cards Mode
+    if (pageItems.length === 0) {
+      cardsModeContainer.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 30px; color: var(--text-muted);">Записів не знайдено</div>`;
+    } else {
+      let cardsHtml = '';
+      pageItems.forEach(item => {
+        const isPending = isRepairPending(item);
+        const carrierTagClass = getCarrierClass(item.carrier);
+
+        cardsHtml += `
+          <div class="repair-card-item ${isPending ? 'card-pending' : ''}" onclick="window.editRepair(${item.id})">
+            <div class="repair-card-top">
+              <div class="card-vehicle-wrap">
+                <span class="card-vehicle-num">🚌 ${escapeHtml(item.vehicle || 'Без номера')}</span>
+                <span class="card-date">📅 ${escapeHtml(item.date)}</span>
+              </div>
+              <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
+                <span class="carrier-tag ${carrierTagClass}">${escapeHtml(item.carrier || '—')}</span>
+                ${isPending ? `<span class="badge-pending-pulsing" style="font-size: 10px; padding: 2px 6px;"><span class="pulsing-amber-dot"></span> В РОБОТІ</span>` : ''}
+              </div>
+            </div>
+
+            <div class="card-body">
+              <div style="font-size: 11px; color: var(--text-muted);">
+                S/N: ${formatSerialHtml(item.serial)}
+              </div>
+              <div class="card-issue" style="${isPending ? 'color: #fbbf24; font-weight: 700;' : ''}">
+                ⚠️ ${escapeHtml(item.issue || 'Не вказано')}
+              </div>
+              ${item.solution ? `<div class="card-solution">🔧 ${escapeHtml(item.solution)}</div>` : ''}
+              ${item.notes ? `<div style="font-size: 11px; color: #94a3b8;">📝 ${formatNotesHtml(item.notes)}</div>` : ''}
+            </div>
+
+            <div class="card-footer">
+              <div>${getTechBadgeHtml(item.specialist)}</div>
+              <div>
+                ${isPending ? `
+                  <button class="btn-finish-repair" onclick="window.finishRepair(${item.id}); event.stopPropagation();">
+                    ⚡ Закрити ремонт
+                  </button>
+                ` : `
+                  <span style="font-size: 11px; color: #cbd5e1;">Fix: ${escapeHtml(item.repairDate || '—')}</span>
+                `}
+              </div>
+            </div>
+          </div>
+        `;
+      });
+      cardsModeContainer.innerHTML = cardsHtml;
+    }
+  }
+
+  // Render Inventory (New Trackers)
+  function renderInventory() {
+    const tbody = document.getElementById('inventoryTableBody');
+    const chipsWrap = document.getElementById('officeSnChipsContainer');
+    const modalOfficeChipsWrap = document.getElementById('modalOfficeSnWrap');
+
+    let officeList = [];
+    let installedList = [];
+
+    appData.inventory.forEach(item => {
+      const isOffice = (item.status || '').toLowerCase().includes('офіс');
+      if (isOffice) officeList.push(item);
+      else installedList.push(item);
+    });
+
+    document.getElementById('invCountOffice').textContent = `${officeList.length} шт`;
+    document.getElementById('invCountInstalled').textContent = `${installedList.length} шт`;
+    document.getElementById('invCountTotal').textContent = `${appData.inventory.length} шт`;
+
+    // Render Office SN Chips
+    chipsWrap.innerHTML = officeList.map(item => `
+      <span class="sn-chip-badge" onclick="window.useTrackerForRepair('${escapeHtml(item.serial)}')" title="Натисніть щоб створити заявку на заміну цим трекером">
+        ${escapeHtml(item.serial)} ➜
+      </span>
+    `).join('') || '<span style="color: var(--text-muted); font-size: 12px;">Немає вільних трекерів на складі</span>';
+
+    // Render chips for modal
+    modalOfficeChipsWrap.innerHTML = `<span style="font-size: 10px; color: var(--text-muted);">Вільні на складі:</span> ` +
+      officeList.map(item => `
+        <span class="quick-tmpl-btn" onclick="window.selectTrackerInModal('${escapeHtml(item.serial)}')">
+          ${escapeHtml(item.serial)}
+        </span>
+      `).join('');
+    modalOfficeChipsWrap.style.display = officeList.length > 0 ? 'flex' : 'none';
+
+    // Sort groups so newest received date is at the top
+    const sortByDateDesc = (a, b) => {
+      const timeA = parseDateToTimestamp(a.receivedDate);
+      const timeB = parseDateToTimestamp(b.receivedDate);
+      if (timeA !== timeB) return timeB - timeA;
+      return (b.id || 0) - (a.id || 0);
+    };
+
+    officeList.sort(sortByDateDesc);
+    installedList.sort(sortByDateDesc);
+
+    let list = [];
+    if (inventoryFilter === 'office') {
+      list = officeList;
+    } else if (inventoryFilter === 'installed') {
+      list = installedList;
+    } else {
+      // In default/all view: available on stock (Office) displayed FIRST!
+      list = [...officeList, ...installedList];
+    }
+
+    if (list.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 25px; color: var(--text-muted);">Немає трекерів за цим фільтром</td></tr>`;
+      return;
+    }
+
+    let html = '';
+    list.forEach(item => {
+      const isOffice = (item.status || '').toLowerCase().includes('офіс');
+      html += `
+        <tr class="${isOffice ? 'row-office-stock' : ''}">
+          <td style="font-weight: 700; color: #fff;">${escapeHtml(item.receivedDate)}</td>
+          <td><span class="vehicle-pill" style="color: #60a5fa;">${escapeHtml(item.serial)}</span></td>
+          <td>
+            <span class="status-badge-pill ${isOffice ? 'status-done' : 'status-open'}" style="${isOffice ? '' : 'background: rgba(239, 68, 68, 0.2); color: #fca5a5; border-color: rgba(239, 68, 68, 0.4);'}">
+              ${isOffice ? '🏢 В наявності (Офіс)' : '🚌 Встановлено'}
+            </span>
+          </td>
+          <td>
+            ${item.assignedTo ? `<span class="carrier-tag carrier-tet">${escapeHtml(item.assignedTo)}</span>` : '<span style="color: var(--text-muted);">—</span>'}
+          </td>
+          <td style="text-align: center;">
+            <div style="display: inline-flex; gap: 4px;">
+              ${isOffice ? `
+                <button class="btn btn-sky" style="padding: 3px 8px; font-size: 11px;" onclick="window.useTrackerForRepair('${escapeHtml(item.serial)}')">
+                  Встановити ➜
+                </button>
+              ` : `
+                <button class="btn" style="padding: 3px 8px; font-size: 11px;" onclick="window.returnTrackerToOffice(${item.id})">
+                  Повернути в офіс
+                </button>
+              `}
+              <button class="action-icon-btn delete-btn" onclick="window.deleteInventoryItem(${item.id})" title="Видалити">🗑️</button>
+            </div>
+          </td>
+        </tr>
+      `;
+    });
+    tbody.innerHTML = html;
+  }
+
+  // Render AT Commands
+  function renderAtCommands() {
+    const grid = document.getElementById('atCommandsGrid');
+    const q = (document.getElementById('atSearchInput').value || '').toLowerCase().trim();
+
+    // 4 Primary Configuration Commands
+    const PRIMARY_CONFIG = [
+      {
+        id: 'prim_cpbw',
+        num: 1,
+        type: 'single',
+        cmd: 'at+cpbw=10,"+380504506021"',
+        title: 'Запис номеру в контактну книгу трекера',
+        desc: 'Записує номер диспетчера/сервера на позицію 10 телефонної книги SIM-карти.',
+        tag: 'Контактна книга',
+        category: 'gprs'
+      },
+      {
+        id: 'prim_tgact',
+        num: 2,
+        type: 'single',
+        cmd: 'AT+TGACT=1,5,3600',
+        title: 'Інтервал передачі даних (рух / стоянка)',
+        desc: '1 = активна GPRS сесія; 5 сек = опитування у русі; 3600 сек = інтервал 1 год на стоянці.',
+        tag: 'Інтервал GPRS',
+        category: 'gprs'
+      },
+      {
+        id: 'prim_dual_tgprs',
+        num: 3,
+        type: 'dual',
+        title: 'Сервер та APN інтернету (взаємозамінні під SIM)',
+        desc: 'Сервер: <strong>95.85.51.138</strong>, порт <strong>11111</strong>. Оберіть команду залежно від оператора SIM-картки в трекері:',
+        vodafone: 'AT+TGPRS="95.85.51.138",11111,"internet","",""',
+        kyivstar: 'AT+TGPRS="95.85.51.138",11111,"www.kyivstar.net","",""',
+        tag: 'Сервер & APN',
+        category: 'gprs'
+      },
+      {
+        id: 'prim_tprotocol',
+        num: 4,
+        type: 'single',
+        cmd: 'at+tprotocol="3SV2"',
+        title: 'Протокол передачі даних трекера',
+        desc: 'Встановлення протоколу взаємодії трекера Smartico: <strong>3SV2</strong>.',
+        tag: 'Протокол',
+        category: 'gprs'
+      }
+    ];
+
+    // Filter Primary Commands
+    let filteredPrimary = PRIMARY_CONFIG.filter(item => {
+      if (!q) return true;
+      if (item.type === 'single') {
+        return item.cmd.toLowerCase().includes(q) || item.title.toLowerCase().includes(q) || item.desc.toLowerCase().includes(q);
+      } else {
+        return item.vodafone.toLowerCase().includes(q) || item.kyivstar.toLowerCase().includes(q) ||
+               item.title.toLowerCase().includes(q) || item.desc.toLowerCase().includes(q) ||
+               q.includes('водафон') || q.includes('київстар') || q.includes('apn') || q.includes('gprs');
+      }
+    });
+
+    // Secondary / Other Commands (Cleaned: no empty cells, no non-command text, no duplicates of primary)
+    let rawList = (appData.atCommands && appData.atCommands.length > 0)
+      ? appData.atCommands
+      : (window.TRACKER_INITIAL_DATA ? window.TRACKER_INITIAL_DATA.atCommandsRaw || [] : []);
+
+    let secondaryList = rawList.filter(item => {
+      // Exclude empty commands completely
+      if (!item.cmd || !item.cmd.trim()) return false;
+      const cmdClean = item.cmd.trim();
+
+      // Exclude non-command raw prose paragraphs
+      if (!cmdClean.match(/^(\+INPUT|AT|at|ati)/i)) return false;
+
+      // Exclude primary commands from secondary list to avoid duplication
+      const cmdLower = cmdClean.toLowerCase();
+      if (cmdLower.startsWith('at+cpbw=10') ||
+          cmdClean.toUpperCase() === 'AT+TGACT=1,5,3600' ||
+          cmdClean.toUpperCase().includes('TGPRS="95.85.51.138"') ||
+          cmdLower.includes('tprotocol="3sv2"')) {
+        return false;
+      }
+
+      // Search query filter
+      if (q) {
+        const matchQ = (item.cmd && item.cmd.toLowerCase().includes(q)) ||
+                       (item.desc && item.desc.toLowerCase().includes(q)) ||
+                       (item.notes && item.notes.toLowerCase().includes(q));
+        if (!matchQ) return false;
+      }
+
+      return true;
+    });
+
+    if (filteredPrimary.length === 0 && secondaryList.length === 0) {
+      grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 35px; color: var(--text-muted);">Команд за вашим запитом не знайдено</div>`;
+      return;
+    }
+
+    let html = '';
+
+    // RENDER PRIMARY COMMANDS
+    if (filteredPrimary.length > 0) {
+      html += `
+        <div class="at-section-header">
+          <div class="at-section-title">
+            <span>⭐ ОСНОВНІ 4 КОМАНДИ НАЛАШТУВАННЯ ТРЕКЕРА</span>
+          </div>
+          <span class="at-section-pill">Базова конфігурація</span>
+        </div>
+      `;
+
+      filteredPrimary.forEach(item => {
+        if (item.type === 'single') {
+          const cmdText = escapeHtml(item.cmd);
+          html += `
+            <div class="at-card is-primary">
+              <div class="at-card-top">
+                <span class="badge-primary-star">⭐ ОСНОВНА КОМАНДА #${item.num}</span>
+                <button class="btn btn-sky" style="padding: 2px 8px; font-size: 10px;" onclick="copyToClipboard('${item.cmd.replace(/'/g, "\\'")}', 'Команду #${item.num}')">
+                  📋 Копіювати
+                </button>
+              </div>
+
+              <div class="at-code-box" onclick="copyToClipboard('${item.cmd.replace(/'/g, "\\'")}', 'Команду #${item.num}')" title="Клікніть щоб скопіювати">
+                <span class="at-code-text" style="color: #fbbf24;">${cmdText}</span>
+                <span style="font-size: 11px; opacity: 0.8; color: #fbbf24;">📋</span>
+              </div>
+
+              <div class="at-desc">
+                <strong style="color: #fff;">${item.title}</strong>
+                <div style="font-size: 11.5px; color: #cbd5e1; margin-top: 3px; line-height: 1.4;">${item.desc}</div>
+              </div>
+            </div>
+          `;
+        } else if (item.type === 'dual') {
+          html += `
+            <div class="at-card is-primary">
+              <div class="at-card-top">
+                <span class="badge-primary-star">⭐ ОСНОВНА КОМАНДА #${item.num}</span>
+                <span style="font-size: 10px; color: #fbbf24; font-weight: 800; background: rgba(245, 158, 11, 0.15); padding: 2px 6px; border-radius: 4px;">
+                  Взаємозамінні (APN)
+                </span>
+              </div>
+
+              <div class="at-desc">
+                <strong style="color: #fff;">${item.title}</strong>
+                <div style="font-size: 11.5px; color: #cbd5e1; margin-top: 3px; line-height: 1.4;">${item.desc}</div>
+              </div>
+
+              <!-- Vodafone Option -->
+              <div class="at-dual-subcard" onclick="copyToClipboard('${item.vodafone.replace(/'/g, "\\'")}', 'Vodafone GPRS команду')" title="Клікніть, щоб скопіювати команду для Vodafone">
+                <div class="at-dual-subcard-header">
+                  <span style="color: #f87171; font-weight: 800;">🔴 Для Vodafone (APN: internet)</span>
+                  <button class="btn btn-sky" style="padding: 2px 7px; font-size: 10px;" onclick="event.stopPropagation(); copyToClipboard('${item.vodafone.replace(/'/g, "\\'")}', 'Vodafone GPRS команду')">
+                    📋 Копіювати
+                  </button>
+                </div>
+                <div class="at-code-text" style="color: #fca5a5;">
+                  ${escapeHtml(item.vodafone)}
+                </div>
+              </div>
+
+              <!-- Kyivstar Option -->
+              <div class="at-dual-subcard" onclick="copyToClipboard('${item.kyivstar.replace(/'/g, "\\'")}', 'Київстар GPRS команду')" title="Клікніть, щоб скопіювати команду для Київстар">
+                <div class="at-dual-subcard-header">
+                  <span style="color: #60a5fa; font-weight: 800;">🔵 Для Київстар (APN: www.kyivstar.net)</span>
+                  <button class="btn btn-sky" style="padding: 2px 7px; font-size: 10px;" onclick="event.stopPropagation(); copyToClipboard('${item.kyivstar.replace(/'/g, "\\'")}', 'Київстар GPRS команду')">
+                    📋 Копіювати
+                  </button>
+                </div>
+                <div class="at-code-text" style="color: #93c5fd;">
+                  ${escapeHtml(item.kyivstar)}
+                </div>
+              </div>
+            </div>
+          `;
+        }
+      });
+    }
+
+    // RENDER SECONDARY / OTHER COMMANDS
+    if (secondaryList.length > 0) {
+      if (filteredPrimary.length > 0) {
+        html += `
+          <div class="at-section-header" style="margin-top: 14px;">
+            <div class="at-section-title">
+              <span style="color: #94a3b8;">🔧 ІНШІ КОРИСНІ КОМАНДИ</span>
+            </div>
+            <span class="at-section-pill-muted">${secondaryList.length} команд</span>
+          </div>
+        `;
+      }
+
+      secondaryList.forEach(item => {
+        const cmdText = escapeHtml(item.cmd);
+        const descText = item.desc ? escapeHtml(item.desc) : '';
+
+        // Strip PDF links and URLs from notes
+        let noteText = (item.notes || '').trim();
+        if (noteText.startsWith('http') || noteText.includes('.pdf') || noteText.includes('www.')) {
+          noteText = '';
+        }
+
+        html += `
+          <div class="at-card">
+            <div class="at-card-top">
+              <span class="at-category-tag">AT Команда</span>
+              <button class="btn btn-sky" style="padding: 2px 7px; font-size: 10px;" onclick="copyToClipboard('${item.cmd.replace(/'/g, "\\'")}', 'Команду')">
+                📋 Копіювати
+              </button>
+            </div>
+
+            <div class="at-code-box" onclick="copyToClipboard('${item.cmd.replace(/'/g, "\\'")}', 'Команду')" title="Клікніть щоб скопіювати">
+              <span class="at-code-text">${cmdText}</span>
+              <span style="font-size: 11px; opacity: 0.6;">📋</span>
+            </div>
+
+            ${descText ? `<div class="at-desc">${descText}</div>` : ''}
+
+            ${noteText ? `
+              <div class="at-notes">
+                💡 ${escapeHtml(noteText)}
+              </div>
+            ` : ''}
+          </div>
+        `;
+      });
+    }
+
+    grid.innerHTML = html;
+  }
+
+  // Global Actions for Window
+  window.editRepair = function(id) {
+    const item = appData.repairs.find(r => r.id === id);
+    if (!item) return;
+
+    document.getElementById('editRecordId').value = item.id;
+    document.getElementById('inputDate').value = item.date || '';
+    document.getElementById('inputCarrier').value = item.carrier || '';
+    document.getElementById('inputReportedBy').value = item.reportedBy || '';
+    document.getElementById('inputVehicle').value = item.vehicle || '';
+    document.getElementById('inputSerial').value = item.serial || '';
+    document.getElementById('inputIssue').value = item.issue || '';
+    document.getElementById('inputRepairDate').value = item.repairDate || '';
+    document.getElementById('inputSpecialist').value = item.specialist || '';
+    document.getElementById('inputSolution').value = item.solution || '';
+    document.getElementById('inputNotes').value = item.notes || '';
+
+    const isInvoice = (item.notes || '').toLowerCase().includes('рахунок') || (item.solution || '').toLowerCase().includes('рахунок');
+    document.getElementById('checkboxInvoice').checked = isInvoice;
+
+    repairModalTitle.innerHTML = `<span>✏️ Редагувати заявку #${item.id} (Авто ${escapeHtml(item.vehicle)})</span>`;
+    repairModalOverlay.classList.add('active');
+  };
+
+  // Quick Finish in-progress repair
+  window.finishRepair = function(id) {
+    const item = appData.repairs.find(r => r.id === id);
+    if (!item) return;
+
+    document.getElementById('editRecordId').value = item.id;
+    document.getElementById('inputDate').value = item.date || '';
+    document.getElementById('inputCarrier').value = item.carrier || '';
+    document.getElementById('inputReportedBy').value = item.reportedBy || '';
+    document.getElementById('inputVehicle').value = item.vehicle || '';
+    document.getElementById('inputSerial').value = item.serial || '';
+    document.getElementById('inputIssue').value = item.issue || '';
+    // Prefill repair date with TODAY!
+    document.getElementById('inputRepairDate').value = getTodayString();
+    document.getElementById('inputSpecialist').value = item.specialist || 'Артем';
+    document.getElementById('inputSolution').value = item.solution || '';
+    document.getElementById('inputNotes').value = item.notes || '';
+
+    const isInvoice = (item.notes || '').toLowerCase().includes('рахунок') || (item.solution || '').toLowerCase().includes('рахунок');
+    document.getElementById('checkboxInvoice').checked = isInvoice;
+
+    repairModalTitle.innerHTML = `<span>⚡ Завершити ремонт авто #${escapeHtml(item.vehicle || item.id)}</span>`;
+    repairModalOverlay.classList.add('active');
+
+    setTimeout(() => {
+      document.getElementById('inputSolution').focus();
+    }, 150);
+  };
+
+  window.duplicateRepair = function(id) {
+    const item = appData.repairs.find(r => r.id === id);
+    if (!item) return;
+
+    document.getElementById('editRecordId').value = '';
+    document.getElementById('inputDate').value = getTodayString();
+    document.getElementById('inputCarrier').value = item.carrier || '';
+    document.getElementById('inputReportedBy').value = item.reportedBy || '';
+    document.getElementById('inputVehicle').value = item.vehicle || '';
+    document.getElementById('inputSerial').value = item.serial || '';
+    document.getElementById('inputIssue').value = item.issue || '';
+    document.getElementById('inputRepairDate').value = '';
+    document.getElementById('inputSpecialist').value = item.specialist || '';
+    document.getElementById('inputSolution').value = '';
+    document.getElementById('inputNotes').value = item.notes || '';
+    document.getElementById('checkboxInvoice').checked = false;
+
+    repairModalTitle.innerHTML = `<span>📋 Новий запис на основі #${item.id}</span>`;
+    repairModalOverlay.classList.add('active');
+  };
+
+  window.deleteRepair = function(id) {
+    if (!confirm('Видалити цей запис ремонту?')) return;
+    appData.repairs = appData.repairs.filter(r => r.id !== id);
+    saveLocalData();
+    renderRepairs();
+    showToast('Запис видалено');
+  };
+
+  window.deleteInventoryItem = function(id) {
+    if (!confirm('Видалити цей трекер зі складу?')) return;
+    appData.inventory = appData.inventory.filter(i => i.id !== id);
+    saveLocalData();
+    renderInventory();
+    showToast('Трекер видалено зі складу');
+  };
+
+  window.returnTrackerToOffice = function(id) {
+    const item = appData.inventory.find(i => i.id === id);
+    if (!item) return;
+    item.status = 'Офіс';
+    item.assignedTo = '';
+    saveLocalData();
+    renderInventory();
+    showToast(`Трекер ${item.serial} повернуто в офіс`);
+  };
+
+  window.useTrackerForRepair = function(newSerial) {
+    document.getElementById('editRecordId').value = '';
+    document.getElementById('inputDate').value = getTodayString();
+    document.getElementById('inputCarrier').value = '';
+    document.getElementById('inputReportedBy').value = '';
+    document.getElementById('inputVehicle').value = '';
+    document.getElementById('inputSerial').value = `[старий] ➜ ${newSerial}`;
+    document.getElementById('inputIssue').value = 'Заміна трекера на новий';
+    document.getElementById('inputRepairDate').value = getTodayString();
+    document.getElementById('inputSpecialist').value = 'Артем';
+    document.getElementById('inputSolution').value = `Встановлено новий трекер ${newSerial}`;
+    document.getElementById('inputNotes').value = 'ВИСТАВИТИ РАХУНОК';
+    document.getElementById('checkboxInvoice').checked = true;
+
+    repairModalTitle.innerHTML = `<span>🔄 Встановлення нового трекера ${newSerial}</span>`;
+    repairModalOverlay.classList.add('active');
+  };
+
+  window.selectTrackerInModal = function(serial) {
+    const cur = document.getElementById('inputSerial').value.trim();
+    if (cur && !cur.includes('➜')) {
+      document.getElementById('inputSerial').value = `${cur} ➜ ${serial}`;
+    } else {
+      document.getElementById('inputSerial').value = serial;
+    }
+    showToast(`Серійний номер ${serial} додано`);
+  };
+
+  // Event Listeners
+  // Tab Switching
+  tabBtnJournal.addEventListener('click', () => {
+    activeTab = 'journal';
+    tabBtnJournal.className = 'main-tab-btn active';
+    tabBtnInventory.className = 'main-tab-btn inventory-tab';
+    tabBtnAtCommands.className = 'main-tab-btn at-tab';
+    viewJournal.style.display = 'flex';
+    viewInventory.style.display = 'none';
+    viewAtCommands.style.display = 'none';
+  });
+
+  tabBtnInventory.addEventListener('click', () => {
+    activeTab = 'inventory';
+    tabBtnJournal.className = 'main-tab-btn';
+    tabBtnInventory.className = 'main-tab-btn inventory-tab active';
+    tabBtnAtCommands.className = 'main-tab-btn at-tab';
+    viewJournal.style.display = 'none';
+    viewInventory.style.display = 'flex';
+    viewAtCommands.style.display = 'none';
+    renderInventory();
+  });
+
+  tabBtnAtCommands.addEventListener('click', () => {
+    activeTab = 'at';
+    tabBtnJournal.className = 'main-tab-btn';
+    tabBtnInventory.className = 'main-tab-btn inventory-tab';
+    tabBtnAtCommands.className = 'main-tab-btn at-tab active';
+    viewJournal.style.display = 'none';
+    viewInventory.style.display = 'none';
+    viewAtCommands.style.display = 'flex';
+    renderAtCommands();
+  });
+
+  // Toggle Table / Cards View
+  btnToggleViewMode.addEventListener('click', () => {
+    if (viewMode === 'table') {
+      viewMode = 'cards';
+      tableModeContainer.style.display = 'none';
+      cardsModeContainer.style.display = 'grid';
+      viewModeIcon.textContent = '🗂️';
+      viewModeLabel.textContent = 'Картки';
+    } else {
+      viewMode = 'table';
+      tableModeContainer.style.display = 'block';
+      cardsModeContainer.style.display = 'none';
+      viewModeIcon.textContent = '📑';
+      viewModeLabel.textContent = 'Таблиця';
+    }
+  });
+
+  // SORT BY DATE CLICK
+  thSortDate.addEventListener('click', () => {
+    if (sortField === 'date') {
+      sortDirection = sortDirection === 'desc' ? 'asc' : 'desc';
+    } else {
+      sortField = 'date';
+      sortDirection = 'desc';
+    }
+    sortDateIcon.textContent = sortDirection === 'desc' ? '▼' : '▲';
+    thSortDate.title = sortDirection === 'desc' ? 'Сортування: найновіші (клікніть для зміни)' : 'Сортування: найстаріші (клікніть для зміни)';
+    renderRepairs();
+  });
+
+  // Global Search
+  globalSearchInput.addEventListener('input', (e) => {
+    searchQuery = e.target.value;
+    searchClearBtn.style.display = searchQuery ? 'block' : 'none';
+    currentPage = 1;
+    renderRepairs();
+  });
+
+  searchClearBtn.addEventListener('click', () => {
+    globalSearchInput.value = '';
+    searchQuery = '';
+    searchClearBtn.style.display = 'none';
+    currentPage = 1;
+    renderRepairs();
+  });
+
+  // Filter by carrier dropdown
+  if (filterCarrierSelect) {
+    filterCarrierSelect.addEventListener('change', (e) => {
+      carrierFilter = e.target.value;
+      currentPage = 1;
+      renderRepairs();
+    });
+  }
+
+  // Filter chips clicks
+  filterChipsContainer.addEventListener('click', (e) => {
+    const chip = e.target.closest('.filter-chip');
+    if (!chip) return;
+    document.querySelectorAll('#filterChipsContainer .filter-chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    activeFilterChip = chip.dataset.filter || 'all';
+    currentPage = 1;
+    renderRepairs();
+  });
+
+  // Stat card click to filter
+  document.getElementById('statCardAll')?.addEventListener('click', () => {
+    activeFilterChip = 'all';
+    document.querySelectorAll('#filterChipsContainer .filter-chip').forEach(c => c.classList.remove('active'));
+    document.querySelector('#filterChipsContainer [data-filter="all"]')?.classList.add('active');
+    tabBtnJournal.click();
+    renderRepairs();
+  });
+
+  document.getElementById('statCardPending')?.addEventListener('click', () => {
+    activeFilterChip = 'pending';
+    document.querySelectorAll('#filterChipsContainer .filter-chip').forEach(c => c.classList.remove('active'));
+    document.querySelector('#filterChipsContainer [data-filter="pending"]')?.classList.add('active');
+    tabBtnJournal.click();
+    renderRepairs();
+  });
+
+  document.getElementById('statCardInvoice')?.addEventListener('click', () => {
+    activeFilterChip = 'invoice';
+    document.querySelectorAll('#filterChipsContainer .filter-chip').forEach(c => c.classList.remove('active'));
+    document.querySelector('#filterChipsContainer [data-filter="invoice"]')?.classList.add('active');
+    tabBtnJournal.click();
+    renderRepairs();
+  });
+
+  document.getElementById('statCardArtem')?.addEventListener('click', () => {
+    activeFilterChip = 'artem';
+    document.querySelectorAll('#filterChipsContainer .filter-chip').forEach(c => c.classList.remove('active'));
+    tabBtnJournal.click();
+    renderRepairs();
+  });
+
+  document.getElementById('statCardOleksandr')?.addEventListener('click', () => {
+    activeFilterChip = 'oleksandr';
+    document.querySelectorAll('#filterChipsContainer .filter-chip').forEach(c => c.classList.remove('active'));
+    tabBtnJournal.click();
+    renderRepairs();
+  });
+
+  document.getElementById('statCardSelfFixed')?.addEventListener('click', () => {
+    activeFilterChip = 'tracker';
+    document.querySelectorAll('#filterChipsContainer .filter-chip').forEach(c => c.classList.remove('active'));
+    tabBtnJournal.click();
+    renderRepairs();
+  });
+
+  document.getElementById('statCardOffice')?.addEventListener('click', () => {
+    tabBtnInventory.click();
+  });
+
+  // Pagination events
+  pageSizeSelect.addEventListener('change', (e) => {
+    pageSize = e.target.value;
+    currentPage = 1;
+    renderRepairs();
+  });
+
+  btnPrevPage.addEventListener('click', () => {
+    if (currentPage > 1) {
+      currentPage--;
+      renderRepairs();
+    }
+  });
+
+  btnNextPage.addEventListener('click', () => {
+    currentPage++;
+    renderRepairs();
+  });
+
+  // Inventory Filter Buttons
+  document.getElementById('invFilterAll').addEventListener('click', (e) => {
+    inventoryFilter = 'all';
+    document.querySelectorAll('#viewInventory .filter-chip').forEach(c => c.classList.remove('active'));
+    e.target.classList.add('active');
+    renderInventory();
+  });
+  document.getElementById('invFilterOffice').addEventListener('click', (e) => {
+    inventoryFilter = 'office';
+    document.querySelectorAll('#viewInventory .filter-chip').forEach(c => c.classList.remove('active'));
+    e.target.classList.add('active');
+    renderInventory();
+  });
+  document.getElementById('invFilterInstalled').addEventListener('click', (e) => {
+    inventoryFilter = 'installed';
+    document.querySelectorAll('#viewInventory .filter-chip').forEach(c => c.classList.remove('active'));
+    e.target.classList.add('active');
+    renderInventory();
+  });
+
+
+
+  document.getElementById('atSearchInput').addEventListener('input', () => {
+    renderAtCommands();
+  });
+
+  // Modal Open / Close
+  btnOpenAddModal.addEventListener('click', () => {
+    document.getElementById('editRecordId').value = '';
+    repairForm.reset();
+    document.getElementById('inputDate').value = getTodayString();
+    document.getElementById('inputRepairDate').value = '';
+    repairModalTitle.innerHTML = '<span>➕ Новий запис ремонту трекера</span>';
+    repairModalOverlay.classList.add('active');
+  });
+
+  function closeRepairModal() {
+    repairModalOverlay.classList.remove('active');
+    document.querySelectorAll('.calendar-popover').forEach(p => p.classList.remove('active'));
+  }
+  closeRepairModalBtn.addEventListener('click', closeRepairModal);
+  btnCancelRepairModal.addEventListener('click', closeRepairModal);
+
+  // Submit Repair Form
+  repairForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const editId = document.getElementById('editRecordId').value;
+    const date = document.getElementById('inputDate').value.trim();
+    const carrier = document.getElementById('inputCarrier').value.trim();
+    const reportedBy = document.getElementById('inputReportedBy').value.trim();
+    const vehicle = document.getElementById('inputVehicle').value.trim();
+    const serial = document.getElementById('inputSerial').value.trim();
+    const issue = document.getElementById('inputIssue').value.trim();
+    const repairDate = document.getElementById('inputRepairDate').value.trim();
+    const specialist = document.getElementById('inputSpecialist').value.trim();
+    const solution = document.getElementById('inputSolution').value.trim();
+    let notes = document.getElementById('inputNotes').value.trim();
+    const needInvoice = document.getElementById('checkboxInvoice').checked;
+
+    if (needInvoice && !notes.toLowerCase().includes('рахунок')) {
+      notes = notes ? `${notes} (ВИСТАВИТИ РАХУНОК)` : 'ВИСТАВИТИ РАХУНОК';
+    }
+
+    if (editId) {
+      // Edit existing
+      const rec = appData.repairs.find(r => r.id === parseInt(editId, 10));
+      if (rec) {
+        rec.date = date;
+        rec.carrier = carrier;
+        rec.reportedBy = reportedBy;
+        rec.vehicle = vehicle;
+        rec.serial = serial;
+        rec.issue = issue;
+        rec.repairDate = repairDate;
+        rec.specialist = specialist;
+        rec.solution = solution;
+        rec.notes = notes;
+      }
+      showToast('Запис успішно оновлено!');
+    } else {
+      // New record (insert at top)
+      const maxId = appData.repairs.reduce((max, r) => Math.max(max, r.id || 0), 0);
+      const newRec = {
+        id: maxId + 1,
+        date,
+        carrier,
+        reportedBy,
+        vehicle,
+        serial,
+        issue,
+        repairDate,
+        specialist,
+        solution,
+        notes
+      };
+      appData.repairs.unshift(newRec);
+
+      // If replacement serial was used from office, mark it as installed
+      if (serial.includes('➜')) {
+        const parts = serial.split('➜');
+        const newSn = parts[1].trim();
+        const invItem = appData.inventory.find(i => i.serial === newSn && i.status === 'Офіс');
+        if (invItem) {
+          invItem.status = 'Встановлено';
+          invItem.assignedTo = carrier;
+        }
+      }
+
+      showToast('Новий запис ремонту збережено!');
+    }
+
+    saveLocalData();
+    populateCarriersDatalist();
+    populateCarriersFilter();
+    renderRepairs();
+    renderInventory();
+    closeRepairModal();
+  });
+
+  // Inventory Modal Open / Close
+  btnOpenAddInventoryModal.addEventListener('click', () => {
+    inventoryForm.reset();
+    document.getElementById('invInputDate').value = getTodayString();
+    inventoryModalOverlay.classList.add('active');
+  });
+
+  function closeInvModal() {
+    inventoryModalOverlay.classList.remove('active');
+  }
+  closeInventoryModalBtn.addEventListener('click', closeInvModal);
+  btnCancelInvModal.addEventListener('click', closeInvModal);
+
+  inventoryForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const receivedDate = document.getElementById('invInputDate').value.trim();
+    const serial = document.getElementById('invInputSerial').value.trim();
+    const status = document.getElementById('invInputStatus').value;
+    const assignedTo = document.getElementById('invInputAssigned').value.trim();
+
+    const maxId = appData.inventory.reduce((max, i) => Math.max(max, i.id || 0), 0);
+    appData.inventory.unshift({
+      id: maxId + 1,
+      receivedDate,
+      serial,
+      status,
+      assignedTo
+    });
+
+    saveLocalData();
+    renderInventory();
+    closeInvModal();
+    showToast(`Трекер ${serial} додано на склад!`);
+  });
+
+  // Bulk Inventory Modal Logic
+  function updateBulkPreview() {
+    const text = bulkInputSerials.value;
+    const tokens = text.split(/[\r\n,;\t\s]+/).map(t => t.trim()).filter(Boolean);
+
+    // Track unique serials and duplicates within batch
+    const uniqueSerials = [];
+    const internalDupes = new Set();
+    const seenInBatch = new Set();
+    tokens.forEach(s => {
+      if (seenInBatch.has(s)) {
+        internalDupes.add(s);
+      } else {
+        seenInBatch.add(s);
+        uniqueSerials.push(s);
+      }
+    });
+
+    // Check duplicates against existing warehouse database
+    const existingInDb = new Set(appData.inventory.map(i => (i.serial || '').trim()));
+    const alreadyOnStock = uniqueSerials.filter(s => existingInDb.has(s));
+
+    if (tokens.length === 0) {
+      bulkCountBadge.textContent = 'Введено: 0 шт';
+      bulkPreviewSection.style.display = 'none';
+      bulkWarningDuplicates.style.display = 'none';
+      return;
+    }
+
+    bulkCountBadge.textContent = `Введено: ${tokens.length} (унікальних: ${uniqueSerials.length}) шт`;
+    bulkPreviewSection.style.display = 'block';
+
+    // Render chips
+    const displayList = uniqueSerials.slice(0, 80);
+    bulkPreviewChips.innerHTML = displayList.map(s => {
+      const isDupe = existingInDb.has(s);
+      return `<span style="font-family: ui-monospace, monospace; font-size: 11px; padding: 2px 7px; border-radius: 4px; font-weight: 600; ${isDupe ? 'background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4);' : 'background: rgba(56, 189, 248, 0.15); color: #7dd3fc; border: 1px solid rgba(56, 189, 248, 0.3);'}" title="${isDupe ? 'Увага: цей серійний номер вже є в базі!' : 'Новий номер'}">${escapeHtml(s)}${isDupe ? ' ⚠️' : ''}</span>`;
+    }).join('') + (uniqueSerials.length > 80 ? `<span style="font-size: 11px; color: var(--text-muted); align-self: center; padding-left: 4px;">... та ще ${uniqueSerials.length - 80} шт</span>` : '');
+
+    // Duplicate warnings
+    let warningMessages = [];
+    if (internalDupes.size > 0) {
+      const dupeList = Array.from(internalDupes);
+      warningMessages.push(`⚠️ Виявлено повтори всередині списку (${internalDupes.size} шт: <strong>${dupeList.slice(0, 4).join(', ')}${dupeList.length > 4 ? '...' : ''}</strong>), їх буде збережено лише 1 раз.`);
+    }
+    if (alreadyOnStock.length > 0) {
+      warningMessages.push(`⚠️ Зверніть увагу: <strong>${alreadyOnStock.length}</strong> трекерів вже існують в базі (${alreadyOnStock.slice(0, 4).join(', ')}${alreadyOnStock.length > 4 ? '...' : ''}).`);
+    }
+
+    if (warningMessages.length > 0) {
+      bulkWarningDuplicates.innerHTML = warningMessages.join('<br>');
+      bulkWarningDuplicates.style.display = 'block';
+    } else {
+      bulkWarningDuplicates.style.display = 'none';
+    }
+  }
+
+  function openBulkInvModal() {
+    bulkInventoryForm.reset();
+    document.getElementById('bulkInputDate').value = getTodayString();
+    document.getElementById('bulkInputStatus').value = 'Офіс';
+    document.getElementById('bulkInputAssigned').value = '';
+    bulkInputSerials.value = '';
+    genStartSerial.value = '';
+    genCount.value = '';
+    updateBulkPreview();
+    bulkInventoryModalOverlay.classList.add('active');
+  }
+
+  function closeBulkInvModal() {
+    bulkInventoryModalOverlay.classList.remove('active');
+    document.querySelectorAll('.calendar-popover').forEach(p => p.classList.remove('active'));
+  }
+
+  if (btnOpenBulkInventoryModal) {
+    btnOpenBulkInventoryModal.addEventListener('click', openBulkInvModal);
+  }
+  if (closeBulkInventoryModalBtn) {
+    closeBulkInventoryModalBtn.addEventListener('click', closeBulkInvModal);
+  }
+  if (btnCancelBulkInvModal) {
+    btnCancelBulkInvModal.addEventListener('click', closeBulkInvModal);
+  }
+
+  if (bulkInputSerials) {
+    bulkInputSerials.addEventListener('input', updateBulkPreview);
+  }
+
+  // Quick range generator
+  if (btnRunGenerator) {
+    btnRunGenerator.addEventListener('click', () => {
+      const startStr = genStartSerial.value.trim();
+      const count = parseInt(genCount.value, 10);
+      if (!startStr) {
+        showToast('Вкажіть початковий серійний номер трекера', false);
+        genStartSerial.focus();
+        return;
+      }
+      if (isNaN(count) || count <= 0) {
+        showToast('Вкажіть кількість для генерації (від 1 до 500)', false);
+        genCount.focus();
+        return;
+      }
+      if (count > 500) {
+        showToast('Максимальна кількість для генератора: 500 шт', false);
+        return;
+      }
+
+      // Extract prefix and digits with zero padding preservation
+      const match = startStr.match(/^(.*?)(\d+)$/);
+      if (!match) {
+        showToast('Номер має містити числове закінчення (напр. 023020)', false);
+        return;
+      }
+
+      const prefix = match[1];
+      const numPartStr = match[2];
+      const padLen = numPartStr.length;
+      let currentNum = parseInt(numPartStr, 10);
+
+      const generated = [];
+      for (let i = 0; i < count; i++) {
+        const nextNumStr = String(currentNum + i).padStart(padLen, '0');
+        generated.push(prefix + nextNumStr);
+      }
+
+      const currentText = bulkInputSerials.value.trim();
+      if (currentText) {
+        bulkInputSerials.value = currentText + '\n' + generated.join('\n');
+      } else {
+        bulkInputSerials.value = generated.join('\n');
+      }
+
+      updateBulkPreview();
+      showToast(`Згенеровано діапазон з ${count} трекерів!`);
+    });
+  }
+
+  // Submit bulk inventory
+  if (bulkInventoryForm) {
+    bulkInventoryForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const receivedDate = document.getElementById('bulkInputDate').value.trim() || getTodayString();
+      const status = document.getElementById('bulkInputStatus').value || 'Офіс';
+      const assignedTo = document.getElementById('bulkInputAssigned').value.trim();
+
+      const rawTokens = bulkInputSerials.value.split(/[\r\n,;\t\s]+/).map(t => t.trim()).filter(Boolean);
+      
+      const uniqueSerials = [];
+      const seen = new Set();
+      rawTokens.forEach(s => {
+        if (!seen.has(s)) {
+          seen.add(s);
+          uniqueSerials.push(s);
+        }
+      });
+
+      if (uniqueSerials.length === 0) {
+        showToast('Введіть або скопіюйте хоча б один номер трекера', false);
+        bulkInputSerials.focus();
+        return;
+      }
+
+      let maxId = appData.inventory.reduce((max, i) => Math.max(max, i.id || 0), 0);
+
+      const newItems = uniqueSerials.map(serial => {
+        maxId++;
+        return {
+          id: maxId,
+          receivedDate,
+          serial,
+          status,
+          assignedTo
+        };
+      });
+
+      appData.inventory.unshift(...newItems);
+
+      saveLocalData();
+      populateCarriersDatalist();
+      populateCarriersFilter();
+      renderInventory();
+      closeBulkInvModal();
+      showToast(`Успішно додано ${uniqueSerials.length} трекерів на склад! 🎉`);
+    });
+  }
+
+  // Export / Backup Modal
+  btnOpenExportModal.addEventListener('click', () => {
+    exportModalOverlay.classList.add('active');
+  });
+  function closeExportModal() {
+    exportModalOverlay.classList.remove('active');
+  }
+  closeExportModalBtn.addEventListener('click', closeExportModal);
+  btnCloseExportModal.addEventListener('click', closeExportModal);
+
+  // Download JSON
+  btnDownloadJson.addEventListener('click', () => {
+    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(appData, null, 2));
+    const dlAnchor = document.createElement('a');
+    dlAnchor.setAttribute('href', dataStr);
+    dlAnchor.setAttribute('download', `szvk_trackers_backup_${getTodayString()}.json`);
+    dlAnchor.click();
+    showToast('JSON бекап збережено!');
+  });
+
+  // Download CSV
+  btnDownloadCsv.addEventListener('click', () => {
+    let csv = '\uFEFF';
+    csv += 'ID;Дата;Перевізник;Хто звертався;Номер т/з;S/N трекера;Чому?;Дата ремонту;Fix;Рішення спеціаліста;Нотатки\r\n';
+
+    appData.repairs.forEach(r => {
+      const row = [
+        r.id,
+        `"${(r.date || '').replace(/"/g, '""')}"`,
+        `"${(r.carrier || '').replace(/"/g, '""')}"`,
+        `"${(r.reportedBy || '').replace(/"/g, '""')}"`,
+        `"${(r.vehicle || '').replace(/"/g, '""')}"`,
+        `"${(r.serial || '').replace(/"/g, '""')}"`,
+        `"${(r.issue || '').replace(/"/g, '""')}"`,
+        `"${(r.repairDate || '').replace(/"/g, '""')}"`,
+        `"${(r.specialist || '').replace(/"/g, '""')}"`,
+        `"${(r.solution || '').replace(/"/g, '""')}"`,
+        `"${(r.notes || '').replace(/"/g, '""')}"`
+      ];
+      csv += row.join(';') + '\r\n';
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const dlAnchor = document.createElement('a');
+    dlAnchor.setAttribute('href', url);
+    dlAnchor.setAttribute('download', `szvk_trackers_journal_${getTodayString()}.csv`);
+    dlAnchor.click();
+    showToast('CSV експортовано для Excel!');
+  });
+
+  // Import JSON
+  importJsonFileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+      try {
+        const imported = JSON.parse(evt.target.result);
+        if (imported.repairs && Array.isArray(imported.repairs)) {
+          appData = imported;
+          saveLocalData();
+          populateCarriersDatalist();
+          populateCarriersFilter();
+          renderRepairs();
+          renderInventory();
+          renderAtCommands();
+          closeExportModal();
+          showToast('Дані успішно відновлено з файлу!');
+        } else {
+          alert('Невірний формат файлу резервної копії.');
+        }
+      } catch (err) {
+        alert('Помилка читання JSON файлу: ' + err.message);
+      }
+    };
+    reader.readAsText(file);
+  });
+
+  // Reset to default
+  btnResetToDefaults.addEventListener('click', () => {
+    if (!confirm('Ви впевнені, що хочете скинути дані до початкових? Усі внесені зміни буде скасовано.')) return;
+    loadDefaults();
+    populateCarriersDatalist();
+    populateCarriersFilter();
+    renderRepairs();
+    renderInventory();
+    renderAtCommands();
+    closeExportModal();
+    showToast('Дані скинуто до початкових!');
+  });
+
+  // Initial Run
+  initData();
+
+})();
+</script>
+
+</body>
+</html>
