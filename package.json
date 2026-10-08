@@ -1,0 +1,10 @@
+{
+  "name": "szvk-work-hours",
+  "version": "1.0.0",
+  "description": "SZVK Work Hours schedule and task manager with Netlify Blobs sync",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@netlify/blobs": "^8.1.0"
+  }
+}

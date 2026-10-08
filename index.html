@@ -605,6 +605,7 @@
 
     <div class="auth-error" id="loginErrorMessage">Невірний логін або пароль</div>
     <button type="submit" class="auth-btn">Увійти в систему</button>
+    <div id="authSyncStatus" style="font-size: 11px; color: var(--text-muted); text-align: center; margin-top: 4px;">☁️ Хмарна синхронізація активна</div>
   </form>
 </div>
 
@@ -616,6 +617,11 @@
     </div>
     
     <div class="user-profile-widget">
+      <div id="cloudSyncStatus" style="font-size: 11px; display: inline-flex; align-items: center; gap: 5px; padding: 4px 8px; border-radius: 6px; background: rgba(16, 185, 129, 0.15); color: #34d399; font-weight: 600; border: 1px solid rgba(16, 185, 129, 0.25);" title="Статус синхронізації з Netlify">
+        <span id="cloudSyncDot" style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#10b981;"></span>
+        <span id="cloudSyncText">Хмара</span>
+      </div>
+
       <button class="btn" id="btnOpenAdminPanel" style="display: none; background: rgba(59, 130, 246, 0.2); color: #60a5fa; font-size: 11px; padding: 6px 10px; border: 1px solid rgba(59, 130, 246, 0.4);">
         🛡️ Керування користувачами
       </button>
@@ -833,6 +839,72 @@ document.addEventListener("DOMContentLoaded", function () {
   let currentUser = null;
   let customUsers = {};
 
+  // СИНХРОНІЗАЦІЯ З ХМАРОЮ (Netlify Blobs)
+  const SYNC_API_URL = "/api/sync";
+  let saveDebounceTimer = null;
+
+  function updateSyncIndicator(state, text) {
+    const dot = document.getElementById("cloudSyncDot");
+    const txt = document.getElementById("cloudSyncText");
+    const authTxt = document.getElementById("authSyncStatus");
+    if (dot && txt) {
+      if (state === "syncing") {
+        dot.style.background = "#f59e0b";
+        txt.textContent = text || "Синхронізація...";
+      } else if (state === "synced") {
+        dot.style.background = "#10b981";
+        txt.textContent = text || "Хмара";
+      } else if (state === "error") {
+        dot.style.background = "#ef4444";
+        txt.textContent = text || "Офлайн";
+      } else if (state === "local") {
+        dot.style.background = "#64748b";
+        txt.textContent = text || "Локально";
+      }
+    }
+    if (authTxt && state === "error") {
+      authTxt.textContent = "⚠️ Офлайн режим (локальні дані)";
+    } else if (authTxt && state === "synced") {
+      authTxt.textContent = "☁️ Хмарна синхронізація активна";
+    }
+  }
+
+  async function fetchCloudData() {
+    if (!window.location.protocol.startsWith("http")) {
+      updateSyncIndicator("local", "Локально");
+      return null;
+    }
+    try {
+      updateSyncIndicator("syncing", "Оновлення...");
+      const res = await fetch(SYNC_API_URL, { cache: "no-store" });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const data = await res.json();
+      updateSyncIndicator("synced", "Хмара");
+      return data;
+    } catch (e) {
+      console.warn("Помилка читання з хмари:", e);
+      updateSyncIndicator("error", "Офлайн");
+      return null;
+    }
+  }
+
+  async function pushCloudData(payload) {
+    if (!window.location.protocol.startsWith("http")) return;
+    try {
+      updateSyncIndicator("syncing", "Збереження...");
+      const res = await fetch(SYNC_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      updateSyncIndicator("synced", "Хмара");
+    } catch (e) {
+      console.warn("Помилка запису в хмару:", e);
+      updateSyncIndicator("error", "Офлайн");
+    }
+  }
+
   // Завантаження збережених користувачів
   try {
     const rawUsers = localStorage.getItem(USERS_STORAGE_KEY);
@@ -841,6 +913,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function saveUsers() {
     localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(customUsers));
+    pushCloudData({ customUsers: customUsers });
   }
 
   // Автозаповнення пароля з пам'яті
@@ -858,7 +931,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const loginError = document.getElementById("loginErrorMessage");
   const rememberCheckbox = document.getElementById("rememberMeCheckbox");
 
-  loginForm.onsubmit = function(e) {
+  loginForm.onsubmit = async function(e) {
     e.preventDefault();
     const u = document.getElementById("loginInput").value.trim();
     const p = document.getElementById("passwordInput").value;
@@ -870,7 +943,18 @@ document.addEventListener("DOMContentLoaded", function () {
     if (u === SUPER_ADMIN.username && p === SUPER_ADMIN.password) {
       authenticatedUser = SUPER_ADMIN;
     } else {
-      const foundKey = Object.keys(customUsers).find(k => (customUsers[k].username || "").toLowerCase() === u.toLowerCase());
+      let foundKey = Object.keys(customUsers).find(k => (customUsers[k].username || "").toLowerCase() === u.toLowerCase());
+
+      // Якщо користувача не знайдено або пароль не зійшовся, спочатку перевіряємо свіжі дані з хмари
+      if ((!foundKey || customUsers[foundKey].password !== p) && window.location.protocol.startsWith("http")) {
+        const cloudData = await fetchCloudData();
+        if (cloudData && cloudData.customUsers) {
+          customUsers = cloudData.customUsers;
+          localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(customUsers));
+          foundKey = Object.keys(customUsers).find(k => (customUsers[k].username || "").toLowerCase() === u.toLowerCase());
+        }
+      }
+
       if (foundKey) {
         const foundUser = customUsers[foundKey];
         if (foundUser.password === p) {
@@ -1053,6 +1137,56 @@ document.addEventListener("DOMContentLoaded", function () {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
     } catch (e) {}
+
+    clearTimeout(saveDebounceTimer);
+    saveDebounceTimer = setTimeout(() => {
+      pushCloudData({ schedule: payload });
+    }, 350);
+  }
+
+  async function syncAppFromCloud() {
+    if (!window.location.protocol.startsWith("http")) {
+      updateSyncIndicator("local", "Локально");
+      return;
+    }
+    const data = await fetchCloudData();
+    if (!data) return;
+
+    let scheduleUpdated = false;
+
+    // Синхронізуємо користувачів
+    if (data.customUsers && typeof data.customUsers === "object") {
+      const keys = Object.keys(data.customUsers);
+      if (keys.length > 0) {
+        customUsers = data.customUsers;
+        localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(customUsers));
+        renderAdminUsersList();
+      } else if (Object.keys(customUsers).length > 0) {
+        pushCloudData({ customUsers: customUsers });
+      }
+    }
+
+    // Синхронізуємо розклад
+    if (data.schedule && typeof data.schedule === "object") {
+      window.overrides = data.schedule.overrides || {};
+      window.dayNotes = data.schedule.dayNotes || {};
+      window.monthlyDebts = data.schedule.monthlyDebts || {};
+      window.monthFocusNotes = data.schedule.monthFocusNotes || {};
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data.schedule));
+      } catch(e) {}
+      scheduleUpdated = true;
+    } else {
+      const hasLocalSchedule = (window.overrides && Object.keys(window.overrides).length > 0) ||
+                               (window.dayNotes && Object.keys(window.dayNotes).length > 0);
+      if (hasLocalSchedule) {
+        saveLocalData();
+      }
+    }
+
+    if (scheduleUpdated) {
+      renderApp();
+    }
   }
 
   const initialData = loadLocalData();
@@ -1702,6 +1836,14 @@ document.addEventListener("DOMContentLoaded", function () {
 
   applyAccessState();
   document.getElementById("btnGoToToday").click();
+
+  // Запуск хмарної синхронізації
+  syncAppFromCloud();
+  window.addEventListener("focus", () => syncAppFromCloud());
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) syncAppFromCloud();
+  });
+  setInterval(syncAppFromCloud, 40000);
 });
 </script>
 
