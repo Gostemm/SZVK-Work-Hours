@@ -5,6 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>🛰️ Ремонт трекерів | SZVK</title>
 
+  <script>
+    // Init theme as early as possible to prevent flash
+    (function() {
+      try {
+        var saved = localStorage.getItem('szvk_ui_theme') || 'dark';
+        var effective = saved;
+        if (saved === 'system') {
+          effective = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        document.documentElement.setAttribute('data-theme', effective);
+      } catch (e) {}
+    })();
+  </script>
+
   <style>
     :root {
       --bg: #0f172a;
@@ -23,6 +37,97 @@
       --warning: #f59e0b;
       --success: #10b981;
       --badge-carrier: #334155;
+      --table-header-bg: #0f172a;
+      --table-container-bg: #162032;
+      --table-row-hover: rgba(255, 255, 255, 0.025);
+      --code-bg: #0b1120;
+      --code-text: #38bdf8;
+      --input-bg: #0f172a;
+      --input-border: #334155;
+      --row-pending-bg: linear-gradient(90deg, rgba(245, 158, 11, 0.22) 0%, rgba(245, 158, 11, 0.09) 35%, rgba(30, 41, 59, 0.6) 100%);
+      --row-stock-bg: rgba(16, 185, 129, 0.04);
+      --at-card-bg: #172236;
+      --at-dual-bg: #090e1a;
+      --modal-bg: #1e293b;
+    }
+
+    /* LIGHT THEME */
+    [data-theme="light"] {
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --card-hover: #f1f5f9;
+      --text: #0f172a;
+      --text-muted: #475569;
+      --border: #cbd5e1;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --artem: #7c3aed;
+      --oleksandr: #059669;
+      --today-border: #d97706;
+      --danger: #dc2626;
+      --sky: #0284c7;
+      --warning: #d97706;
+      --success: #059669;
+      --badge-carrier: #e2e8f0;
+      --table-header-bg: #e2e8f0;
+      --table-container-bg: #ffffff;
+      --table-row-hover: #f8fafc;
+      --code-bg: #f1f5f9;
+      --code-text: #0284c7;
+      --input-bg: #ffffff;
+      --input-border: #cbd5e1;
+      --row-pending-bg: linear-gradient(90deg, rgba(254, 243, 199, 0.95) 0%, rgba(254, 243, 199, 0.6) 50%, rgba(255, 255, 255, 0.9) 100%);
+      --row-stock-bg: rgba(220, 252, 231, 0.45);
+      --at-card-bg: #ffffff;
+      --at-dual-bg: #f8fafc;
+      --modal-bg: #ffffff;
+    }
+
+    /* THEME SWITCHER WIDGET */
+    .theme-switch-group {
+      display: inline-flex;
+      align-items: center;
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 2px;
+      gap: 2px;
+    }
+    .theme-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      border-radius: 7px;
+      padding: 5px 8px;
+      font-size: 13px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+      line-height: 1;
+      user-select: none;
+    }
+    .theme-btn:hover {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.08);
+    }
+    .theme-btn.active {
+      background: var(--accent);
+      color: #ffffff;
+      border-color: var(--accent);
+      box-shadow: 0 1px 6px rgba(0, 0, 0, 0.25);
+    }
+    [data-theme="light"] .theme-switch-group {
+      background: #f1f5f9;
+      border-color: #cbd5e1;
+    }
+    [data-theme="light"] .theme-btn:hover {
+      background: rgba(0, 0, 0, 0.06);
+    }
+    [data-theme="light"] .theme-btn.active {
+      background: var(--accent);
+      color: #ffffff;
     }
 
     * {
@@ -454,31 +559,31 @@
       overflow-x: auto;
       border-radius: 10px;
       border: 1px solid var(--border);
-      background: #162032;
+      background: var(--table-container-bg);
     }
 
     .repair-table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 11.5px;
+      font-size: 12px;
       text-align: left;
     }
 
     .repair-table thead {
-      background: #0f172a;
+      background: var(--table-header-bg);
       position: sticky;
       top: 0;
       z-index: 10;
     }
 
     .repair-table th {
-      padding: 7px 8px;
-      font-size: 10.5px;
+      padding: 8px 9px;
+      font-size: 11px;
       font-weight: 800;
       text-transform: uppercase;
       letter-spacing: 0.3px;
       color: var(--text-muted);
-      border-bottom: 1px solid var(--border);
+      border-bottom: 2px solid var(--border);
       white-space: nowrap;
       user-select: none;
     }
@@ -488,31 +593,31 @@
       transition: color 0.15s;
     }
     .sortable-th:hover {
-      color: #fff;
+      color: var(--text);
       background: rgba(255, 255, 255, 0.05);
     }
     .sort-indicator {
       display: inline-block;
       margin-left: 3px;
-      color: #60a5fa;
+      color: var(--accent);
       font-size: 10px;
       font-weight: 800;
     }
 
     .repair-table td {
-      padding: 6px 8px;
-      border-bottom: 1px solid rgba(51, 65, 85, 0.6);
+      padding: 7px 9px;
+      border-bottom: 1px solid var(--border);
       vertical-align: middle;
       font-weight: 500;
     }
 
     .repair-table tr:hover {
-      background: rgba(255, 255, 255, 0.025);
+      background: var(--table-row-hover);
     }
 
     /* VISUAL HIGHLIGHT FOR "В РОБОТІ" (IN-PROGRESS REPAIRS) */
     .repair-table tr.row-pending {
-      background: linear-gradient(90deg, rgba(245, 158, 11, 0.22) 0%, rgba(245, 158, 11, 0.09) 35%, rgba(30, 41, 59, 0.6) 100%) !important;
+      background: var(--row-pending-bg) !important;
       box-shadow: inset 0 0 16px rgba(245, 158, 11, 0.14);
     }
     .repair-table tr.row-pending td:first-child {
@@ -521,7 +626,7 @@
 
     /* VISUAL HIGHLIGHT FOR IN-STOCK TRACKERS (WAREHOUSE) */
     .repair-table tr.row-office-stock {
-      background: rgba(16, 185, 129, 0.04);
+      background: var(--row-stock-bg) !important;
     }
     .repair-table tr.row-office-stock td:first-child {
       border-left: 3px solid #10b981 !important;
@@ -673,14 +778,24 @@
     }
 
     .issue-text {
+      color: #fca5a5;
+      font-weight: 600;
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+      line-height: 1.35;
+      font-size: 12px;
+    }
+    .solution-text {
       color: #f1f5f9;
       white-space: normal;
       word-break: break-word;
       overflow-wrap: anywhere;
       line-height: 1.35;
-      font-size: 11.5px;
+      font-size: 12px;
+      font-weight: 500;
     }
-    .solution-text {
+    .notes-text {
       color: #cbd5e1;
       white-space: normal;
       word-break: break-word;
@@ -688,14 +803,51 @@
       line-height: 1.35;
       font-size: 11.5px;
     }
-    .notes-text {
-      color: #94a3b8;
-      white-space: normal;
-      word-break: break-word;
-      overflow-wrap: anywhere;
-      line-height: 1.35;
-      font-size: 11px;
-    }
+
+    /* Light mode text & badge overrides for crisp readability */
+    [data-theme="light"] .repair-table { color: #0f172a; }
+    [data-theme="light"] .repair-table th { color: #334155; }
+    [data-theme="light"] .issue-text { color: #b91c1c; font-weight: 700; }
+    [data-theme="light"] .solution-text { color: #0f172a; font-weight: 600; }
+    [data-theme="light"] .notes-text { color: #475569; }
+    [data-theme="light"] .serial-box { color: #0f172a; font-weight: 700; }
+    [data-theme="light"] .vehicle-pill { background: #f1f5f9; border: 1px solid #cbd5e1; color: #0f172a; }
+    [data-theme="light"] .carrier-tag { background: #f1f5f9; color: #1e293b; border: 1px solid #cbd5e1; }
+    [data-theme="light"] .carrier-tet { background: #dbeafe; color: #1e40af; border-color: #93c5fd; }
+    [data-theme="light"] .carrier-vodo { background: #e0f2fe; color: #0369a1; border-color: #7dd3fc; }
+    [data-theme="light"] .carrier-mat { background: #f3e8ff; color: #6b21a8; border-color: #d8b4fe; }
+    [data-theme="light"] .carrier-etalon { background: #fef9c3; color: #854d0e; border-color: #fde047; }
+    [data-theme="light"] .carrier-lagish { background: #d1fae5; color: #065f46; border-color: #6ee7b7; }
+    [data-theme="light"] .tech-artem { background: #ede9fe; color: #5b21b6; border-color: #c4b5fd; }
+    [data-theme="light"] .tech-oleksandr { background: #d1fae5; color: #065f46; border-color: #6ee7b7; }
+    [data-theme="light"] .tech-tracker { background: #e0f2fe; color: #0369a1; border-color: #7dd3fc; }
+    [data-theme="light"] .tech-pending { background: #fef3c7; color: #92400e; border-color: #fcd34d; }
+    [data-theme="light"] .tech-other { background: #f1f5f9; color: #334155; border-color: #cbd5e1; }
+    [data-theme="light"] .status-done { background: #d1fae5; color: #065f46; border-color: #6ee7b7; }
+    [data-theme="light"] .status-open { background: #fef3c7; color: #92400e; border-color: #fcd34d; }
+    [data-theme="light"] .status-replace { background: #ede9fe; color: #5b21b6; border-color: #c4b5fd; }
+    [data-theme="light"] .status-invoice { background: #fef9c3; color: #854d0e; border-color: #fde047; }
+    [data-theme="light"] .repair-card-item { background: #ffffff; border-color: #cbd5e1; }
+    [data-theme="light"] .card-vehicle-num { color: #0f172a; }
+    [data-theme="light"] .card-solution { background: #f1f5f9; color: #1e293b; }
+    [data-theme="light"] .modal-box { background: #ffffff; border-color: #cbd5e1; color: #0f172a; }
+    [data-theme="light"] .modal-title { color: #0f172a; }
+    [data-theme="light"] .calendar-popover { background: #ffffff; border-color: #cbd5e1; color: #0f172a; }
+    [data-theme="light"] .cal-title { color: #0f172a; }
+    [data-theme="light"] .cal-day-cell { color: #1e293b; background: #f8fafc; }
+    [data-theme="light"] .cal-day-cell:hover { background: #dbeafe; color: #1e40af; }
+    [data-theme="light"] .btn { background: #f1f5f9; color: #0f172a; border-color: #cbd5e1; }
+    [data-theme="light"] .btn:hover { background: #e2e8f0; }
+    [data-theme="light"] .btn-secondary { background: #ede9fe; color: #6d28d9; border-color: #c4b5fd; }
+    [data-theme="light"] .btn-amber { background: #fef3c7; color: #b45309; border-color: #fcd34d; }
+    [data-theme="light"] .btn-sky { background: #e0f2fe; color: #0369a1; border-color: #7dd3fc; }
+    [data-theme="light"] .filter-select,
+    [data-theme="light"] .search-input,
+    [data-theme="light"] .form-input,
+    [data-theme="light"] .form-select,
+    [data-theme="light"] .form-textarea { background: #ffffff; color: #0f172a; border-color: #cbd5e1; }
+    [data-theme="light"] .filter-chip { background: #f1f5f9; color: #475569; border-color: #cbd5e1; }
+    [data-theme="light"] .filter-chip:hover { color: #0f172a; background: #e2e8f0; }
     .phone-copy {
       color: #38bdf8;
       cursor: pointer;
@@ -893,7 +1045,7 @@
     }
 
     .at-card {
-      background: #172236;
+      background: var(--at-card-bg);
       border: 1px solid var(--border);
       border-radius: 12px;
       padding: 12px;
@@ -969,8 +1121,8 @@
       text-transform: uppercase;
     }
     .at-dual-subcard {
-      background: #090e1a;
-      border: 1px solid #1e293b;
+      background: var(--at-dual-bg);
+      border: 1px solid var(--border);
       border-radius: 8px;
       padding: 8px 10px;
       display: flex;
@@ -982,7 +1134,7 @@
     }
     .at-dual-subcard:hover {
       border-color: #f59e0b;
-      background: #0f182c;
+      background: rgba(245, 158, 11, 0.08);
     }
     .at-dual-subcard-header {
       display: flex;
@@ -1011,8 +1163,8 @@
     }
 
     .at-code-box {
-      background: #0b1120;
-      border: 1px solid #1e293b;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
       border-radius: 8px;
       padding: 8px 10px;
       display: flex;
@@ -1029,13 +1181,13 @@
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
       font-size: 12.5px;
       font-weight: 700;
-      color: #38bdf8;
+      color: var(--code-text);
       word-break: break-all;
     }
 
     .at-desc {
       font-size: 12px;
-      color: #f1f5f9;
+      color: var(--text);
       line-height: 1.4;
     }
 
@@ -1049,7 +1201,7 @@
     }
 
     .firmware-summary-box {
-      background: #0f172a;
+      background: var(--card-bg);
       border: 1px solid var(--border);
       border-radius: 10px;
       padding: 12px;
@@ -1061,13 +1213,21 @@
     .fw-item {
       padding: 8px 10px;
       border-radius: 8px;
-      background: rgba(255, 255, 255, 0.03);
+      background: var(--bg);
       border: 1px solid var(--border);
     }
     .fw-title { font-size: 11px; font-weight: 800; text-transform: uppercase; margin-bottom: 3px; }
     .fw-black { color: #cbd5e1; }
     .fw-blue { color: #60a5fa; }
     .fw-grey { color: #94a3b8; }
+
+    /* Light theme AT overrides */
+    [data-theme="light"] .at-intro-card { background: #fef3c7; border-color: #fcd34d; }
+    [data-theme="light"] .at-card.is-primary { background: linear-gradient(135deg, #ffffff 0%, #fffbeb 100%) !important; }
+    [data-theme="light"] .at-notes { background: #f1f5f9; color: #475569; }
+    [data-theme="light"] .fw-black { color: #1e293b; }
+    [data-theme="light"] .fw-blue { color: #1d4ed8; }
+    [data-theme="light"] .fw-grey { color: #475569; }
 
     /* Modals */
     .modal-overlay {
@@ -1461,6 +1621,13 @@
       <div class="cloud-status" id="cloudSyncStatus" title="Статус синхронізації з хмарою">
         <span class="status-dot" id="cloudSyncDot"></span>
         <span id="cloudSyncText">Локально</span>
+      </div>
+
+      <!-- Theme Switcher Segmented Control -->
+      <div class="theme-switch-group" id="themeSwitchGroup" title="Тема оформлення: Темна / Світла / Системна">
+        <button type="button" class="theme-btn active" data-theme-val="dark" title="Темна тема" aria-label="Темна тема">🌙</button>
+        <button type="button" class="theme-btn" data-theme-val="light" title="Світла тема" aria-label="Світла тема">☀️</button>
+        <button type="button" class="theme-btn" data-theme-val="system" title="Системна тема" aria-label="Системна тема">💻</button>
       </div>
 
       <a href="index.html" class="btn btn-secondary" title="Повернутися до графіка роботи системних адміністраторів">
@@ -3969,6 +4136,46 @@
     closeExportModal();
     showToast('Дані скинуто до початкових!');
   });
+
+  // Theme Switching Logic
+  const THEME_STORAGE_KEY = 'szvk_ui_theme';
+  const themeButtons = document.querySelectorAll('.theme-btn');
+  const mediaDark = window.matchMedia('(prefers-color-scheme: dark)');
+
+  function applyTheme(themeChoice) {
+    let effective = themeChoice;
+    if (themeChoice === 'system') {
+      effective = mediaDark.matches ? 'dark' : 'light';
+    }
+    document.documentElement.setAttribute('data-theme', effective);
+    themeButtons.forEach(btn => {
+      btn.classList.toggle('active', btn.getAttribute('data-theme-val') === themeChoice);
+    });
+  }
+
+  function setTheme(themeChoice) {
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, themeChoice);
+    } catch (e) {}
+    applyTheme(themeChoice);
+  }
+
+  themeButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      setTheme(btn.getAttribute('data-theme-val'));
+    });
+  });
+
+  try {
+    mediaDark.addEventListener('change', () => {
+      const current = localStorage.getItem(THEME_STORAGE_KEY) || 'dark';
+      if (current === 'system') applyTheme('system');
+    });
+  } catch (e) {}
+
+  // Sync active button on load
+  const currentSavedTheme = localStorage.getItem(THEME_STORAGE_KEY) || 'dark';
+  applyTheme(currentSavedTheme);
 
   // Initial Run
   initData();
