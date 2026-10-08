@@ -9,7 +9,12 @@
     // Init theme as early as possible to prevent flash
     (function() {
       try {
-        var saved = localStorage.getItem('szvk_ui_theme') || 'dark';
+        var urlParams = new URLSearchParams(window.location.search);
+        var urlTheme = urlParams.get('theme');
+        if (urlTheme) {
+          localStorage.setItem('szvk_ui_theme', urlTheme);
+        }
+        var saved = urlTheme || localStorage.getItem('szvk_ui_theme') || 'dark';
         var effective = saved;
         if (saved === 'system') {
           effective = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
@@ -230,10 +235,18 @@
       font-weight: 800;
     }
     [data-theme="light"] .author-chip-badge {
-      background: #e0f2fe;
-      border-color: #7dd3fc;
-      color: #0369a1;
-      font-weight: 700;
+      background: #ffffff !important;
+      border: 1px solid #94a3b8 !important;
+      color: #0f172a !important;
+      font-weight: 800 !important;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+    [data-theme="light"] .author-chip-badge.all-done {
+      background: #f1f5f9 !important;
+      border-color: #cbd5e1 !important;
+      color: #64748b !important;
+      opacity: 0.85;
+      box-shadow: none;
     }
     [data-theme="light"] .today-tag {
       background: #d97706;
@@ -275,6 +288,244 @@
       background: #f8fafc;
       border-color: #cbd5e1;
       color: #0f172a;
+    }
+
+    /* General Notes Tab (Загальні нотатки) in Light Mode */
+    [data-theme="light"] #debtsNotesView {
+      background: #ffffff;
+      border: 1.5px solid #cbd5e1;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+    }
+    [data-theme="light"] .debt-header {
+      background: #fef3c7;
+      border: 1.5px solid #fcd34d;
+      border-left: 5px solid #d97706;
+      box-shadow: 0 2px 8px rgba(245, 158, 11, 0.08);
+    }
+    [data-theme="light"] .debt-title {
+      color: #92400e !important;
+      font-weight: 900;
+    }
+    [data-theme="light"] .debt-month-box {
+      background: #ffffff;
+      border: 1.5px solid #cbd5e1;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+    [data-theme="light"] .debt-month-title {
+      color: #0f172a !important;
+      font-weight: 900;
+      border-bottom: 1.5px solid #e2e8f0;
+    }
+    [data-theme="light"] .debt-active-badge {
+      color: #92400e !important;
+      font-weight: 900;
+    }
+    [data-theme="light"] .month-target-field {
+      background: #f8fafc;
+      border: 1.5px solid #cbd5e1;
+    }
+    [data-theme="light"] .month-target-field label {
+      color: #0369a1 !important;
+      font-weight: 800;
+    }
+    [data-theme="light"] .month-target-val {
+      color: #475569 !important;
+      font-weight: 600;
+    }
+    [data-theme="light"] .month-target-val.has-val {
+      color: #0f172a !important;
+      font-weight: 700;
+    }
+    [data-theme="light"] .global-taskbar-item {
+      background: #ffffff;
+      border: 1.5px solid #cbd5e1;
+      border-left: 4px solid #2563eb;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+    }
+    [data-theme="light"] .global-taskbar-item:hover {
+      background: #eff6ff;
+    }
+    [data-theme="light"] .global-taskbar-item.settled {
+      background: #f8fafc;
+      border-color: #e2e8f0;
+      border-left-color: #94a3b8;
+      opacity: 0.7;
+    }
+    [data-theme="light"] .taskbar-text {
+      color: #0f172a !important;
+      font-weight: 600;
+    }
+    [data-theme="light"] .global-taskbar-item.settled .taskbar-text {
+      color: #64748b !important;
+    }
+    [data-theme="light"] .author-badge {
+      color: #1d4ed8 !important;
+      background: #dbeafe;
+      border: 1px solid #bfdbfe;
+      font-weight: 800;
+    }
+    [data-theme="light"] .debt-input {
+      background: #ffffff;
+      border: 1.5px solid #94a3b8;
+      color: #0f172a;
+      font-weight: 600;
+    }
+    [data-theme="light"] .debt-input:focus {
+      border-color: #2563eb;
+      background: #ffffff;
+    }
+    [data-theme="light"] .debt-input::placeholder {
+      color: #64748b;
+    }
+
+    /* Local Day Notes Modal in Light Mode */
+    [data-theme="light"] .day-modal-duty-box {
+      background: #f8fafc;
+      border: 1.5px solid #cbd5e1;
+    }
+    [data-theme="light"] .duty-label {
+      color: #475569 !important;
+      font-weight: 700;
+    }
+    [data-theme="light"] #modalDayTitle {
+      color: #0f172a !important;
+      font-weight: 900;
+    }
+    [data-theme="light"] #modalCurrentWorker {
+      color: #0f172a;
+      font-weight: 900;
+    }
+    [data-theme="light"] .day-tasks-modal-header {
+      color: #0f172a !important;
+      font-weight: 800;
+    }
+    [data-theme="light"] #modalTasksCount {
+      color: #475569 !important;
+      font-weight: 700;
+    }
+    [data-theme="light"] .task-modal-item {
+      background: #f8fafc;
+      border: 1.5px solid #cbd5e1;
+      color: #0f172a;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    }
+    [data-theme="light"] .task-modal-item:hover {
+      background: #f1f5f9;
+      border-color: #94a3b8;
+    }
+    [data-theme="light"] .task-modal-item.done {
+      background: #f1f5f9;
+      border-color: #e2e8f0;
+      opacity: 0.65;
+    }
+    [data-theme="light"] .task-modal-text {
+      color: #0f172a !important;
+      font-weight: 600;
+    }
+    [data-theme="light"] .task-modal-item.done .task-modal-text {
+      color: #64748b !important;
+    }
+    [data-theme="light"] .task-modal-author {
+      color: #1d4ed8 !important;
+      font-weight: 800;
+    }
+
+    /* Season Overview Modal & Global Focus Modal */
+    [data-theme="light"] .overview-group-box {
+      background: #ffffff;
+      border: 1.5px solid #cbd5e1;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+    [data-theme="light"] .overview-group-header {
+      color: #92400e !important;
+      font-weight: 900;
+      border-bottom: 1.5px solid #fcd34d;
+    }
+    [data-theme="light"] .overview-task-line {
+      color: #0f172a !important;
+      font-weight: 600;
+    }
+    [data-theme="light"] #seasonOverviewTitle {
+      color: #92400e !important;
+      font-weight: 900;
+    }
+    [data-theme="light"] #globalModalTitle {
+      color: #0f172a !important;
+      font-weight: 900;
+    }
+    [data-theme="light"] .admin-user-card {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+      color: #0f172a;
+    }
+    [data-theme="light"] .overview-task-text {
+      color: #0f172a !important;
+      font-weight: 600;
+    }
+    [data-theme="light"] .overview-bullet-day {
+      color: #2563eb !important;
+      font-weight: 900;
+    }
+    [data-theme="light"] .overview-bullet-debt {
+      color: #d97706 !important;
+      font-weight: 900;
+    }
+    [data-theme="light"] .overview-focus-text {
+      color: #1d4ed8 !important;
+      font-weight: 700;
+    }
+    [data-theme="light"] .tab-btn.notes-tab {
+      border-color: #d97706;
+      color: #b45309 !important;
+      font-weight: 800;
+    }
+    [data-theme="light"] .tab-btn.notes-tab.active {
+      background: #d97706;
+      color: #ffffff !important;
+      font-weight: 900;
+    }
+    [data-theme="light"] .global-month-banner {
+      background: #eff6ff;
+      border: 1.5px solid #bfdbfe;
+      border-left: 4px solid #2563eb;
+      box-shadow: 0 2px 6px rgba(37, 99, 235, 0.08);
+    }
+    [data-theme="light"] .global-month-banner.empty {
+      background: #f8fafc;
+      border: 1.5px dashed #cbd5e1;
+      border-left: 4px dashed #94a3b8;
+    }
+    [data-theme="light"] .global-label {
+      color: #1d4ed8 !important;
+      font-weight: 900;
+    }
+    [data-theme="light"] .global-text {
+      color: #0f172a !important;
+      font-weight: 600;
+    }
+    [data-theme="light"] .global-text.placeholder {
+      color: #64748b !important;
+    }
+    [data-theme="light"] #btnEditGlobalNote {
+      background: #e0f2fe !important;
+      color: #0369a1 !important;
+      border: 1px solid #7dd3fc !important;
+    }
+    [data-theme="light"] a[href="trackers.html"] {
+      background: #ede9fe !important;
+      color: #6d28d9 !important;
+      border-color: #c4b5fd !important;
+    }
+    [data-theme="light"] #btnOpenAdminPanel {
+      background: #dbeafe !important;
+      color: #1d4ed8 !important;
+      border-color: #93c5fd !important;
+    }
+    [data-theme="light"] .reset-option-card div div {
+      color: #0f172a !important;
+    }
+    [data-theme="light"] .admin-user-card div div {
+      color: #0f172a !important;
     }
 
     * {
@@ -696,7 +947,20 @@
     .task-modal-item.done { opacity: 0.55; }
     .task-modal-item.done .task-modal-text { text-decoration: line-through; color: var(--text-muted); }
     .task-modal-checkbox { width: 17px; height: 17px; accent-color: #10b981; cursor: pointer; }
+    .task-modal-author { font-size: 10px; color: #38bdf8; margin-left: 5px; font-weight: 700; }
     .task-add-form { display: flex; gap: 6px; }
+
+    .day-modal-duty-box {
+      background: #0f172a;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .duty-label { font-size: 11px; color: var(--text-muted); }
+    .day-tasks-modal-header { font-size: 12px; font-weight: 800; color: var(--note-badge); }
 
     .debt-container { display: flex; flex-direction: column; gap: 12px; }
     .debt-header {
@@ -731,6 +995,7 @@
       border-bottom: 1px solid rgba(255,255,255,0.08);
       padding-bottom: 6px;
     }
+    .debt-active-badge { font-size: 11px; color: #fbbf24; font-weight: 800; }
 
     .debt-items-list { display: flex; flex-direction: column; gap: 6px; min-height: 50px; }
 
@@ -771,6 +1036,8 @@
       padding: 8px;
     }
     .month-target-field label { font-size: 11px; font-weight: 800; color: #38bdf8; }
+    .month-target-val { font-size: 12px; color: var(--text-muted); }
+    .month-target-val.has-val { color: #f8fafc; font-weight: 600; }
 
     .season-overview-list {
       display: flex;
@@ -803,6 +1070,10 @@
     }
 
     .overview-task-line { display: flex; align-items: center; justify-content: space-between; font-size: 12px; gap: 8px; padding: 3px 0; }
+    .overview-task-text { color: #f1f5f9; display: flex; align-items: center; gap: 6px; }
+    .overview-bullet-day { color: #38bdf8; }
+    .overview-bullet-debt { color: #fbbf24; }
+    .overview-focus-text { font-size: 13px; color: #38bdf8; font-weight: 600; }
 
     .admin-user-card {
       display: flex;
@@ -1071,9 +1342,9 @@
       <button class="btn" id="modalDayCloseX" style="padding: 4px 8px;">✕</button>
     </div>
     
-    <div style="background: #0f172a; padding: 10px; border-radius: 8px; border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+    <div class="day-modal-duty-box">
       <div>
-        <div style="font-size: 11px; color: var(--text-muted);">Зараз чергує:</div>
+        <div class="duty-label">Зараз чергує:</div>
         <div id="modalCurrentWorker" style="font-size: 16px; font-weight: 800;">-</div>
       </div>
       <button class="btn" id="modalSwapWorkerBtn" style="background: #3b82f6;">⇄ Змінити напарника</button>
@@ -1081,7 +1352,7 @@
 
     <div>
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-        <span style="font-size: 12px; font-weight: 800; color: var(--note-badge);">📋 Завдання на цей день:</span>
+        <span class="day-tasks-modal-header">📋 Завдання на цей день:</span>
         <span id="modalTasksCount" style="font-size: 11px; color: var(--text-muted);">0 пунктів</span>
       </div>
       <div class="day-tasks-modal-list" id="modalDayTasksList"></div>
@@ -1114,6 +1385,16 @@ document.addEventListener("DOMContentLoaded", function () {
 
   let currentUser = null;
   let customUsers = {};
+
+  function escapeHtml(str) {
+    if (!str) return "";
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
 
   // СИНХРОНІЗАЦІЯ З ХМАРОЮ (Netlify Blobs)
   const SYNC_API_URL = "/.netlify/functions/sync";
@@ -1632,12 +1913,12 @@ document.addEventListener("DOMContentLoaded", function () {
     tasks.forEach((task, idx) => {
       const item = document.createElement("div");
       item.className = `task-modal-item ${task.done ? 'done' : ''}`;
-      const authorText = task.author ? `<span style="font-size: 10px; color: #38bdf8; margin-left: 5px; font-weight: 700;">(${task.author})</span>` : '';
+      const authorText = task.author ? `<span class="task-modal-author">(${escapeHtml(task.author)})</span>` : '';
 
       item.innerHTML = `
         <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0;">
           <input type="checkbox" class="task-modal-checkbox" ${task.done ? 'checked' : ''}>
-          <span class="task-modal-text" style="word-break: break-word;">${task.text}</span>
+          <span class="task-modal-text" style="word-break: break-word;">${escapeHtml(task.text)}</span>
           ${authorText}
         </div>
         <button class="btn" style="padding: 2px 6px; font-size: 10px; background: rgba(239, 68, 68, 0.2); color: #f87171;">✕</button>
@@ -1745,7 +2026,7 @@ document.addEventListener("DOMContentLoaded", function () {
             <span>🎯 ${monthLabel} — Головний фокус</span>
             <button class="btn" style="padding: 2px 7px; font-size: 10px;" onclick="switchMonthAndTab(${mIdx}, 'calendar')">До місяця</button>
           </div>
-          <div style="font-size: 13px; color: #38bdf8; font-weight: 600;">${globalFocus}</div>
+          <div class="overview-focus-text">${escapeHtml(globalFocus)}</div>
         `;
         list.appendChild(box);
       }
@@ -1763,10 +2044,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
           let tasksHtml = dayTasks.map(t => `
             <div class="overview-task-line">
-              <span style="color: #f1f5f9; display: flex; align-items: center; gap: 6px;">
-                <span style="color: #38bdf8;">•</span> ${t.text}
+              <span class="overview-task-text">
+                <span class="overview-bullet-day">•</span> ${escapeHtml(t.text)}
               </span>
-              ${t.author ? `<span class="author-badge">${t.author}</span>` : ''}
+              ${t.author ? `<span class="author-badge">${escapeHtml(t.author)}</span>` : ''}
             </div>
           `).join('');
 
@@ -1790,10 +2071,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
         let debtsHtml = activeDebts.map(d => `
           <div class="overview-task-line">
-            <span style="color: #f1f5f9; display: flex; align-items: center; gap: 6px;">
-              <span style="color: #fbbf24;">⚡</span> ${d.text}
+            <span class="overview-task-text">
+              <span class="overview-bullet-debt">⚡</span> ${escapeHtml(d.text)}
             </span>
-            ${d.author ? `<span class="author-badge">${d.author}</span>` : ''}
+            ${d.author ? `<span class="author-badge">${escapeHtml(d.author)}</span>` : ''}
           </div>
         `).join('');
 
@@ -2008,11 +2289,11 @@ document.addEventListener("DOMContentLoaded", function () {
       box.innerHTML = `
         <div class="debt-month-title">
           <span>📅 ${MONTH_NAMES[mObj.month]} ${mObj.year}</span>
-          <span style="font-size:11px; color:#fbbf24; font-weight:800;">${activeCount} активних</span>
+          <span class="debt-active-badge">${activeCount} активних</span>
         </div>
         <div class="month-target-field">
           <label>🎯 Головний фокус місяця:</label>
-          <div style="font-size: 12px; color: ${globalNote ? '#fff' : 'var(--text-muted)'};">${globalNote || 'Не задано'}</div>
+          <div class="month-target-val ${globalNote ? 'has-val' : 'empty-val'}">${escapeHtml(globalNote) || 'Не задано'}</div>
         </div>
       `;
 
@@ -2025,8 +2306,8 @@ document.addEventListener("DOMContentLoaded", function () {
         row.innerHTML = `
           <div class="taskbar-text-wrap">
             <input type="checkbox" class="task-modal-checkbox" ${item.settled ? "checked" : ""}>
-            <span class="taskbar-text">${item.text}</span>
-            <span class="author-badge">${item.author || ''}</span>
+            <span class="taskbar-text">${escapeHtml(item.text)}</span>
+            <span class="author-badge">${escapeHtml(item.author || '')}</span>
           </div>
           <button class="btn" style="padding: 2px 6px; font-size: 10px; background: rgba(239,68,68,0.2); color:#f87171;">✕</button>
         `;
@@ -2206,6 +2487,15 @@ document.addEventListener("DOMContentLoaded", function () {
 
   const currentSavedTheme = localStorage.getItem(THEME_STORAGE_KEY) || 'dark';
   applyTheme(currentSavedTheme);
+
+  // Підтримка прямого переходу на вкладку нотаток через URL (?tab=notes або #notes)
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('tab') === 'notes' || window.location.hash === '#notes') {
+      activeTab = 'debts';
+      renderApp();
+    }
+  } catch (e) {}
 
   // Запуск хмарної синхронізації
   syncAppFromCloud();
