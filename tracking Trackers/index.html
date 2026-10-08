@@ -9,7 +9,12 @@
     // Init theme as early as possible to prevent flash
     (function() {
       try {
-        var saved = localStorage.getItem('szvk_ui_theme') || 'dark';
+        var urlParams = new URLSearchParams(window.location.search);
+        var urlTheme = urlParams.get('theme');
+        if (urlTheme) {
+          localStorage.setItem('szvk_ui_theme', urlTheme);
+        }
+        var saved = urlTheme || localStorage.getItem('szvk_ui_theme') || 'dark';
         var effective = saved;
         if (saved === 'system') {
           effective = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
@@ -805,9 +810,9 @@
     }
 
     /* Light mode text & badge overrides for crisp readability */
-    [data-theme="light"] .dashboard { background: #ffffff; border-color: #cbd5e1; }
-    [data-theme="light"] .stat-card { background: #ffffff; }
-    [data-theme="light"] .stat-card:hover { background: #f1f5f9; }
+    [data-theme="light"] .dashboard { background: #ffffff; border: 1.5px solid #cbd5e1; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05); }
+    [data-theme="light"] .stat-card { background: #f8fafc; border: 1px solid #e2e8f0; }
+    [data-theme="light"] .stat-card:hover { background: #f1f5f9; border-color: #cbd5e1; }
     [data-theme="light"] .stat-title { color: #334155; font-weight: 800; }
     [data-theme="light"] .stat-value { color: #0f172a; font-weight: 900; }
     [data-theme="light"] .badge-artem { color: #6b21a8; font-weight: 900; }
@@ -818,60 +823,83 @@
     [data-theme="light"] .badge-bill { color: #b45309; font-weight: 900; }
     [data-theme="light"] .cloud-status { background: #d1fae5; color: #065f46; border-color: #6ee7b7; font-weight: 800; }
 
-    [data-theme="light"] .table-container { border: 2px solid #cbd5e1; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05); }
+    [data-theme="light"] .table-container { background: #ffffff; border: 1.5px solid #cbd5e1; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04); }
     [data-theme="light"] .repair-table { color: #0f172a; }
     [data-theme="light"] .repair-table thead { background: #e2e8f0; }
-    [data-theme="light"] .repair-table th { color: #0f172a !important; font-weight: 900 !important; border-bottom: 2px solid #94a3b8; }
-    [data-theme="light"] .repair-table td { color: #0f172a !important; font-weight: 600; border-bottom: 1px solid #cbd5e1; }
-    [data-theme="light"] .repair-table tr.row-pending { background: #fef3c7 !important; }
+    [data-theme="light"] .repair-table th { background: #e2e8f0; color: #0f172a !important; font-weight: 900 !important; border-bottom: 2px solid #94a3b8; font-size: 12px; }
+    [data-theme="light"] .repair-table td { color: #0f172a !important; font-size: 12.5px; border-bottom: 1px solid #cbd5e1; padding: 8px 10px; vertical-align: middle; }
+    
+    /* Zebra striping for table readability */
+    [data-theme="light"] .repair-table tbody tr:nth-child(even):not(.row-pending):not(.row-office-stock) { background-color: #f8fafc; }
+    [data-theme="light"] .repair-table tbody tr:nth-child(odd):not(.row-pending):not(.row-office-stock) { background-color: #ffffff; }
+    [data-theme="light"] .repair-table tbody tr:hover:not(.row-pending):not(.row-office-stock) { background-color: #eff6ff !important; }
+
+    [data-theme="light"] .repair-table tr.row-pending { background: #fef3c7 !important; box-shadow: inset 0 0 14px rgba(245, 158, 11, 0.2) !important; }
     [data-theme="light"] .repair-table tr.row-pending td:first-child { border-left: 5px solid #d97706 !important; }
-    [data-theme="light"] .badge-pending-pulsing { background: #fef3c7; color: #92400e; border-color: #f59e0b; font-weight: 900; }
-    [data-theme="light"] .pulsing-amber-dot { background: #d97706; }
-    [data-theme="light"] .btn-finish-repair { background: #fef3c7; color: #92400e; border-color: #f59e0b; font-weight: 900; }
-    [data-theme="light"] .btn-finish-repair:hover { background: #f59e0b; color: #000; }
+    [data-theme="light"] .repair-table tr.row-pending:hover { background: #fde68a !important; }
+    [data-theme="light"] .badge-pending-pulsing { background: #fef3c7; color: #92400e !important; border: 1.5px solid #f59e0b; font-weight: 900; }
+    [data-theme="light"] .pulsing-amber-dot { background: #d97706; box-shadow: 0 0 6px #d97706; }
+    [data-theme="light"] .btn-finish-repair { background: #fef3c7; color: #92400e; border: 1.5px solid #d97706; font-weight: 900; }
+    [data-theme="light"] .btn-finish-repair:hover { background: #d97706; color: #ffffff; }
 
-    [data-theme="light"] .issue-text { color: #b91c1c; font-weight: 700; }
-    [data-theme="light"] .issue-pending { color: #b91c1c !important; font-weight: 800; }
-    [data-theme="light"] .solution-text { color: #0f172a; font-weight: 600; }
-    [data-theme="light"] .notes-text { color: #334155; font-weight: 500; }
-    [data-theme="light"] .serial-box { color: #0f172a; font-weight: 700; }
-    [data-theme="light"] .serial-new-highlight { color: #1d4ed8; font-weight: 900; }
+    [data-theme="light"] .cell-date { font-weight: 800; color: #0f172a !important; font-family: ui-monospace, monospace; font-size: 13px; white-space: nowrap; }
+    [data-theme="light"] .repair-date-label { color: #0f172a !important; font-weight: 800; font-family: ui-monospace, monospace; font-size: 12.5px; }
+    [data-theme="light"] .reported-by-sub { color: #475569 !important; font-weight: 700; font-size: 10.5px; margin-top: 2px; }
+
+    [data-theme="light"] .issue-text { color: #0f172a; font-weight: 600; font-size: 12.5px; line-height: 1.4; }
+    [data-theme="light"] .issue-pending,
+    [data-theme="light"] .issue-text.issue-pending { color: #b91c1c !important; font-weight: 800; }
+    [data-theme="light"] .solution-text { color: #0f172a !important; font-weight: 600; font-size: 12.5px; line-height: 1.4; }
+    [data-theme="light"] .solution-pending-label { color: #92400e !important; font-weight: 800; font-style: italic; }
+    [data-theme="light"] .notes-text { color: #1e293b !important; font-weight: 600; font-size: 12px; line-height: 1.4; }
+    [data-theme="light"] .notes-empty-dash { color: #94a3b8 !important; font-weight: 600; }
+    [data-theme="light"] .phone-copy { color: #1d4ed8 !important; font-weight: 800; text-decoration: underline; }
+    [data-theme="light"] .phone-copy:hover { color: #1e40af !important; background: #dbeafe; }
+    [data-theme="light"] .status-done-label { color: #047857 !important; font-weight: 900; font-size: 11.5px; }
+
+    [data-theme="light"] .serial-box { color: #0f172a !important; font-weight: 800; font-size: 12px; }
+    [data-theme="light"] .serial-replace-arrow { color: #7c3aed !important; font-weight: 900; font-size: 13px; }
+    [data-theme="light"] .serial-new-highlight { color: #1d4ed8 !important; font-weight: 900; }
     [data-theme="light"] .vehicle-serial-pill { color: #1d4ed8; font-weight: 900; }
-    [data-theme="light"] .vehicle-pill { background: #f1f5f9; border: 1px solid #94a3b8; color: #0f172a; font-weight: 800; }
-    [data-theme="light"] .status-done-label { color: #047857; font-weight: 900; }
-    [data-theme="light"] .solution-pending-label { color: #b45309; font-weight: 700; font-style: italic; }
+    [data-theme="light"] .vehicle-pill { background: #f1f5f9; border: 1.5px solid #94a3b8; color: #0f172a !important; font-weight: 900; font-size: 12.5px; }
 
-    [data-theme="light"] .carrier-tag { background: #f1f5f9; color: #0f172a; border: 1px solid #cbd5e1; font-weight: 800; }
-    [data-theme="light"] .carrier-tet { background: #dbeafe; color: #1e40af; border-color: #93c5fd; }
-    [data-theme="light"] .carrier-vodo { background: #e0f2fe; color: #0369a1; border-color: #7dd3fc; }
-    [data-theme="light"] .carrier-mat { background: #f3e8ff; color: #6b21a8; border-color: #d8b4fe; }
-    [data-theme="light"] .carrier-etalon { background: #fef9c3; color: #854d0e; border-color: #fde047; }
-    [data-theme="light"] .carrier-lagish { background: #d1fae5; color: #065f46; border-color: #6ee7b7; }
-    [data-theme="light"] .tech-artem { background: #ede9fe; color: #5b21b6; border-color: #c4b5fd; font-weight: 800; }
-    [data-theme="light"] .tech-oleksandr { background: #d1fae5; color: #065f46; border-color: #6ee7b7; font-weight: 800; }
-    [data-theme="light"] .tech-tracker { background: #e0f2fe; color: #0369a1; border-color: #7dd3fc; font-weight: 800; }
-    [data-theme="light"] .tech-pending { background: #fef3c7; color: #92400e; border-color: #fcd34d; font-weight: 800; }
-    [data-theme="light"] .tech-other { background: #f1f5f9; color: #334155; border-color: #cbd5e1; font-weight: 800; }
-    [data-theme="light"] .status-done { background: #d1fae5; color: #065f46; border-color: #6ee7b7; font-weight: 800; }
-    [data-theme="light"] .status-open { background: #fef3c7; color: #92400e; border-color: #fcd34d; font-weight: 800; }
-    [data-theme="light"] .status-replace { background: #ede9fe; color: #5b21b6; border-color: #c4b5fd; font-weight: 800; }
-    [data-theme="light"] .status-invoice { background: #fef9c3; color: #854d0e; border-color: #fde047; font-weight: 800; }
+    [data-theme="light"] .carrier-tag { font-weight: 800; border: 1px solid #cbd5e1; }
+    [data-theme="light"] .carrier-tet { background: #dbeafe !important; color: #1e40af !important; border-color: #93c5fd !important; }
+    [data-theme="light"] .carrier-vodo { background: #e0f2fe !important; color: #0369a1 !important; border-color: #7dd3fc !important; }
+    [data-theme="light"] .carrier-mat { background: #f3e8ff !important; color: #6b21a8 !important; border-color: #d8b4fe !important; }
+    [data-theme="light"] .carrier-etalon { background: #fef9c3 !important; color: #854d0e !important; border-color: #fde047 !important; }
+    [data-theme="light"] .carrier-lagish { background: #d1fae5 !important; color: #065f46 !important; border-color: #6ee7b7 !important; }
+
+    [data-theme="light"] .tech-artem { background: #ede9fe; color: #5b21b6 !important; border-color: #c4b5fd; font-weight: 900; }
+    [data-theme="light"] .tech-oleksandr { background: #d1fae5; color: #065f46 !important; border-color: #6ee7b7; font-weight: 900; }
+    [data-theme="light"] .tech-tracker { background: #e0f2fe; color: #0369a1 !important; border-color: #7dd3fc; font-weight: 900; }
+    [data-theme="light"] .tech-pending { background: #fef3c7; color: #92400e !important; border-color: #fcd34d; font-weight: 900; }
+    [data-theme="light"] .tech-other { background: #f1f5f9; color: #334155 !important; border-color: #cbd5e1; font-weight: 900; }
+    [data-theme="light"] .status-done { background: #d1fae5; color: #065f46; border-color: #6ee7b7; font-weight: 900; }
+    [data-theme="light"] .status-open { background: #fef3c7; color: #92400e; border-color: #fcd34d; font-weight: 900; }
+    [data-theme="light"] .status-replace { background: #ede9fe; color: #5b21b6; border-color: #c4b5fd; font-weight: 900; }
+    [data-theme="light"] .status-invoice { background: #fef9c3 !important; color: #854d0e !important; border-color: #fde047 !important; font-weight: 900; }
     [data-theme="light"] .status-installed { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; font-weight: 900; }
 
-    [data-theme="light"] .main-tab-btn { color: #334155; border-color: #cbd5e1; background: #ffffff; }
-    [data-theme="light"] .main-tab-btn:hover { color: #0f172a; background: #f1f5f9; }
-    [data-theme="light"] .tab-counter { background: #e2e8f0; color: #0f172a; font-weight: 800; }
-    [data-theme="light"] .repair-card-item { background: #ffffff; border-color: #cbd5e1; }
-    [data-theme="light"] .card-vehicle-num { color: #0f172a; font-weight: 800; }
+    [data-theme="light"] .main-tab-btn { color: #1e293b; border-color: #cbd5e1; background: #f8fafc; font-weight: 800; }
+    [data-theme="light"] .main-tab-btn:hover { color: #0f172a; background: #e2e8f0; }
+    [data-theme="light"] .main-tab-btn.active { background: #2563eb; color: #ffffff; border-color: #2563eb; }
+    [data-theme="light"] .main-tab-btn.inventory-tab.active { background: #059669; color: #ffffff; border-color: #059669; }
+    [data-theme="light"] .main-tab-btn.at-tab.active { background: #d97706; color: #ffffff; border-color: #d97706; }
+    [data-theme="light"] .tab-counter { background: #e2e8f0; color: #0f172a; font-weight: 900; }
+    [data-theme="light"] .main-tab-btn.active .tab-counter { background: rgba(255, 255, 255, 0.3); color: #ffffff; }
+
+    [data-theme="light"] .repair-card-item { background: #ffffff; border: 1.5px solid #cbd5e1; }
+    [data-theme="light"] .card-vehicle-num { color: #0f172a; font-weight: 900; }
     [data-theme="light"] .card-date { color: #475569; font-weight: 700; }
-    [data-theme="light"] .card-solution { background: #f1f5f9; color: #0f172a; border: 1px solid #cbd5e1; }
-    [data-theme="light"] .modal-box { background: #ffffff; border-color: #cbd5e1; color: #0f172a; }
-    [data-theme="light"] .modal-title { color: #0f172a; }
-    [data-theme="light"] .calendar-popover { background: #ffffff; border-color: #cbd5e1; color: #0f172a; }
-    [data-theme="light"] .cal-title { color: #0f172a; }
-    [data-theme="light"] .cal-day-cell { color: #1e293b; background: #f8fafc; }
+    [data-theme="light"] .card-solution { background: #f1f5f9; color: #0f172a; border: 1px solid #cbd5e1; font-weight: 600; }
+    [data-theme="light"] .modal-box { background: #ffffff; border: 1.5px solid #cbd5e1; color: #0f172a; box-shadow: 0 20px 45px rgba(0, 0, 0, 0.15); }
+    [data-theme="light"] .modal-title { color: #0f172a; font-weight: 900; }
+    [data-theme="light"] .calendar-popover { background: #ffffff; border: 1.5px solid #cbd5e1; color: #0f172a; }
+    [data-theme="light"] .cal-title { color: #0f172a; font-weight: 900; }
+    [data-theme="light"] .cal-day-cell { color: #1e293b; background: #f8fafc; font-weight: 700; }
     [data-theme="light"] .cal-day-cell:hover { background: #dbeafe; color: #1e40af; }
-    [data-theme="light"] .btn { background: #f1f5f9; color: #0f172a; border-color: #cbd5e1; }
+    [data-theme="light"] .btn { background: #f1f5f9; color: #0f172a; border: 1px solid #cbd5e1; }
     [data-theme="light"] .btn:hover { background: #e2e8f0; }
     [data-theme="light"] .btn-secondary { background: #ede9fe; color: #6d28d9; border-color: #c4b5fd; font-weight: 800; }
     [data-theme="light"] .btn-amber { background: #fef3c7; color: #b45309; border-color: #fcd34d; font-weight: 800; }
@@ -880,17 +908,76 @@
     [data-theme="light"] .search-input,
     [data-theme="light"] .form-input,
     [data-theme="light"] .form-select,
-    [data-theme="light"] .form-textarea { background: #ffffff; color: #0f172a; border-color: #94a3b8; }
-    [data-theme="light"] .filter-chip { background: #f1f5f9; color: #334155; border-color: #cbd5e1; font-weight: 700; }
+    [data-theme="light"] .form-textarea { background: #ffffff; color: #0f172a; border: 1.5px solid #94a3b8; font-weight: 600; }
+    [data-theme="light"] .filter-chip { background: #f8fafc; color: #1e293b; border: 1.5px solid #cbd5e1; font-weight: 800; }
     [data-theme="light"] .filter-chip:hover { color: #0f172a; background: #e2e8f0; }
+    [data-theme="light"] .filter-chip.active { background: #2563eb; color: #ffffff; border-color: #2563eb; }
+    [data-theme="light"] .filter-chip.chip-pending { background: #fef3c7; color: #92400e; border-color: #f59e0b; }
+    [data-theme="light"] .filter-chip.chip-bill { background: #fef9c3; color: #854d0e; border-color: #fde047; }
 
-    /* Light mode AT commands typography */
+    /* Action buttons in table */
+    [data-theme="light"] .action-icon-btn { color: #334155; }
+    [data-theme="light"] .action-icon-btn:hover { background: #e2e8f0; color: #0f172a; }
+    [data-theme="light"] .action-icon-btn.delete-btn:hover { background: #fee2e2; color: #dc2626; border-color: #fca5a5; }
+
+    /* Pagination */
+    [data-theme="light"] .pagination-bar { color: #0f172a; }
+    [data-theme="light"] #paginationInfo { color: #1e293b !important; font-weight: 700; }
+    [data-theme="light"] .page-current-label,
+    [data-theme="light"] #pageCurrentLabel { color: #0f172a !important; font-weight: 900; }
+
+    /* Inventory View in Light Mode */
+    [data-theme="light"] .inventory-banner { background: #d1fae5; border: 1.5px solid #6ee7b7; border-left: 5px solid #059669; }
+    [data-theme="light"] .inv-stat-label { color: #065f46; font-weight: 800; }
+    [data-theme="light"] .inv-count-office { color: #047857 !important; font-weight: 900; }
+    [data-theme="light"] .inv-count-installed { color: #b91c1c !important; font-weight: 900; }
+    [data-theme="light"] .inv-count-total { color: #0f172a !important; font-weight: 900; }
+    [data-theme="light"] .office-chips-panel { background: #f0fdf4 !important; border: 1.5px solid #a7f3d0 !important; }
+    [data-theme="light"] .office-chips-panel-title { color: #065f46 !important; font-weight: 900; }
+    [data-theme="light"] .sn-chip-badge { background: #d1fae5; color: #065f46; border: 1.5px solid #6ee7b7; font-weight: 900; }
+    [data-theme="light"] .sn-chip-badge:hover { background: #a7f3d0; }
+
+    /* Light mode AT commands typography & cards */
+    [data-theme="light"] .at-intro-card { background: #fef3c7; border: 1.5px solid #fcd34d; border-left: 5px solid #d97706; box-shadow: 0 2px 8px rgba(245, 158, 11, 0.08); }
+    [data-theme="light"] .at-intro-title { color: #92400e !important; font-weight: 900; }
+    [data-theme="light"] .at-intro-desc { color: #1e293b !important; font-weight: 600; }
+
+    [data-theme="light"] .firmware-summary-box { background: #ffffff; border: 1.5px solid #cbd5e1; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); }
+    [data-theme="light"] .fw-item { background: #f8fafc; border: 1.5px solid #cbd5e1; }
+    [data-theme="light"] .fw-item-black { background: #f8fafc; border-color: #94a3b8; }
+    [data-theme="light"] .fw-black { color: #0f172a !important; font-weight: 900; }
+    [data-theme="light"] .fw-version-black { color: #0f172a !important; font-weight: 900; }
+    [data-theme="light"] .fw-blue { color: #1d4ed8 !important; font-weight: 900; }
+    [data-theme="light"] .fw-version-blue { color: #1d4ed8 !important; font-weight: 900; }
+    [data-theme="light"] .fw-grey { color: #334155 !important; font-weight: 900; }
+    [data-theme="light"] .fw-version-grey { color: #1e293b !important; font-weight: 900; }
+    [data-theme="light"] .fw-subtitle { color: #475569 !important; font-weight: 700; }
+
+    [data-theme="light"] .at-card { background: #ffffff; border: 1.5px solid #cbd5e1; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03); }
+    [data-theme="light"] .at-card:hover { border-color: #94a3b8; }
+    [data-theme="light"] .at-card.is-primary { background: linear-gradient(135deg, #ffffff 0%, #fffbeb 100%) !important; border: 2px solid #f59e0b !important; box-shadow: 0 4px 14px rgba(245, 158, 11, 0.12) !important; }
+    [data-theme="light"] .at-card.is-primary:hover { border-color: #d97706 !important; }
+    [data-theme="light"] .badge-primary-star { background: #fef3c7; color: #92400e !important; border-color: #f59e0b; font-weight: 900; }
+    [data-theme="light"] .at-dual-badge { font-size: 10px; color: #92400e !important; font-weight: 900; background: #fef3c7; padding: 2px 6px; border-radius: 4px; border: 1px solid #fcd34d; }
+    [data-theme="light"] .at-code-box { background: #f8fafc; border: 1.5px solid #cbd5e1; }
+    [data-theme="light"] .at-code-box:hover { border-color: #2563eb; background: #eff6ff; }
+    [data-theme="light"] .at-code-text { color: #0369a1 !important; font-weight: 800; }
+    [data-theme="light"] .at-primary-code { color: #b45309 !important; font-weight: 900; }
     [data-theme="light"] .at-item-title { color: #0f172a !important; font-weight: 900; }
-    [data-theme="light"] .at-item-desc { color: #334155 !important; font-weight: 500; }
-    [data-theme="light"] .at-vodafone-code { color: #b91c1c !important; font-weight: 800; }
-    [data-theme="light"] .at-kyivstar-code { color: #1d4ed8 !important; font-weight: 800; }
-    [data-theme="light"] .at-section-title { color: #0f172a !important; }
-    [data-theme="light"] .at-section-pill-muted { background: #e2e8f0; color: #334155; }
+    [data-theme="light"] .at-item-desc { color: #334155 !important; font-weight: 600; }
+    [data-theme="light"] .at-desc { color: #0f172a !important; font-weight: 500; }
+    [data-theme="light"] .at-notes { background: #f1f5f9; color: #334155 !important; border: 1px solid #e2e8f0; font-weight: 600; }
+    [data-theme="light"] .at-dual-subcard { background: #f8fafc; border: 1.5px solid #cbd5e1; }
+    [data-theme="light"] .at-dual-subcard:hover { background: #fef3c7; border-color: #f59e0b; }
+    [data-theme="light"] .at-vodafone-title { color: #b91c1c !important; font-weight: 900; }
+    [data-theme="light"] .at-vodafone-code { color: #991b1b !important; font-weight: 900; }
+    [data-theme="light"] .at-kyivstar-title { color: #1d4ed8 !important; font-weight: 900; }
+    [data-theme="light"] .at-kyivstar-code { color: #1e40af !important; font-weight: 900; }
+    [data-theme="light"] .at-section-title { color: #92400e !important; font-weight: 900; }
+    [data-theme="light"] .at-secondary-section-title { color: #0f172a !important; font-weight: 900; }
+    [data-theme="light"] .at-section-pill { background: #fef3c7; color: #92400e; border-color: #fcd34d; font-weight: 800; }
+    [data-theme="light"] .at-section-pill-muted { background: #e2e8f0; color: #1e293b; border-color: #cbd5e1; font-weight: 800; }
+    [data-theme="light"] .at-category-tag { background: #dbeafe; color: #1d4ed8; border-color: #93c5fd; font-weight: 800; }
     .phone-copy {
       color: #38bdf8;
       cursor: pointer;
@@ -1080,6 +1167,17 @@
       gap: 12px;
       flex-wrap: wrap;
     }
+    .at-intro-title {
+      font-size: 14px;
+      font-weight: 800;
+      color: #fbbf24;
+      margin-bottom: 3px;
+    }
+    .at-intro-desc {
+      font-size: 12px;
+      color: #cbd5e1;
+      line-height: 1.4;
+    }
 
     .at-grid {
       display: grid;
@@ -1242,6 +1340,18 @@
       border-radius: 6px;
       padding: 6px 8px;
     }
+    .at-primary-code { color: #fbbf24; }
+    .at-dual-badge {
+      font-size: 10px;
+      color: #fbbf24;
+      font-weight: 800;
+      background: rgba(245, 158, 11, 0.15);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .at-vodafone-title { color: #f87171; font-weight: 800; }
+    .at-kyivstar-title { color: #60a5fa; font-weight: 800; }
+    .at-secondary-section-title { color: #94a3b8; }
 
     .firmware-summary-box {
       background: var(--card-bg);
@@ -1254,7 +1364,7 @@
       margin-bottom: 6px;
     }
     .fw-item {
-      padding: 8px 10px;
+      padding: 10px 12px;
       border-radius: 8px;
       background: var(--bg);
       border: 1px solid var(--border);
@@ -1263,14 +1373,11 @@
     .fw-black { color: #cbd5e1; }
     .fw-blue { color: #60a5fa; }
     .fw-grey { color: #94a3b8; }
-
-    /* Light theme AT overrides */
-    [data-theme="light"] .at-intro-card { background: #fef3c7; border-color: #fcd34d; }
-    [data-theme="light"] .at-card.is-primary { background: linear-gradient(135deg, #ffffff 0%, #fffbeb 100%) !important; }
-    [data-theme="light"] .at-notes { background: #f1f5f9; color: #475569; }
-    [data-theme="light"] .fw-black { color: #1e293b; }
-    [data-theme="light"] .fw-blue { color: #1d4ed8; }
-    [data-theme="light"] .fw-grey { color: #475569; }
+    .fw-version { font-size: 13px; font-weight: 800; margin-bottom: 2px; }
+    .fw-version-black { color: #fff; }
+    .fw-version-blue { color: #60a5fa; }
+    .fw-version-grey { color: #e2e8f0; }
+    .fw-subtitle { font-size: 11px; color: var(--text-muted); }
 
     /* Modals */
     .modal-overlay {
@@ -1822,7 +1929,7 @@
           <option value="all">Всі</option>
         </select>
         <button class="btn" id="btnPrevPage" style="padding: 4px 8px;">◀</button>
-        <span id="pageCurrentLabel" style="font-weight: 700; color: #fff;">1 / 4</span>
+        <span id="pageCurrentLabel" class="page-current-label">1 / 4</span>
         <button class="btn" id="btnNextPage" style="padding: 4px 8px;">▶</button>
       </div>
     </div>
@@ -1834,15 +1941,15 @@
       <div class="inv-stats-box">
         <div class="inv-stat-item">
           <span class="inv-stat-label">🏢 Вільні на складі (Офіс)</span>
-          <span class="inv-stat-count" id="invCountOffice" style="color: #34d399;">6 шт</span>
+          <span class="inv-stat-count inv-count-office" id="invCountOffice">6 шт</span>
         </div>
         <div class="inv-stat-item">
           <span class="inv-stat-label">🚌 Встановлено на маршрути</span>
-          <span class="inv-stat-count" id="invCountInstalled" style="color: #f87171;">19 шт</span>
+          <span class="inv-stat-count inv-count-installed" id="invCountInstalled">19 шт</span>
         </div>
         <div class="inv-stat-item">
           <span class="inv-stat-label">📦 Всього нових трекерів</span>
-          <span class="inv-stat-count" id="invCountTotal">25 шт</span>
+          <span class="inv-stat-count inv-count-total" id="invCountTotal">25 шт</span>
         </div>
       </div>
 
@@ -1856,8 +1963,8 @@
       </div>
     </div>
 
-    <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px;">
-      <div style="font-size: 11px; font-weight: 800; color: #34d399; text-transform: uppercase; margin-bottom: 6px;">
+    <div class="office-chips-panel">
+      <div class="office-chips-panel-title">
         ⚡ Вільні трекери в офісі (клікніть для використання в ремонті):
       </div>
       <div class="office-sn-chips" id="officeSnChipsContainer">
@@ -1899,10 +2006,10 @@
   <div class="view-card" id="viewAtCommands" style="display: none;">
     <div class="at-intro-card">
       <div>
-        <div style="font-size: 14px; font-weight: 800; color: #fbbf24; margin-bottom: 3px;">
+        <div class="at-intro-title">
           ⚡ Шпаргалка / Ремайндер AT команд для трекерів
         </div>
-        <div style="font-size: 12px; color: #cbd5e1;">
+        <div class="at-intro-desc">
           Зручний довідник команд для налаштування Smartico / SIM800, GSM/GPRS, прошивок, CAN та ACC запалювання. Натисніть на будь-яку команду, щоб скопіювати.
         </div>
       </div>
@@ -1915,20 +2022,20 @@
 
     <!-- Firmware quick bar -->
     <div class="firmware-summary-box">
-      <div class="fw-item">
+      <div class="fw-item fw-item-black">
         <div class="fw-title fw-black">🖤 Чорні трекери</div>
-        <div style="font-size: 13px; font-weight: 700; color: #fff;">SW 2.66 / HW 6.30</div>
-        <div style="font-size: 11px; color: var(--text-muted);">Актуальна версія прошивки</div>
+        <div class="fw-version fw-version-black">SW 2.66 / HW 6.30</div>
+        <div class="fw-subtitle">Актуальна версія прошивки</div>
       </div>
-      <div class="fw-item">
+      <div class="fw-item fw-item-blue">
         <div class="fw-title fw-blue">💙 Сині трекери (8U2GX)</div>
-        <div style="font-size: 13px; font-weight: 700; color: #60a5fa;">SW 2.72 / HW 8.02</div>
-        <div style="font-size: 11px; color: var(--text-muted);">Актуальна версія прошивки</div>
+        <div class="fw-version fw-version-blue">SW 2.72 / HW 8.02</div>
+        <div class="fw-subtitle">Актуальна версія прошивки</div>
       </div>
-      <div class="fw-item">
+      <div class="fw-item fw-item-grey">
         <div class="fw-title fw-grey">🩶 Сірі трекери</div>
-        <div style="font-size: 13px; font-weight: 700; color: #e2e8f0;">SW 2.80 (2.79) / HW 11.10</div>
-        <div style="font-size: 11px; color: var(--text-muted);">Актуальна версія прошивки</div>
+        <div class="fw-version fw-version-grey">SW 2.80 (2.79) / HW 11.10</div>
+        <div class="fw-subtitle">Актуальна версія прошивки</div>
       </div>
     </div>
 
@@ -2883,7 +2990,7 @@
 
   // Format notes with clickable phone numbers
   function formatNotesHtml(notes) {
-    if (!notes) return '<span style="color: rgba(255,255,255,0.2);">—</span>';
+    if (!notes) return '<span class="notes-empty-dash">—</span>';
     const escaped = escapeHtml(notes);
     const formatted = escaped.replace(/(\+?3?8?0\d{9})/g, function(match) {
       return `<span class="phone-copy" onclick="copyToClipboard('${match}', 'Телефон')" title="Клікніть щоб скопіювати">${match}</span>`;
@@ -3008,12 +3115,12 @@
 
         rowsHtml += `
           <tr class="${rowClass}">
-            <td style="font-weight: 800; color: var(--text);">
+            <td class="cell-date">
               ${escapeHtml(item.date)}
             </td>
             <td>
               <span class="carrier-tag ${carrierTagClass}">${escapeHtml(item.carrier || '—')}</span>
-              ${item.reportedBy ? `<div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">від: ${escapeHtml(item.reportedBy)}</div>` : ''}
+              ${item.reportedBy ? `<div class="reported-by-sub">від: ${escapeHtml(item.reportedBy)}</div>` : ''}
             </td>
             <td>
               <span class="vehicle-pill">${escapeHtml(item.vehicle || '—')}</span>
@@ -3037,7 +3144,7 @@
                   </div>
                 </div>
               ` : `
-                <div style="color: var(--text); font-weight: 800;">
+                <div class="repair-date-label">
                   ${escapeHtml(item.repairDate || '—')}
                 </div>
                 <div class="status-done-label">
@@ -3341,8 +3448,8 @@
               </div>
 
               <div class="at-code-box" onclick="copyToClipboard('${item.cmd.replace(/'/g, "\\'")}', 'Команду #${item.num}')" title="Клікніть щоб скопіювати">
-                <span class="at-code-text" style="color: #fbbf24;">${cmdText}</span>
-                <span style="font-size: 11px; opacity: 0.8; color: #fbbf24;">📋</span>
+                <span class="at-code-text at-primary-code">${cmdText}</span>
+                <span style="font-size: 11px; opacity: 0.8;">📋</span>
               </div>
 
               <div class="at-desc">
@@ -3356,7 +3463,7 @@
             <div class="at-card is-primary">
               <div class="at-card-top">
                 <span class="badge-primary-star">⭐ ОСНОВНА КОМАНДА #${item.num}</span>
-                <span style="font-size: 10px; color: #fbbf24; font-weight: 800; background: rgba(245, 158, 11, 0.15); padding: 2px 6px; border-radius: 4px;">
+                <span class="at-dual-badge">
                   Взаємозамінні (APN)
                 </span>
               </div>
@@ -3369,7 +3476,7 @@
               <!-- Vodafone Option -->
               <div class="at-dual-subcard" onclick="copyToClipboard('${item.vodafone.replace(/'/g, "\\'")}', 'Vodafone GPRS команду')" title="Клікніть, щоб скопіювати команду для Vodafone">
                 <div class="at-dual-subcard-header">
-                  <span style="color: #f87171; font-weight: 800;">🔴 Для Vodafone (APN: internet)</span>
+                  <span class="at-vodafone-title">🔴 Для Vodafone (APN: internet)</span>
                   <button class="btn btn-sky" style="padding: 2px 7px; font-size: 10px;" onclick="event.stopPropagation(); copyToClipboard('${item.vodafone.replace(/'/g, "\\'")}', 'Vodafone GPRS команду')">
                     📋 Копіювати
                   </button>
@@ -3382,7 +3489,7 @@
               <!-- Kyivstar Option -->
               <div class="at-dual-subcard" onclick="copyToClipboard('${item.kyivstar.replace(/'/g, "\\'")}', 'Київстар GPRS команду')" title="Клікніть, щоб скопіювати команду для Київстар">
                 <div class="at-dual-subcard-header">
-                  <span style="color: #60a5fa; font-weight: 800;">🔵 Для Київстар (APN: www.kyivstar.net)</span>
+                  <span class="at-kyivstar-title">🔵 Для Київстар (APN: www.kyivstar.net)</span>
                   <button class="btn btn-sky" style="padding: 2px 7px; font-size: 10px;" onclick="event.stopPropagation(); copyToClipboard('${item.kyivstar.replace(/'/g, "\\'")}', 'Київстар GPRS команду')">
                     📋 Копіювати
                   </button>
@@ -3403,7 +3510,7 @@
         html += `
           <div class="at-section-header" style="margin-top: 14px;">
             <div class="at-section-title">
-              <span style="color: #94a3b8;">🔧 ІНШІ КОРИСНІ КОМАНДИ</span>
+              <span class="at-secondary-section-title">🔧 ІНШІ КОРИСНІ КОМАНДИ</span>
             </div>
             <span class="at-section-pill-muted">${secondaryList.length} команд</span>
           </div>
@@ -4217,11 +4324,18 @@
   } catch (e) {}
 
   // Sync active button on load
-  const currentSavedTheme = localStorage.getItem(THEME_STORAGE_KEY) || 'dark';
+  const urlParams = new URLSearchParams(window.location.search);
+  const currentSavedTheme = urlParams.get('theme') || localStorage.getItem(THEME_STORAGE_KEY) || 'dark';
   applyTheme(currentSavedTheme);
 
   // Initial Run
   initData();
+
+  if (urlParams.get('tab') === 'at') {
+    tabBtnAtCommands.click();
+  } else if (urlParams.get('tab') === 'inventory') {
+    tabBtnInventory.click();
+  }
 
 })();
 </script>
