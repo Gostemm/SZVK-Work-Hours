@@ -2452,7 +2452,6 @@
 
       <button class="main-tab-btn history-tab" id="tabBtnHistory">
         <span>🕒 Історія дій</span>
-        <span class="tab-counter" id="tabCounterHistory">0</span>
       </button>
     </div>
 
@@ -4286,7 +4285,6 @@
 
   function updateHistoryCounter() {
     const list = window.actionHistory || [];
-    if (tabCounterHistory) tabCounterHistory.textContent = list.length;
     const badge = document.getElementById('historyTotalBadgeTrackers');
     if (badge) badge.textContent = `(${list.length} дій)`;
   }

@@ -751,16 +751,56 @@
     .season-label-wrapper { display: flex; align-items: center; gap: 6px; }
     .season-label { font-size: 14px; font-weight: 800; min-width: 110px; text-align: center; }
 
-    .season-task-badge {
-      background: #f59e0b;
-      color: #000;
+    .season-overview-btn, .season-task-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
       font-size: 11px;
-      font-weight: 900;
-      padding: 3px 8px;
-      border-radius: 12px;
-      box-shadow: 0 0 10px rgba(245, 158, 11, 0.6);
+      font-weight: 700;
+      padding: 4px 9px;
+      border-radius: 8px;
       cursor: pointer;
       user-select: none;
+      transition: all 0.2s ease;
+      box-shadow: none;
+      line-height: 1.2;
+    }
+    .season-overview-btn:hover, .season-task-badge:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: var(--text);
+      border-color: rgba(255, 255, 255, 0.25);
+    }
+    .season-daily-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 16px;
+      height: 16px;
+      padding: 0 4px;
+      background: rgba(245, 158, 11, 0.2);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      border-radius: 8px;
+      font-size: 10px;
+      font-weight: 800;
+      line-height: 1;
+    }
+    [data-theme="light"] .season-overview-btn, [data-theme="light"] .season-task-badge {
+      background: #f1f5f9;
+      border-color: #cbd5e1;
+      color: #475569;
+    }
+    [data-theme="light"] .season-overview-btn:hover, [data-theme="light"] .season-task-badge:hover {
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+    [data-theme="light"] .season-daily-badge {
+      background: rgba(217, 119, 6, 0.12);
+      color: #b45309;
+      border-color: rgba(217, 119, 6, 0.3);
     }
 
     .tab-btn {
@@ -773,20 +813,47 @@
       font-weight: 700;
       cursor: pointer;
       position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
     }
     .tab-btn.active { background: #3b82f6; color: #fff; border-color: #3b82f6; }
-    .tab-btn.notes-tab { border-color: #f59e0b; color: #fbbf24; }
-    .tab-btn.notes-tab.active { background: #f59e0b; color: #000; font-weight: 900; }
+    .tab-btn.notes-tab { border-color: rgba(245, 158, 11, 0.3); color: var(--text-muted); }
+    .tab-btn.notes-tab:hover { border-color: rgba(245, 158, 11, 0.6); color: #fbbf24; background: rgba(245, 158, 11, 0.08); }
+    .tab-btn.notes-tab.active { background: #f59e0b; color: #000; font-weight: 900; border-color: #f59e0b; }
 
-    .tab-badge {
-      display: inline-block;
-      width: 6px;
-      height: 6px;
-      background: #f59e0b;
-      border-radius: 50%;
-      margin-left: 4px;
+    .month-daily-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 17px;
+      height: 17px;
+      padding: 0 4px;
+      font-size: 10px;
+      font-weight: 800;
+      line-height: 1;
+      border-radius: 9px;
+      background: rgba(245, 158, 11, 0.2);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.38);
       vertical-align: middle;
-      box-shadow: 0 0 6px #f59e0b;
+      box-shadow: none;
+    }
+    [data-theme="light"] .month-daily-badge {
+      background: rgba(217, 119, 6, 0.12);
+      color: #b45309;
+      border-color: rgba(217, 119, 6, 0.3);
+    }
+    .month-note-indicator {
+      display: inline-block;
+      font-size: 11px;
+      opacity: 0.85;
+      vertical-align: middle;
+      line-height: 1;
+      filter: grayscale(0.1);
+    }
+    .tab-badge {
+      display: none !important;
     }
 
     .view-card {
@@ -1884,7 +1951,9 @@
       <button class="btn" id="btnPrevSeason">◀</button>
       <div class="season-label-wrapper">
         <div class="season-label" id="currentSeasonLabel">Осінь 2026</div>
-        <span class="season-task-badge" id="seasonTaskBadge" title="Розгорнути завдання сезону" style="display: none;">🔔 0</span>
+        <button class="season-overview-btn" id="seasonTaskBadge" title="Розгорнути завдання та огляд сезону">
+          <span>📋 Огляд</span>
+        </button>
       </div>
       <button class="btn" id="btnNextSeason">▶</button>
     </div>
@@ -1894,12 +1963,10 @@
     <div class="nav-right">
       <button class="tab-btn notes-tab" id="btnTabDebts">
         <span>📝 Загальні нотатки</span>
-        <span class="tab-badge" id="debtsTabBadge" style="display: none;"></span>
       </button>
 
       <button class="tab-btn history-tab" id="btnTabHistory">
         <span>📜 Історія дій</span>
-        <span class="tab-badge" id="historyTabBadge" style="display: none;"></span>
       </button>
 
       <button class="btn" id="btnOpenResetModal" style="display: none; background: rgba(239,68,68,0.2); color: #f87171;">
@@ -2845,12 +2912,8 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function updateHistoryBadge() {
-    const tabBadge = document.getElementById("historyTabBadge");
     const totalBadge = document.getElementById("historyTotalBadge");
     const count = (window.actionHistory || []).length;
-    if (tabBadge) {
-      tabBadge.style.display = count > 0 ? "inline-block" : "none";
-    }
     if (totalBadge) {
       totalBadge.textContent = `${count} дій`;
     }
@@ -3280,14 +3343,10 @@ document.addEventListener("DOMContentLoaded", function () {
   function renderHistoryView() {
     const container = document.getElementById("historyListContainer");
     const totalBadge = document.getElementById("historyTotalBadge");
-    const tabBadge = document.getElementById("historyTabBadge");
     if (!container) return;
 
     const list = window.actionHistory || [];
     if (totalBadge) totalBadge.textContent = `${list.length} дій`;
-    if (tabBadge) {
-      tabBadge.style.display = list.length > 0 ? "inline-block" : "none";
-    }
 
     const filtered = list.filter(item => {
       // 1. Module filter
@@ -3617,22 +3676,25 @@ document.addEventListener("DOMContentLoaded", function () {
     renderApp();
   }
 
-  function getMonthActiveTasksCount(year, month) {
+  function getMonthActiveDailyTasksCount(year, month) {
     let count = 0;
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     for (let day = 1; day <= daysInMonth; day++) {
       count += getDayTasks(formatDateKey(year, month, day)).filter(t => !t.done).length;
     }
-    const mKey = formatMonthKey(year, month);
-    count += ((window.monthlyDebts && window.monthlyDebts[mKey]) || []).filter(d => !d.settled).length;
-    if (window.monthFocusNotes && window.monthFocusNotes[mKey] && window.monthFocusNotes[mKey].trim() !== '') {
-      count += 1;
-    }
     return count;
   }
 
+  function getMonthActiveTasksCount(year, month) {
+    return getMonthActiveDailyTasksCount(year, month);
+  }
+
+  function getSeasonActiveDailyTasksCount(season) {
+    return season.months.reduce((acc, m) => acc + getMonthActiveDailyTasksCount(m.year, m.month), 0);
+  }
+
   function getSeasonActiveTasksCount(season) {
-    return season.months.reduce((acc, m) => acc + getMonthActiveTasksCount(m.year, m.month), 0);
+    return getSeasonActiveDailyTasksCount(season);
   }
 
   function renderModalTasks(tasks, dateKey) {
@@ -3756,7 +3818,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const season = getSeasonDetails(currentSeasonIndex);
     const modal = document.getElementById("seasonOverviewModal");
     const list = document.getElementById("seasonOverviewList");
-    document.getElementById("seasonOverviewTitle").textContent = `🔔 Завдання: ${season.name}`;
+    document.getElementById("seasonOverviewTitle").textContent = `📋 Огляд сезону: ${season.name}`;
     list.innerHTML = "";
 
     let hasAnyTask = false;
@@ -3883,13 +3945,15 @@ document.addEventListener("DOMContentLoaded", function () {
     const season = getSeasonDetails(currentSeasonIndex);
     document.getElementById("currentSeasonLabel").textContent = season.name;
 
-    const seasonActiveCount = getSeasonActiveTasksCount(season);
+    const seasonDailyCount = getSeasonActiveDailyTasksCount(season);
     const seasonBadgeEl = document.getElementById("seasonTaskBadge");
-    if (seasonActiveCount > 0) {
-      seasonBadgeEl.textContent = `🔔 ${seasonActiveCount}`;
-      seasonBadgeEl.style.display = "inline-block";
-    } else {
-      seasonBadgeEl.style.display = "none";
+    if (seasonBadgeEl) {
+      if (seasonDailyCount > 0) {
+        seasonBadgeEl.innerHTML = `<span>📋 Огляд</span><span class="season-daily-badge" title="Активні завдання по днях: ${seasonDailyCount}">${seasonDailyCount}</span>`;
+      } else {
+        seasonBadgeEl.innerHTML = `<span>📋 Огляд</span>`;
+      }
+      seasonBadgeEl.style.display = "inline-flex";
     }
 
     let seasonArtemCount = 0;
@@ -3943,11 +4007,22 @@ document.addEventListener("DOMContentLoaded", function () {
 
     season.months.forEach((mObj, idx) => {
       const daysInMonth = new Date(mObj.year, mObj.month + 1, 0).getDate();
-      const activeCount = getMonthActiveTasksCount(mObj.year, mObj.month);
+      const activeDailyCount = getMonthActiveDailyTasksCount(mObj.year, mObj.month);
+      const mKey = formatMonthKey(mObj.year, mObj.month);
+      const hasFocus = !!(window.monthFocusNotes && window.monthFocusNotes[mKey] && window.monthFocusNotes[mKey].trim() !== "");
+      const hasDebts = !!(window.monthlyDebts && window.monthlyDebts[mKey] && window.monthlyDebts[mKey].some(d => !d.settled));
+
+      let badgeHtml = "";
+      if (activeDailyCount > 0) {
+        badgeHtml += `<span class="month-daily-badge" title="Активних завдань по днях: ${activeDailyCount}">${activeDailyCount}</span>`;
+      }
+      if (hasFocus || hasDebts) {
+        badgeHtml += `<span class="month-note-indicator" title="У цьому місяці є фокус або нотатки">📌</span>`;
+      }
 
       const tabBtn = document.createElement("button");
       tabBtn.className = "tab-btn " + (idx === selectedMonthRelative && activeTab === "calendar" ? "active" : "");
-      tabBtn.innerHTML = `${MONTH_NAMES[mObj.month]} (${daysInMonth})${activeCount > 0 ? '<span class="tab-badge"></span>' : ''}`;
+      tabBtn.innerHTML = `<span>${MONTH_NAMES[mObj.month]} (${daysInMonth})</span>${badgeHtml}`;
       tabBtn.onclick = () => {
         activeTab = "calendar";
         selectedMonthRelative = idx;
