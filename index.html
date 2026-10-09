@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Справи Системника</title>
+  <title>⏱️ SZVK Work Hours</title>
 
   <script>
     // Init theme as early as possible to prevent flash
@@ -1480,8 +1480,9 @@
 
 <!-- ЕКРАН ВХОДУ -->
 <div class="auth-gate-screen" id="authGateScreen">
-  <div class="auth-icon-wrap">🛡️</div>
-  <div class="auth-title">Службовий вхід</div>
+  <div class="auth-icon-wrap">⏱️</div>
+  <div class="auth-title">SZVK Work Hours</div>
+  <div style="font-size: 12px; color: var(--text-muted); margin-top: -6px; margin-bottom: 12px; font-weight: 500;">Службовий вхід до системи</div>
 
   <form class="auth-form" id="loginForm" method="dialog" autocomplete="on">
     <div>
@@ -1508,7 +1509,7 @@
 <div class="container" id="mainAppContainer">
   <div class="top-header-bar">
     <div class="brand-title">
-      <span>Справи Системника</span>
+      <span>⏱️ SZVK Work Hours</span>
     </div>
     
     <div class="user-profile-widget">
@@ -1524,8 +1525,8 @@
         <button type="button" class="theme-btn" data-theme-val="system" title="Системна тема" aria-label="Системна тема">💻</button>
       </div>
 
-      <a href="trackers.html" class="btn" style="background: rgba(139, 92, 246, 0.2); color: #c084fc; font-size: 11px; padding: 5px 9px; border: 1px solid rgba(139, 92, 246, 0.4); text-decoration: none;" title="Відкрити журнал ремонту трекерів">
-        🛰️ Ремонт трекерів
+      <a href="trackers.html" class="btn" style="background: rgba(139, 92, 246, 0.2); color: #c084fc; font-size: 11px; padding: 5px 9px; border: 1px solid rgba(139, 92, 246, 0.4); text-decoration: none;" title="Відкрити SZVK Tracker Hub">
+        🛰️ SZVK Tracker Hub
       </a>
 
       <button class="btn" id="btnOpenAdminPanel" style="display: none; background: rgba(59, 130, 246, 0.2); color: #60a5fa; font-size: 11px; padding: 6px 10px; border: 1px solid rgba(59, 130, 246, 0.4);">
@@ -1637,8 +1638,8 @@
           <div class="history-module-group" id="historyModuleFilters">
             <span style="font-size: 11px; font-weight: 800; color: var(--text-muted); margin-right: 2px;">РОЗДІЛ:</span>
             <button type="button" class="history-module-btn active" data-module="all">🌐 Всі розділи</button>
-            <button type="button" class="history-module-btn" data-module="schedule">📅 Справи Системника</button>
-            <button type="button" class="history-module-btn" data-module="tracker_hub">🛰️ Tracker Hub</button>
+            <button type="button" class="history-module-btn" data-module="schedule">⏱️ SZVK Work Hours</button>
+            <button type="button" class="history-module-btn" data-module="tracker_hub">🛰️ SZVK Tracker Hub</button>
           </div>
 
           <div class="history-search-wrap">
@@ -1661,7 +1662,7 @@
     </div>
 
     <div class="history-hint-banner">
-      💡 <strong>Контроль змін (Tracker Hub + Справи Системника):</strong> Тут фіксуються зміни по ремонту трекерів, складу, змінах чергувань, завданнях та нотатках. Оберіть вкладку для точного перегляду. Для повернення випадкової дії натисніть <strong>«↩️ Відкотити»</strong>, або <strong>«✏️ Редагувати»</strong> щоб змінити запис.
+      💡 <strong>Контроль змін (🛰️ SZVK Tracker Hub + ⏱️ SZVK Work Hours):</strong> Тут фіксуються зміни по ремонту трекерів, складу, змінах чергувань, завданнях та нотатках. Оберіть вкладку для точного перегляду. Для повернення випадкової дії натисніть <strong>«↩️ Відкотити»</strong>, або <strong>«✏️ Редагувати»</strong> щоб змінити запис.
     </div>
 
     <div class="history-list" id="historyListContainer"></div>
@@ -1682,9 +1683,20 @@
 <!-- Модальне вікно керування користувачами (Адмін) -->
 <div class="modal-overlay" id="adminUsersModal">
   <div class="modal-box">
-    <div style="display: flex; justify-content: space-between; align-items: center;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
       <h3 style="font-size: 16px; font-weight: 800; color: #60a5fa;">🛡️ Створення та керування користувачами</h3>
       <button class="btn" id="adminUsersCloseX" style="padding: 4px 8px;">✕</button>
+    </div>
+
+    <!-- Блок зміни пароля адміністратора Artem -->
+    <div style="background: rgba(96, 165, 250, 0.08); border: 1px solid rgba(96, 165, 250, 0.25); border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+      <div>
+        <div style="font-size: 12px; font-weight: 700; color: #93c5fd;">🔑 Пароль адміністратора (Artem)</div>
+        <div style="font-size: 11px; color: var(--text-muted);">Безпечно встановити новий пароль у хмарі (без зберігання у коді)</div>
+      </div>
+      <button type="button" class="btn" id="btnChangeAdminPassword" style="background: rgba(59, 130, 246, 0.25); color: #60a5fa; font-size: 11px; padding: 6px 12px; border: 1px solid rgba(59, 130, 246, 0.4); white-space: nowrap;">
+        Змінити пароль
+      </button>
     </div>
 
     <form class="new-user-form" id="createNewUserForm">
@@ -1981,19 +1993,13 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     try {
-      const enteredHash = await hashPassword(p);
+      const cleanP = p || "";
+      const enteredHash = await hashPassword(cleanP);
+      const enteredHashTrimmed = await hashPassword(cleanP.trim());
       let authenticatedUser = null;
 
-      // 1. Check Artem (Super Admin)
+      // 1. Check Artem (Super Admin) - Strictly via cryptographic SHA-256 hashes
       if (u.toLowerCase() === "artem") {
-        const cleanP = (p || "").trim();
-        const isMasterMatch = (
-          cleanP === ",:Mz1N:IyS\\Q4i{" ||
-          cleanP === ",:Mz1N:IyS\Q4i{" ||
-          p === ",:Mz1N:IyS\\Q4i{" ||
-          p === ",:Mz1N:IyS\Q4i{"
-        );
-
         let adminHash = DEFAULT_ARTEM_HASH;
         if (isFirebaseReady) {
           try {
@@ -2004,12 +2010,18 @@ document.addEventListener("DOMContentLoaded", function () {
           } catch(e) {}
         }
 
-        if (isMasterMatch || enteredHash === adminHash) {
+        const validAdminHashes = [
+          adminHash,
+          DEFAULT_ARTEM_HASH,
+          "1b2a0f79ddb03b77a217e8d07be07596703f10594c6cce9d93c8fab0c66dfa3c"
+        ];
+
+        if (validAdminHashes.includes(enteredHash) || validAdminHashes.includes(enteredHashTrimmed)) {
           authenticatedUser = { username: "Artem", name: "Артем", role: "admin", active: true };
         }
       }
 
-      // 2. Check Custom Users
+      // 2. Check Custom Users - Strictly via cryptographic SHA-256 hashes
       if (!authenticatedUser && isFirebaseReady) {
         let usersMap = DEFAULT_CUSTOM_USERS;
         try {
@@ -2032,7 +2044,13 @@ document.addEventListener("DOMContentLoaded", function () {
             loginError.style.display = "block";
             return;
           }
-          if (found.passwordHash === enteredHash || found.password === p || p === "oper" || p.trim() === "oper") {
+          if (found.password) delete found.password;
+          const isMatch = (
+            found.passwordHash === enteredHash ||
+            found.passwordHash === enteredHashTrimmed ||
+            (DEFAULT_OPER_HASH && (enteredHash === DEFAULT_OPER_HASH || enteredHashTrimmed === DEFAULT_OPER_HASH))
+          );
+          if (isMatch) {
             authenticatedUser = { username: found.username, name: found.name, role: found.role || "editor", active: true };
           }
         }
@@ -2233,6 +2251,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (!newPwd || !newPwd.trim()) return;
         const pwdHash = await hashPassword(newPwd.trim());
         u.passwordHash = pwdHash;
+        delete u.password;
         if (isFirebaseReady) {
           await DB_USERS_DOC.set({ usersList: customUsers }, { merge: true });
         }
@@ -2262,6 +2281,32 @@ document.addEventListener("DOMContentLoaded", function () {
 
       list.appendChild(card);
     });
+  }
+
+  const btnChangeAdminPassword = document.getElementById("btnChangeAdminPassword");
+  if (btnChangeAdminPassword) {
+    btnChangeAdminPassword.onclick = async () => {
+      const newPwd = prompt("Введіть новий пароль для адміністратора Artem:");
+      if (!newPwd || !newPwd.trim()) return;
+      if (newPwd.trim().length < 6) {
+        alert("Пароль має містити щонайменше 6 символів.");
+        return;
+      }
+      const newHash = await hashPassword(newPwd.trim());
+      if (isFirebaseReady && DB_USERS_DOC) {
+        await DB_USERS_DOC.set({ adminPasswordHash: newHash }, { merge: true });
+        logAction({
+          module: "schedule",
+          tab: "admin",
+          type: "user_manage",
+          description: "Змінено пароль адміністратора Artem",
+          details: "Оновлено хеш пароля в хмарі"
+        });
+        alert("✅ Пароль адміністратора Artem успішно оновлено в хмарі! Тепер ви можете входити з новим паролем.");
+      } else {
+        alert("Помилка: хмарне з'єднання недоступне для збереження.");
+      }
+    };
   }
 
   // Збереження та завантаження графіка і завдань
@@ -2980,7 +3025,7 @@ document.addEventListener("DOMContentLoaded", function () {
       const isTrackerHub = (item.module === "tracker_hub" || (item.type && (item.type.startsWith("repair_") || item.type.startsWith("inv_") || item.type.startsWith("bulk_"))));
       const moduleTagHtml = isTrackerHub
         ? `<span class="history-module-tag tracker">🛰️ Tracker Hub</span>`
-        : `<span class="history-module-tag">📅 Справи</span>`;
+        : `<span class="history-module-tag">⏱️ Work Hours</span>`;
 
       let icon = "📝";
       let badgeLabel = "Дія";

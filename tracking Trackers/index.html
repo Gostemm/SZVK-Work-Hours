@@ -2105,8 +2105,8 @@
         <button type="button" class="theme-btn" data-theme-val="system" title="Системна тема" aria-label="Системна тема">💻</button>
       </div>
 
-      <a href="index.html" class="btn btn-secondary" title="Повернутися до графіка роботи системних адміністраторів">
-        📅 Графік роботи
+      <a href="index.html" class="btn btn-secondary" title="Перейти до сервісу SZVK Work Hours">
+        ⏱️ SZVK Work Hours
       </a>
 
       <button class="btn btn-amber" id="btnOpenExportModal" title="Експорт / Резервна копія">
@@ -2393,8 +2393,8 @@
           <div class="history-module-group" id="historyModuleFilters">
             <span style="font-size: 11px; font-weight: 800; color: var(--text-muted); margin-right: 2px;">РОЗДІЛ:</span>
             <button type="button" class="history-module-btn active" data-module="all">🌐 Всі розділи</button>
-            <button type="button" class="history-module-btn" data-module="tracker_hub">🛰️ Tracker Hub</button>
-            <button type="button" class="history-module-btn" data-module="schedule">📅 Справи Системника</button>
+            <button type="button" class="history-module-btn" data-module="tracker_hub">🛰️ SZVK Tracker Hub</button>
+            <button type="button" class="history-module-btn" data-module="schedule">⏱️ SZVK Work Hours</button>
           </div>
 
           <div class="history-search-wrap">
@@ -2417,7 +2417,7 @@
     </div>
 
     <div class="history-hint-banner">
-      💡 <strong>Контроль змін (Tracker Hub + Справи Системника):</strong> Тут фіксуються зміни по ремонту трекерів, складу, графіку та нотатках. Оберіть потрібну вкладку для швидкого пошуку. Для повернення випадкової дії натисніть <strong>«↩️ Відкотити»</strong>, або <strong>«✏️ Редагувати»</strong> щоб внести корективи.
+      💡 <strong>Контроль змін (🛰️ SZVK Tracker Hub + ⏱️ SZVK Work Hours):</strong> Тут фіксуються зміни по ремонту трекерів, складу, графіку та нотатках. Оберіть потрібну вкладку для швидкого пошуку. Для повернення випадкової дії натисніть <strong>«↩️ Відкотити»</strong>, або <strong>«✏️ Редагувати»</strong> щоб внести корективи.
     </div>
 
     <div class="history-list" id="historyListContainerTrackers"></div>
@@ -4198,7 +4198,7 @@
               tab: entry.tab || 'calendar',
               type: 'restore',
               description: `Відновлено пункт розкладу: «${entry.description}»`,
-              details: `Успішно повернено в базу Справ Системника`
+              details: `Успішно повернено в базу SZVK Work Hours`
             });
             renderHistory();
             showToast(`Пункт розкладу успішно відновлено!`);
@@ -4302,7 +4302,7 @@
       const isTrackerHub = (item.module === 'tracker_hub' || (item.type && (item.type.startsWith('repair_') || item.type.startsWith('inv_') || item.type.startsWith('bulk_'))));
       const moduleTagHtml = isTrackerHub
         ? `<span class="history-module-tag tracker">🛰️ Tracker Hub</span>`
-        : `<span class="history-module-tag">📅 Справи</span>`;
+        : `<span class="history-module-tag">⏱️ Work Hours</span>`;
 
       let icon = '📝';
       let badgeLabel = 'Дія';
