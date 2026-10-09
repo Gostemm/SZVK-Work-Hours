@@ -1372,19 +1372,40 @@ document.addEventListener("DOMContentLoaded", function () {
   const STORAGE_KEY = "szvk_schedule_local_data";
   const USERS_STORAGE_KEY = "szvk_custom_users";
   const SESSION_USER_KEY = "szvk_internal_session";
-  const REMEMBER_CRED_KEY = "szvk_remembered_credentials";
-
-  // ГОЛОВНИЙ АДМІНІСТРАТОР
-  const SUPER_ADMIN = {
-    username: "Artem",
-    password: ",:Mz1N:IyS\\Q4i{",
-    name: "Артем",
-    role: "admin",
-    active: true
-  };
+  const AUTH_TOKEN_KEY = "szvk_auth_token";
+  const REMEMBER_USER_KEY = "szvk_remembered_username";
 
   let currentUser = null;
   let customUsers = {};
+
+  function getAuthToken() {
+    return localStorage.getItem(AUTH_TOKEN_KEY) || sessionStorage.getItem(AUTH_TOKEN_KEY) || "";
+  }
+
+  function setAuthToken(token, remember) {
+    if (remember) {
+      localStorage.setItem(AUTH_TOKEN_KEY, token);
+      sessionStorage.removeItem(AUTH_TOKEN_KEY);
+    } else {
+      sessionStorage.setItem(AUTH_TOKEN_KEY, token);
+      localStorage.removeItem(AUTH_TOKEN_KEY);
+    }
+  }
+
+  function clearAuth() {
+    currentUser = null;
+    localStorage.removeItem(AUTH_TOKEN_KEY);
+    sessionStorage.removeItem(AUTH_TOKEN_KEY);
+    localStorage.removeItem(SESSION_USER_KEY);
+    localStorage.removeItem(USERS_STORAGE_KEY);
+    localStorage.removeItem("szvk_remembered_credentials");
+  }
+
+  // Очищення застарілих незашифрованих паролів у браузері
+  try {
+    localStorage.removeItem("szvk_remembered_credentials");
+    localStorage.removeItem(USERS_STORAGE_KEY);
+  } catch(e) {}
 
   function escapeHtml(str) {
     if (!str) return "";
@@ -1431,11 +1452,30 @@ document.addEventListener("DOMContentLoaded", function () {
       updateSyncIndicator("local", "Локально");
       return null;
     }
+    const token = getAuthToken();
+    if (!token) return null;
+
     try {
       updateSyncIndicator("syncing", "Оновлення...");
-      let res = await fetch(SYNC_API_URL, { cache: "no-store" });
-      if (!res.ok) {
-        res = await fetch("/api/sync", { cache: "no-store" });
+      let res = await fetch(SYNC_API_URL, {
+        headers: {
+          "Authorization": "Bearer " + token,
+          "Cache-Control": "no-store"
+        }
+      });
+      if (!res.ok && res.status !== 401 && res.status !== 403) {
+        res = await fetch("/api/sync", {
+          headers: {
+            "Authorization": "Bearer " + token,
+            "Cache-Control": "no-store"
+          }
+        });
+      }
+      if (res.status === 401) {
+        clearAuth();
+        applyAccessState();
+        updateSyncIndicator("error", "Сесія завершилась");
+        return null;
       }
       if (!res.ok) throw new Error("HTTP " + res.status);
       const data = await res.json();
@@ -1450,19 +1490,34 @@ document.addEventListener("DOMContentLoaded", function () {
 
   async function pushCloudData(payload) {
     if (!window.location.protocol.startsWith("http")) return false;
+    const token = getAuthToken();
+    if (!token) return false;
+
     try {
       updateSyncIndicator("syncing", "Збереження...");
       let res = await fetch(SYNC_API_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + token
+        },
         body: JSON.stringify(payload)
       });
-      if (!res.ok) {
+      if (!res.ok && res.status !== 401 && res.status !== 403) {
         res = await fetch("/api/sync", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + token
+          },
           body: JSON.stringify(payload)
         });
+      }
+      if (res.status === 401) {
+        clearAuth();
+        applyAccessState();
+        updateSyncIndicator("error", "Сесія завершилась");
+        return false;
       }
       if (!res.ok) throw new Error("HTTP " + res.status);
       updateSyncIndicator("synced", "Хмара");
@@ -1474,28 +1529,16 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  // Завантаження збережених користувачів
+  // Автозаповнення збереженого логіна (без пароля)
   try {
-    const rawUsers = localStorage.getItem(USERS_STORAGE_KEY);
-    if (rawUsers) customUsers = JSON.parse(rawUsers);
-  } catch(e) {}
-
-  function saveUsers() {
-    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(customUsers));
-    pushCloudData({ customUsers: customUsers });
-  }
-
-  // Автозаповнення пароля з пам'яті
-  try {
-    const savedCred = localStorage.getItem(REMEMBER_CRED_KEY);
-    if (savedCred) {
-      const parsed = JSON.parse(savedCred);
-      document.getElementById("loginInput").value = parsed.u || "";
-      document.getElementById("passwordInput").value = parsed.p || "";
+    const savedUser = localStorage.getItem(REMEMBER_USER_KEY);
+    if (savedUser) {
+      const loginInp = document.getElementById("loginInput");
+      if (loginInp) loginInp.value = savedUser;
     }
   } catch(e) {}
 
-  // Авторизація
+  // Авторизація через сервер
   const loginForm = document.getElementById("loginForm");
   const loginError = document.getElementById("loginErrorMessage");
   const rememberCheckbox = document.getElementById("rememberMeCheckbox");
@@ -1507,68 +1550,72 @@ document.addEventListener("DOMContentLoaded", function () {
 
     loginError.style.display = "none";
 
-    let authenticatedUser = null;
-
-    if (u.toLowerCase() === SUPER_ADMIN.username.toLowerCase() && p === SUPER_ADMIN.password) {
-      authenticatedUser = SUPER_ADMIN;
-      // Якщо головний адмін увійшов — гарантовано вивантажуємо наявних користувачів у хмару Netlify
-      if (Object.keys(customUsers).length > 0) {
-        pushCloudData({ customUsers: customUsers });
-      }
-    } else {
-      // Спочатку шукаємо серед відомих користувачів
-      let foundKey = Object.keys(customUsers).find(k => (customUsers[k].username || "").trim().toLowerCase() === u.toLowerCase());
-
-      // Якщо користувача немає або пароль не збігся — робимо свіжий запит до хмари Netlify
-      if (window.location.protocol.startsWith("http")) {
-        const cloudData = await fetchCloudData();
-        if (cloudData && cloudData.customUsers && typeof cloudData.customUsers === "object") {
-          customUsers = cloudData.customUsers;
-          localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(customUsers));
-          foundKey = Object.keys(customUsers).find(k => (customUsers[k].username || "").trim().toLowerCase() === u.toLowerCase());
-        }
-      }
-
-      if (foundKey) {
-        const foundUser = customUsers[foundKey];
-        if (foundUser.password === p) {
-          if (!foundUser.active) {
-            loginError.textContent = "Акаунт деактивовано адміністратором";
-            loginError.style.display = "block";
-            return;
-          }
-          authenticatedUser = foundUser;
-        }
-      }
-    }
-
-    if (!authenticatedUser) {
-      const count = Object.keys(customUsers).length;
-      if (count === 0 && window.location.protocol.startsWith("http")) {
-        loginError.innerHTML = "Невірний логін або пароль.<br><span style='font-size:11px; font-weight:normal; color:#cbd5e1;'>⚠️ У хмарі ще немає створених акаунтів. Увійдіть спочатку як <b>Artem</b> на комп'ютері та створіть або синхронізуйте користувача.</span>";
-      } else {
-        loginError.textContent = "Невірний логін або пароль";
-      }
+    if (!u || !p) {
+      loginError.textContent = "Будь ласка, введіть логін та пароль";
       loginError.style.display = "block";
       return;
     }
 
-    currentUser = authenticatedUser;
-    localStorage.setItem(SESSION_USER_KEY, JSON.stringify(currentUser));
-
-    if (rememberCheckbox.checked) {
-      localStorage.setItem(REMEMBER_CRED_KEY, JSON.stringify({ u, p }));
-      if (window.PasswordCredential && navigator.credentials) {
-        try {
-          const cred = new PasswordCredential({ id: u, password: p, name: authenticatedUser.name });
-          navigator.credentials.store(cred).catch(() => {});
-        } catch(e) {}
-      }
-    } else {
-      localStorage.removeItem(REMEMBER_CRED_KEY);
+    const submitBtn = loginForm.querySelector('button[type="submit"]');
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Перевірка...";
     }
 
-    applyAccessState();
+    try {
+      if (window.location.protocol.startsWith("http")) {
+        let res = await fetch(SYNC_API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "login", username: u, password: p })
+        });
+        if (!res.ok && res.status !== 401 && res.status !== 403) {
+          res = await fetch("/api/sync", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "login", username: u, password: p })
+          });
+        }
+        const data = await res.json();
+
+        if (!res.ok || !data.success) {
+          loginError.textContent = data.error || "Невірний логін або пароль";
+          loginError.style.display = "block";
+          return;
+        }
+
+        setAuthToken(data.token, rememberCheckbox.checked);
+        currentUser = data.user;
+        localStorage.setItem(SESSION_USER_KEY, JSON.stringify(currentUser));
+      } else {
+        // Локальний режим file:///
+        if (u.toLowerCase() === "artem") {
+          currentUser = { username: "Artem", name: "Артем", role: "admin", active: true };
+        } else {
+          currentUser = { username: u, name: u, role: "editor", active: true };
+        }
+        localStorage.setItem(SESSION_USER_KEY, JSON.stringify(currentUser));
+      }
+
+      if (rememberCheckbox.checked) {
+        localStorage.setItem(REMEMBER_USER_KEY, u);
+      } else {
+        localStorage.removeItem(REMEMBER_USER_KEY);
+      }
+      localStorage.removeItem("szvk_remembered_credentials");
+
+      document.getElementById("passwordInput").value = "";
+      applyAccessState();
+      await syncAppFromCloud();
+    } catch (err) {
+      loginError.textContent = "Помилка зв'язку з сервером: " + err.message;
+      loginError.style.display = "block";
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Увійти в систему";
+      }
+    }
   };
 
   function applyAccessState() {
@@ -1593,7 +1640,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const isAdmin = (currentUser.role === "admin");
 
     if (isAdmin) {
-      headerName.innerHTML = `${currentUser.name} <span class="crown-icon" title="Головний адміністратор">👑</span>`;
+      headerName.innerHTML = `${escapeHtml(currentUser.name)} <span class="crown-icon" title="Головний адміністратор">👑</span>`;
       headerStatus.textContent = "Головний доступ";
     } else {
       headerName.textContent = currentUser.name;
@@ -1609,8 +1656,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   document.getElementById("btnLogoutBtn").onclick = function() {
-    currentUser = null;
-    localStorage.removeItem(SESSION_USER_KEY);
+    clearAuth();
     document.getElementById("passwordInput").value = "";
     applyAccessState();
   };
@@ -1632,45 +1678,64 @@ document.addEventListener("DOMContentLoaded", function () {
     btnForcePush.onclick = async function() {
       if (forceStatus) {
         forceStatus.style.color = "#f59e0b";
-        forceStatus.textContent = "⏳ Відправка в хмару...";
+        forceStatus.textContent = "⏳ Оновлення...";
       }
-      const ok = await pushCloudData({ customUsers: customUsers });
-      if (forceStatus) {
-        if (ok) {
+      const cloudData = await fetchCloudData();
+      if (cloudData && cloudData.customUsers) {
+        customUsers = cloudData.customUsers;
+        renderAdminUsersList();
+        if (forceStatus) {
           forceStatus.style.color = "#34d399";
-          forceStatus.textContent = `✅ Успішно! Збережено ${Object.keys(customUsers).length} акаунтів`;
-        } else {
-          forceStatus.style.color = "#f87171";
-          forceStatus.textContent = "❌ Помилка з'єднання з сервером";
+          forceStatus.textContent = `✅ Оновлено (${Object.keys(customUsers).length} акаунтів)`;
         }
-        setTimeout(() => { if (forceStatus) forceStatus.textContent = ""; }, 5000);
+      } else {
+        if (forceStatus) {
+          forceStatus.style.color = "#f87171";
+          forceStatus.textContent = "❌ Помилка оновлення";
+        }
       }
+      setTimeout(() => { if (forceStatus) forceStatus.textContent = ""; }, 4000);
     };
   }
 
-  document.getElementById("createNewUserForm").onsubmit = function(e) {
+  document.getElementById("createNewUserForm").onsubmit = async function(e) {
     e.preventDefault();
     const username = document.getElementById("newUsername").value.trim();
     const password = document.getElementById("newPassword").value;
     const name = document.getElementById("newDisplayName").value.trim();
 
-    if (username.toLowerCase() === SUPER_ADMIN.username.toLowerCase()) {
+    if (username.toLowerCase() === "artem") {
       alert("Логін 'Artem' зарезервовано!");
       return;
     }
 
-    const key = username.toLowerCase().replace(/[^a-z0-9_]/g, "_");
-    customUsers[key] = {
-      username: username,
-      password: password,
-      name: name,
-      role: "editor",
-      active: true
-    };
+    const submitBtn = this.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Створення...";
 
-    saveUsers();
-    renderAdminUsersList();
-    this.reset();
+    try {
+      const ok = await pushCloudData({
+        action: "saveUser",
+        targetUser: { username, password, name, role: "editor", active: true }
+      });
+
+      if (ok) {
+        const key = username.toLowerCase().replace(/[^a-z0-9_]/g, "_");
+        customUsers[key] = {
+          username: username,
+          name: name,
+          role: "editor",
+          active: true
+        };
+        renderAdminUsersList();
+        this.reset();
+      } else {
+        alert("Помилка збереження користувача на сервері");
+      }
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = "+ Створити користувача";
+    }
   };
 
   function renderAdminUsersList() {
@@ -1680,7 +1745,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const keys = Object.keys(customUsers);
     if (keys.length === 0) {
-      list.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:10px; font-size:12px;">Користувачів ще немає.</div>`;
+      list.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:10px; font-size:12px;">Користувачів ще немає або список завантажується...</div>`;
       return;
     }
 
@@ -1690,28 +1755,47 @@ document.addEventListener("DOMContentLoaded", function () {
       card.className = `admin-user-card ${u.active ? 'approved' : 'blocked'}`;
       card.innerHTML = `
         <div>
-          <div style="font-size: 13px; font-weight: 700; color: #fff;">${u.name} (@${u.username})</div>
-          <div style="font-size: 11px; color: var(--text-muted);">Пароль: <code>${u.password}</code> | ${u.active ? 'Активний' : 'Заблоковано'}</div>
+          <div style="font-size: 13px; font-weight: 700; color: #fff;">${escapeHtml(u.name)} (@${escapeHtml(u.username)})</div>
+          <div style="font-size: 11px; color: var(--text-muted);">
+            Роль: <b>${u.role === 'admin' ? 'Адміністратор' : 'Редактор'}</b> | 
+            ${u.active ? '<span style="color:#34d399;">🟢 Активний</span>' : '<span style="color:#f87171;">🔴 Заблоковано</span>'}
+          </div>
         </div>
-        <div style="display:flex; gap:6px;">
+        <div style="display:flex; gap:6px; align-items:center;">
+          <button class="btn btn-pwd" style="font-size: 11px; padding: 4px 8px; background: rgba(59, 130, 246, 0.2); color: #60a5fa;" title="Встановити новий пароль">🔑 Пароль</button>
           <button class="btn btn-toggle" style="font-size: 11px; padding: 4px 8px; background: ${u.active ? 'rgba(239, 68, 68, 0.2)' : 'rgba(16, 185, 129, 0.2)'}; color: ${u.active ? '#f87171' : '#34d399'};">
             ${u.active ? 'Блокувати' : 'Активувати'}
           </button>
-          <button class="btn btn-delete" style="font-size: 11px; padding: 4px 8px; background: rgba(239, 68, 68, 0.2); color: #f87171;">✕</button>
+          <button class="btn btn-delete" style="font-size: 11px; padding: 4px 8px; background: rgba(239, 68, 68, 0.2); color: #f87171;" title="Видалити">✕</button>
         </div>
       `;
 
-      card.querySelector(".btn-toggle").onclick = () => {
-        u.active = !u.active;
-        saveUsers();
-        renderAdminUsersList();
+      card.querySelector(".btn-pwd").onclick = async () => {
+        const newPwd = prompt(`Введіть новий пароль для @${u.username}:`);
+        if (!newPwd || !newPwd.trim()) return;
+        const ok = await pushCloudData({ action: "changePassword", username: u.username, newPassword: newPwd.trim() });
+        if (ok) {
+          alert(`Пароль для @${u.username} успішно змінено!`);
+        } else {
+          alert("Помилка зміни пароля на сервері");
+        }
       };
 
-      card.querySelector(".btn-delete").onclick = () => {
-        if (confirm(`Видалити @${u.username}?`)) {
-          delete customUsers[k];
-          saveUsers();
+      card.querySelector(".btn-toggle").onclick = async () => {
+        const ok = await pushCloudData({ action: "toggleUserActive", username: u.username });
+        if (ok) {
+          u.active = !u.active;
           renderAdminUsersList();
+        }
+      };
+
+      card.querySelector(".btn-delete").onclick = async () => {
+        if (confirm(`Видалити користувача @${u.username}?`)) {
+          const ok = await pushCloudData({ action: "deleteUser", username: u.username });
+          if (ok) {
+            delete customUsers[k];
+            renderAdminUsersList();
+          }
         }
       };
 
@@ -1750,24 +1834,18 @@ document.addEventListener("DOMContentLoaded", function () {
       updateSyncIndicator("local", "Локально");
       return;
     }
+    const token = getAuthToken();
+    if (!token) return;
+
     const data = await fetchCloudData();
     if (!data) return;
 
     let scheduleUpdated = false;
 
-    // СИНХРОНІЗУЄМО КОРИСТУВАЧІВ:
-    const cloudUsers = (data && data.customUsers && typeof data.customUsers === "object") ? data.customUsers : null;
-    const cloudUsersCount = cloudUsers ? Object.keys(cloudUsers).length : 0;
-    const localUsersCount = Object.keys(customUsers || {}).length;
-
-    if (cloudUsersCount > 0) {
-      customUsers = cloudUsers;
-      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(customUsers));
+    // СИНХРОНІЗУЄМО КОРИСТУВАЧІВ (сервер надсилає тільки для admin без паролів):
+    if (data.customUsers && typeof data.customUsers === "object") {
+      customUsers = data.customUsers;
       renderAdminUsersList();
-    } else if (localUsersCount > 0) {
-      // КРИТИЧНО: Якщо в хмарі ще немає акаунтів, але вони є на поточному пристрої — вивантажуємо в хмару!
-      console.log("Автоматичне вивантаження створених акаунтів у хмару Netlify:", customUsers);
-      pushCloudData({ customUsers: customUsers });
     }
 
     // СИНХРОНІЗУЄМО РОЗКЛАД:
@@ -2443,8 +2521,15 @@ document.addEventListener("DOMContentLoaded", function () {
 
   try {
     const rawSaved = localStorage.getItem(SESSION_USER_KEY);
-    if (rawSaved) currentUser = JSON.parse(rawSaved);
-  } catch(e) {}
+    const token = getAuthToken();
+    if (rawSaved && token) {
+      currentUser = JSON.parse(rawSaved);
+    } else {
+      currentUser = null;
+    }
+  } catch(e) {
+    currentUser = null;
+  }
 
   applyAccessState();
   document.getElementById("btnGoToToday").click();
@@ -2497,13 +2582,19 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   } catch (e) {}
 
-  // Запуск хмарної синхронізації
-  syncAppFromCloud();
-  window.addEventListener("focus", () => syncAppFromCloud());
-  document.addEventListener("visibilitychange", () => {
-    if (!document.hidden) syncAppFromCloud();
+  // Запуск хмарної синхронізації ТІЛЬКИ якщо користувач авторизований
+  if (currentUser && getAuthToken()) {
+    syncAppFromCloud();
+  }
+  window.addEventListener("focus", () => {
+    if (currentUser && getAuthToken()) syncAppFromCloud();
   });
-  setInterval(syncAppFromCloud, 40000);
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden && currentUser && getAuthToken()) syncAppFromCloud();
+  });
+  setInterval(() => {
+    if (currentUser && getAuthToken()) syncAppFromCloud();
+  }, 40000);
 });
 </script>
 

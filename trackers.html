@@ -6,8 +6,15 @@
   <title>🛰️ Ремонт трекерів | SZVK</title>
 
   <script>
-    // Init theme as early as possible to prevent flash
+    // Auth guard & Theme init
     (function() {
+      if (window.location.protocol.startsWith("http")) {
+        var token = localStorage.getItem('szvk_auth_token') || sessionStorage.getItem('szvk_auth_token');
+        if (!token) {
+          window.location.replace("index.html");
+          return;
+        }
+      }
       try {
         var urlParams = new URLSearchParams(window.location.search);
         var urlTheme = urlParams.get('theme');
@@ -2813,10 +2820,28 @@
   // Cloud Sync Logic
   async function fetchCloudData() {
     try {
+      const token = localStorage.getItem('szvk_auth_token') || sessionStorage.getItem('szvk_auth_token');
+      if (!token && window.location.protocol.startsWith('http')) {
+        cloudSyncDot.className = 'status-dot';
+        cloudSyncText.textContent = 'Локально';
+        return;
+      }
       cloudSyncDot.className = 'status-dot syncing';
       cloudSyncText.textContent = 'З\'єднання...';
 
-      const res = await fetch(NETLIFY_SYNC_URL);
+      const headers = {};
+      if (token) headers['Authorization'] = 'Bearer ' + token;
+
+      let res = await fetch(NETLIFY_SYNC_URL, { headers });
+      if (!res.ok && res.status !== 401 && res.status !== 403) {
+        res = await fetch('/api/sync', { headers });
+      }
+      if (res.status === 401) {
+        localStorage.removeItem('szvk_auth_token');
+        sessionStorage.removeItem('szvk_auth_token');
+        window.location.replace('index.html');
+        return;
+      }
       if (res.ok) {
         const data = await res.json();
         if (data && data.trackersData && data.trackersData.repairs && data.trackersData.repairs.length > 0) {
@@ -2842,6 +2867,12 @@
 
   async function syncWithCloud() {
     try {
+      const token = localStorage.getItem('szvk_auth_token') || sessionStorage.getItem('szvk_auth_token');
+      if (!token && window.location.protocol.startsWith('http')) {
+        cloudSyncDot.className = 'status-dot';
+        cloudSyncText.textContent = 'Локально';
+        return;
+      }
       cloudSyncDot.className = 'status-dot syncing';
       cloudSyncText.textContent = 'Синхронізація...';
 
@@ -2854,11 +2885,21 @@
         }
       };
 
-      const res = await fetch(NETLIFY_SYNC_URL, {
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = 'Bearer ' + token;
+
+      let res = await fetch(NETLIFY_SYNC_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(payload)
       });
+      if (!res.ok && res.status !== 401 && res.status !== 403) {
+        res = await fetch('/api/sync', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(payload)
+        });
+      }
 
       if (res.ok) {
         cloudSyncDot.className = 'status-dot';
