@@ -2337,7 +2337,7 @@
 
     <div style="display: flex; flex-direction: column; gap: 12px; font-size: 13px;">
       <p style="color: var(--text-muted); line-height: 1.4;">
-        Усі дані надійно зберігаються у вашому браузері та синхронізуються через хмару Netlify. Тут ви можете завантажити повну копію у форматі JSON або CSV (для Excel).
+        Усі дані надійно зберігаються у вашому браузері та синхронізуються через хмару. Тут ви можете завантажити повну копію у форматі JSON або CSV (для Excel).
       </p>
 
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
@@ -2382,7 +2382,6 @@
   'use strict';
 
   const STORAGE_KEY = 'szvk_trackers_data';
-  const NETLIFY_SYNC_URL = '/.netlify/functions/sync';
 
   // Application State
   let appData = {
