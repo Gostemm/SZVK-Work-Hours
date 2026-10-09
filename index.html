@@ -2291,14 +2291,12 @@ document.addEventListener("DOMContentLoaded", function () {
     localStorage.removeItem(AUTH_TOKEN_KEY);
     sessionStorage.removeItem(AUTH_TOKEN_KEY);
     localStorage.removeItem(SESSION_USER_KEY);
-    localStorage.removeItem(USERS_STORAGE_KEY);
     localStorage.removeItem("szvk_remembered_credentials");
   }
 
   // Очищення застарілих незашифрованих паролів у браузері
   try {
     localStorage.removeItem("szvk_remembered_credentials");
-    localStorage.removeItem(USERS_STORAGE_KEY);
   } catch(e) {}
 
   function escapeHtml(str) {
@@ -2382,42 +2380,62 @@ document.addEventListener("DOMContentLoaded", function () {
       const enteredHashTrimmed = await hashPassword(cleanP.trim());
       let authenticatedUser = null;
 
-      // 1. Check Artem (Super Admin) - Strictly via cryptographic SHA-256 hashes
+      // 1. Check Artem (Super Admin) - Strictly ONLY the single active cryptographic hash
       if (u.toLowerCase() === "artem") {
-        let adminHash = DEFAULT_ARTEM_HASH;
+        let activeAdminHash = localStorage.getItem("szvk_admin_pwd_hash") || "";
         if (isFirebaseReady) {
           try {
             const usersSnap = await DB_USERS_DOC.get();
             if (usersSnap.exists && usersSnap.data() && usersSnap.data().adminPasswordHash) {
-              adminHash = usersSnap.data().adminPasswordHash;
+              activeAdminHash = usersSnap.data().adminPasswordHash;
+              localStorage.setItem("szvk_admin_pwd_hash", activeAdminHash);
             }
-          } catch(e) {}
+          } catch(e) {
+            console.warn("Firestore admin read notice:", e);
+          }
         }
 
-        const validAdminHashes = [
-          adminHash,
-          DEFAULT_ARTEM_HASH,
-          "1b2a0f79ddb03b77a217e8d07be07596703f10594c6cce9d93c8fab0c66dfa3c"
-        ];
+        // Only use seed default if no custom password has ever been set
+        if (!activeAdminHash) {
+          activeAdminHash = DEFAULT_ARTEM_HASH;
+        }
 
-        if (validAdminHashes.includes(enteredHash) || validAdminHashes.includes(enteredHashTrimmed)) {
+        // STRICT CHECK: ONLY THE ACTIVE HASH! Old passwords are completely invalidated!
+        if (enteredHash === activeAdminHash || enteredHashTrimmed === activeAdminHash) {
           authenticatedUser = { username: "Artem", name: "Артем", role: "admin", active: true };
         }
       }
 
-      // 2. Check Custom Users - Strictly via cryptographic SHA-256 hashes
-      if (!authenticatedUser && isFirebaseReady) {
-        let usersMap = DEFAULT_CUSTOM_USERS;
+      // 2. Check Custom Users - Strictly ONLY the single active cryptographic hash per user
+      if (!authenticatedUser) {
+        let usersMap = null;
         try {
-          const usersSnap = await DB_USERS_DOC.get();
-          if (usersSnap.exists && usersSnap.data() && usersSnap.data().usersList) {
-            usersMap = usersSnap.data().usersList;
-          } else {
-            // Seed initial users into Firestore
-            await DB_USERS_DOC.set({ usersList: DEFAULT_CUSTOM_USERS }, { merge: true });
+          const cached = localStorage.getItem(USERS_STORAGE_KEY);
+          if (cached) usersMap = JSON.parse(cached);
+        } catch(e) {}
+
+        if (isFirebaseReady) {
+          try {
+            const usersSnap = await DB_USERS_DOC.get();
+            if (usersSnap.exists && usersSnap.data()) {
+              if (usersSnap.data().usersList) {
+                usersMap = usersSnap.data().usersList;
+                try {
+                  localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(usersMap));
+                } catch(e) {}
+              }
+            } else if (!usersMap) {
+              // Seed initial users into Firestore once
+              await DB_USERS_DOC.set({ usersList: DEFAULT_CUSTOM_USERS }, { merge: true });
+              usersMap = DEFAULT_CUSTOM_USERS;
+            }
+          } catch(e) {
+            console.warn("Firestore users read notice:", e);
           }
-        } catch(e) {
-          console.warn("Firestore users read notice:", e);
+        }
+
+        if (!usersMap) {
+          usersMap = DEFAULT_CUSTOM_USERS;
         }
 
         const foundKey = Object.keys(usersMap).find(k => (usersMap[k].username || "").trim().toLowerCase() === u.toLowerCase());
@@ -2429,11 +2447,11 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
           }
           if (found.password) delete found.password;
-          const isMatch = (
-            found.passwordHash === enteredHash ||
-            found.passwordHash === enteredHashTrimmed ||
-            (DEFAULT_OPER_HASH && (enteredHash === DEFAULT_OPER_HASH || enteredHashTrimmed === DEFAULT_OPER_HASH))
-          );
+
+          // STRICT CHECK: ONLY THIS USER'S SINGLE ACTIVE HASH! Old passwords and defaults are strictly rejected!
+          const activeUserHash = found.passwordHash;
+          const isMatch = activeUserHash && (enteredHash === activeUserHash || enteredHashTrimmed === activeUserHash);
+
           if (isMatch) {
             authenticatedUser = { username: found.username, name: found.name, role: found.role || "editor", active: true };
           }
@@ -2519,7 +2537,18 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Керування користувачами (Адмін)
   const adminUsersModal = document.getElementById("adminUsersModal");
-  document.getElementById("btnOpenAdminPanel").onclick = function() {
+  document.getElementById("btnOpenAdminPanel").onclick = async function() {
+    if (isFirebaseReady && DB_USERS_DOC) {
+      try {
+        const snap = await DB_USERS_DOC.get();
+        if (snap.exists && snap.data() && snap.data().usersList) {
+          customUsers = snap.data().usersList;
+          try {
+            localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(customUsers));
+          } catch(e) {}
+        }
+      } catch(e) {}
+    }
     renderAdminUsersList();
     adminUsersModal.classList.add("active");
   };
@@ -2633,14 +2662,21 @@ document.addEventListener("DOMContentLoaded", function () {
       card.querySelector(".btn-pwd").onclick = async () => {
         const newPwd = prompt(`Введіть новий пароль для @${u.username}:`);
         if (!newPwd || !newPwd.trim()) return;
+        if (newPwd.trim().length < 4) {
+          alert("Пароль має містити щонайменше 4 символи.");
+          return;
+        }
         const pwdHash = await hashPassword(newPwd.trim());
         u.passwordHash = pwdHash;
         delete u.password;
         if (isFirebaseReady) {
           await DB_USERS_DOC.set({ usersList: customUsers }, { merge: true });
         }
-        logAction('user_manage', `Змінено пароль для @${u.username}`, `Встановлено новий пароль`);
-        alert(`Пароль для @${u.username} успішно змінено!`);
+        try {
+          localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(customUsers));
+        } catch(e) {}
+        logAction('user_manage', `Змінено пароль для @${u.username}`, `Встановлено новий пароль (старий анульовано)`);
+        alert(`✅ Пароль для @${u.username} успішно змінено! Тепер дійсний ТІЛЬКИ новий пароль (старий анульовано).`);
       };
 
       card.querySelector(".btn-toggle").onclick = async () => {
@@ -2648,6 +2684,9 @@ document.addEventListener("DOMContentLoaded", function () {
         if (isFirebaseReady) {
           await DB_USERS_DOC.set({ usersList: customUsers }, { merge: true });
         }
+        try {
+          localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(customUsers));
+        } catch(e) {}
         logAction('user_manage', `${u.active ? 'Розблоковано' : 'Заблоковано'} користувача @${u.username}`, `Статус акаунта змінено`);
         renderAdminUsersList();
       };
@@ -2658,6 +2697,9 @@ document.addEventListener("DOMContentLoaded", function () {
           if (isFirebaseReady) {
             await DB_USERS_DOC.set({ usersList: customUsers }, { merge: true });
           }
+          try {
+            localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(customUsers));
+          } catch(e) {}
           logAction('user_manage', `Видалено користувача @${u.username}`, `Акаунт видалено`);
           renderAdminUsersList();
         }
@@ -2679,14 +2721,15 @@ document.addEventListener("DOMContentLoaded", function () {
       const newHash = await hashPassword(newPwd.trim());
       if (isFirebaseReady && DB_USERS_DOC) {
         await DB_USERS_DOC.set({ adminPasswordHash: newHash }, { merge: true });
+        localStorage.setItem("szvk_admin_pwd_hash", newHash);
         logAction({
           module: "schedule",
           tab: "admin",
           type: "user_manage",
           description: "Змінено пароль адміністратора Artem",
-          details: "Оновлено хеш пароля в хмарі"
+          details: "Оновлено хеш пароля в хмарі (старий анульовано)"
         });
-        alert("✅ Пароль адміністратора Artem успішно оновлено в хмарі! Тепер ви можете входити з новим паролем.");
+        alert("✅ Пароль адміністратора Artem успішно оновлено в хмарі! Тепер дійсний ТІЛЬКИ цей новий пароль (старий пароль анульовано).");
       } else {
         alert("Помилка: хмарне з'єднання недоступне для збереження.");
       }
