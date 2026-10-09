@@ -2225,7 +2225,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const REMEMBER_USER_KEY = "szvk_remembered_username";
 
   const SALT = "szvk_salt_2026_sec_";
-  const DEFAULT_ARTEM_HASH = "4112e2c2a0f2b35a3b023296ec0ecd7ad01cb7accaab2396bc4bf13a05e8f92c";
+  const DEFAULT_ARTEM_HASH = "5c6385f8d9cca8e62f65700ade1df88d3f35a8ff5c1d63b03bccac9512588e9a";
   const DEFAULT_OPER_HASH = "771110e1ad008a5cdb57e82a3eac5f6e56cc64af6282bfd0972ecbae8fd9e8de";
 
   const DEFAULT_CUSTOM_USERS = {
@@ -2294,9 +2294,23 @@ document.addEventListener("DOMContentLoaded", function () {
     localStorage.removeItem("szvk_remembered_credentials");
   }
 
-  // Очищення застарілих незашифрованих паролів у браузері
+  // Очищення застарілих незашифрованих паролів та залишкових дублікатів акаунта Artem
   try {
     localStorage.removeItem("szvk_remembered_credentials");
+    const cachedUsersRaw = localStorage.getItem(USERS_STORAGE_KEY);
+    if (cachedUsersRaw) {
+      const parsedUsers = JSON.parse(cachedUsersRaw);
+      let changed = false;
+      Object.keys(parsedUsers).forEach(k => {
+        if (k.toLowerCase() === "artem" || (parsedUsers[k].username || "").toLowerCase() === "artem") {
+          delete parsedUsers[k];
+          changed = true;
+        }
+      });
+      if (changed) {
+        localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(parsedUsers));
+      }
+    }
   } catch(e) {}
 
   function escapeHtml(str) {
@@ -2403,11 +2417,17 @@ document.addEventListener("DOMContentLoaded", function () {
         // STRICT CHECK: ONLY THE ACTIVE HASH! Old passwords are completely invalidated!
         if (enteredHash === activeAdminHash || enteredHashTrimmed === activeAdminHash) {
           authenticatedUser = { username: "Artem", name: "Артем", role: "admin", active: true };
+        } else {
+          // If password for Artem does not match the active hash, FAIL IMMEDIATELY!
+          // NEVER fall through to Custom Users!
+          loginError.textContent = "Невірний логін або пароль";
+          loginError.style.display = "block";
+          return;
         }
       }
 
-      // 2. Check Custom Users - Strictly ONLY the single active cryptographic hash per user
-      if (!authenticatedUser) {
+      // 2. Check Custom Users - Strictly ONLY the single active cryptographic hash per user (excludes Artem)
+      if (!authenticatedUser && u.toLowerCase() !== "artem") {
         let usersMap = null;
         try {
           const cached = localStorage.getItem(USERS_STORAGE_KEY);
