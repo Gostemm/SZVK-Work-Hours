@@ -4465,7 +4465,7 @@
 
           if (changed) {
             sData.updatedAt = Date.now();
-            await DB_SCHEDULE_DOC.set(sData, { merge: true });
+            await DB_SCHEDULE_DOC.set(sData);
             logAction({
               module: 'schedule',
               tab: entry.tab || 'calendar',

@@ -293,15 +293,18 @@
       box-shadow: none;
     }
     [data-theme="light"] .day-task-counter.active {
-      background: #e0f2fe;
-      border-color: #38bdf8;
+      background: linear-gradient(135deg, #e0f2fe, #bae6fd);
+      border-color: #0284c7;
       color: #0369a1;
-      box-shadow: none;
+      box-shadow: 0 2px 6px rgba(2, 132, 199, 0.25);
+      text-shadow: none;
     }
     [data-theme="light"] .day-task-counter.done {
-      background: #dcfce7;
-      border-color: #86efac;
-      color: #15803d;
+      background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+      border-color: #059669;
+      color: #065f46;
+      box-shadow: 0 2px 6px rgba(5, 150, 105, 0.2);
+      text-shadow: none;
     }
 
     [data-theme="light"] .btn {
@@ -369,6 +372,20 @@
     [data-theme="light"] .month-target-field {
       background: #f8fafc;
       border: 1.5px solid #cbd5e1;
+    }
+    [data-theme="light"] .month-target-field:hover {
+      background: #f1f5f9;
+      border-color: #0284c7;
+      box-shadow: 0 2px 8px rgba(2, 132, 199, 0.15);
+    }
+    [data-theme="light"] .btn-edit-focus-action {
+      background: rgba(2, 132, 199, 0.12);
+      border-color: rgba(2, 132, 199, 0.35);
+      color: #0284c7;
+    }
+    [data-theme="light"] .btn-edit-focus-action:hover {
+      background: #0284c7;
+      color: #fff;
     }
     [data-theme="light"] .month-target-field label {
       color: #0369a1 !important;
@@ -928,11 +945,21 @@
       align-items: center;
       justify-content: space-between;
       gap: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .global-month-banner:hover {
+      border-color: rgba(56, 189, 248, 0.65);
+      box-shadow: 0 0 14px rgba(56, 189, 248, 0.2);
     }
     .global-month-banner.empty {
       border: 1px dashed #334155;
       border-left: 4px dashed #64748b;
       background: rgba(15, 23, 42, 0.4);
+    }
+    .global-month-banner.empty:hover {
+      border-color: rgba(56, 189, 248, 0.4);
+      background: rgba(15, 23, 42, 0.6);
     }
 
     .global-content { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0; }
@@ -1059,6 +1086,7 @@
       overflow: hidden;
       text-overflow: ellipsis;
       transition: all 0.2s ease;
+      margin-top: auto;
     }
 
     .worker-pill.artem-pill {
@@ -1091,42 +1119,59 @@
     .worker-name-mobile { display: none; }
     .worker-name-desktop { display: inline; }
 
-    /* Day Tasks Counter */
+    /* Day Tasks Counter - Centered & Visually Expressive */
     .day-tasks-container {
       width: 100%;
+      flex: 1;
       display: flex;
+      align-items: center;
       justify-content: center;
-      margin-top: 1px;
+      padding: 2px 0;
+      min-height: 24px;
     }
 
     .day-task-counter {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 4px;
-      font-size: 10px;
-      font-weight: 800;
-      padding: 2px 7px;
-      border-radius: 6px;
+      gap: 5px;
+      font-size: 11px;
+      font-weight: 850;
+      padding: 3.5px 8.5px;
+      border-radius: 8px;
       line-height: 1.2;
-      max-width: 96%;
+      max-width: 98%;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      transition: all 0.2s ease;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      letter-spacing: 0.2px;
     }
 
+    /* Active tasks: visually expressive cyber cyan with glow */
     .day-task-counter.active {
-      background: rgba(14, 165, 233, 0.25);
-      border: 1px solid rgba(56, 189, 248, 0.55);
-      color: #bae6fd;
-      box-shadow: 0 0 8px rgba(56, 189, 248, 0.25);
+      background: linear-gradient(135deg, rgba(14, 165, 233, 0.38), rgba(2, 132, 199, 0.52));
+      border: 1.5px solid #38bdf8;
+      color: #ffffff;
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    }
+    .day-task-counter.active:hover {
+      box-shadow: 0 0 16px rgba(56, 189, 248, 0.7);
+      transform: scale(1.05);
     }
 
+    /* Done tasks: visually expressive emerald glow */
     .day-task-counter.done {
-      background: rgba(16, 185, 129, 0.2);
-      border: 1px solid rgba(16, 185, 129, 0.45);
-      color: #6ee7b7;
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.32), rgba(5, 150, 105, 0.45));
+      border: 1.5px solid #34d399;
+      color: #ecfdf5;
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+    }
+    .day-task-counter.done:hover {
+      box-shadow: 0 0 14px rgba(16, 185, 129, 0.6);
+      transform: scale(1.05);
     }
 
     .counter-mobile { display: none; }
@@ -1280,15 +1325,44 @@
     .month-target-field {
       display: flex;
       flex-direction: column;
-      gap: 4px;
-      background: rgba(15, 23, 42, 0.5);
-      border: 1px solid rgba(56, 189, 248, 0.2);
+      gap: 6px;
+      background: rgba(15, 23, 42, 0.65);
+      border: 1px solid rgba(56, 189, 248, 0.35);
       border-radius: 8px;
-      padding: 8px;
+      padding: 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
     }
-    .month-target-field label { font-size: 11px; font-weight: 800; color: #38bdf8; }
-    .month-target-val { font-size: 12px; color: var(--text-muted); }
+    .month-target-field:hover {
+      background: rgba(15, 23, 42, 0.9);
+      border-color: rgba(56, 189, 248, 0.7);
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.22);
+    }
+    .month-target-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+    .month-target-field label { font-size: 11px; font-weight: 800; color: #38bdf8; cursor: pointer; }
+    .btn-edit-focus-action {
+      background: rgba(56, 189, 248, 0.2);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      padding: 2px 8px;
+      font-size: 11px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: 700;
+      transition: all 0.15s ease;
+    }
+    .btn-edit-focus-action:hover {
+      background: rgba(56, 189, 248, 0.4);
+      color: #fff;
+    }
+    .month-target-val { font-size: 12.5px; color: var(--text-muted); line-height: 1.4; white-space: pre-wrap; word-break: break-word; }
     .month-target-val.has-val { color: #f8fafc; font-weight: 600; }
+    .month-target-val.empty-val { color: var(--text-muted); font-style: italic; }
 
     .season-overview-list {
       display: flex;
@@ -1869,19 +1943,19 @@
       }
 
       .day-card {
-        min-height: 56px;
-        padding: 3px 2px;
-        border-radius: 7px;
-        gap: 1.5px;
+        min-height: 60px;
+        padding: 4px 3px 3px 3px;
+        border-radius: 8px;
+        gap: 2px;
       }
 
       .day-card-header {
-        min-height: 13px;
+        min-height: 14px;
         padding: 0 1px;
       }
 
       .day-card.other-month {
-        min-height: 56px;
+        min-height: 60px;
       }
 
       .day-card.today {
@@ -1899,11 +1973,30 @@
         font-size: 12.5px;
       }
 
+      .day-tasks-container {
+        min-height: 20px;
+        padding: 1px 0;
+      }
+
+      .day-task-counter {
+        font-size: 8.5px;
+        font-weight: 900;
+        padding: 2px 5px;
+        border-radius: 6px;
+        gap: 2.5px;
+        border-width: 1px;
+        max-width: 100%;
+      }
+
+      .counter-desktop { display: none; }
+      .counter-mobile { display: inline; }
+
       .worker-pill {
-        padding: 1px 4px;
+        padding: 1.5px 5px;
         font-size: 8.5px;
         gap: 2.5px;
         border-radius: 10px;
+        margin-top: auto;
       }
 
       .worker-dot {
@@ -1913,16 +2006,6 @@
 
       .worker-name-desktop { display: none; }
       .worker-name-mobile { display: inline; }
-
-      .day-task-counter {
-        font-size: 8px;
-        padding: 1px 4px;
-        border-radius: 4px;
-        gap: 2px;
-      }
-
-      .counter-desktop { display: none; }
-      .counter-mobile { display: inline; }
 
       /* 5. Global Month Focus Banner */
       .global-month-banner {
@@ -2049,28 +2132,36 @@
       }
 
       .day-card {
-        min-height: 52px;
-        padding: 2.5px 1.5px;
+        min-height: 56px;
+        padding: 3px 2px 2px 2px;
         border-radius: 6px;
-        gap: 1px;
+        gap: 1.5px;
       }
 
       .day-card.other-month {
-        min-height: 52px;
+        min-height: 56px;
       }
 
       .day-num {
         font-size: 11.5px;
       }
 
-      .worker-pill {
-        font-size: 8px;
-        padding: 0.5px 3px;
+      .day-tasks-container {
+        min-height: 18px;
+        padding: 0;
       }
 
       .day-task-counter {
         font-size: 7.5px;
-        padding: 0.5px 2px;
+        padding: 1.5px 3.5px;
+        border-radius: 5px;
+        gap: 2px;
+      }
+
+      .worker-pill {
+        font-size: 8px;
+        padding: 1px 3px;
+        margin-top: auto;
       }
 
       .nav-center .tab-btn {
@@ -2084,13 +2175,22 @@
     }
 
     @media (max-width: 380px) {
+      .day-card {
+        min-height: 54px;
+        padding: 2.5px 1.5px 1.5px 1.5px;
+      }
       .worker-pill {
         font-size: 7.5px;
-        padding: 0 2px;
+        padding: 0.5px 2.5px;
+        margin-top: auto;
       }
       .worker-dot {
         width: 3px;
         height: 3px;
+      }
+      .day-task-counter {
+        font-size: 7px;
+        padding: 1px 2.5px;
       }
     }
   </style>
@@ -3090,7 +3190,7 @@ document.addEventListener("DOMContentLoaded", function () {
     saveDebounceTimer = setTimeout(async () => {
       try {
         updateSyncIndicator("syncing", "Збереження...");
-        await DB_SCHEDULE_DOC.set(payload, { merge: true });
+        await DB_SCHEDULE_DOC.set(payload);
         updateSyncIndicator("synced", "Хмара (Firebase)");
       } catch(err) {
         console.warn("Error pushing schedule to Firestore:", err);
@@ -3605,30 +3705,17 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // 5. Month Focus
     if (entry.tab === "focus" || entry.type === "focus_edit") {
-      activeTab = "calendar";
-      renderApp();
-      const season = getSeasonDetails(currentSeasonIndex);
-      const mObj = season.months[selectedMonthRelative];
-      const mKey = formatMonthKey(mObj.year, mObj.month);
-      const currentVal = (window.monthFocusNotes && window.monthFocusNotes[mKey]) || "";
-      const newVal = prompt(`Редагувати фокус на ${MONTH_NAMES[mObj.month]} ${mObj.year}:`, currentVal);
-      if (newVal !== null) {
-        if (newVal.trim()) window.monthFocusNotes[mKey] = newVal.trim();
-        else delete window.monthFocusNotes[mKey];
-        logAction({
-          module: "schedule",
-          tab: "focus",
-          type: "focus_edit",
-          description: `Оновлено фокус на ${MONTH_NAMES[mObj.month]} ${mObj.year}`,
-          details: `«${newVal.trim() || 'очищено'}» (було: «${currentVal || 'порожньо'}»)`,
-          restoreData: { mKey, prevVal: currentVal },
-          editRef: { module: "schedule", type: "focus", mKey }
-        });
-        saveLocalData();
-        renderApp();
-        renderHistoryView();
-        alert("✅ Фокус місяця оновлено!");
+      const mKey = (entry.editRef && entry.editRef.mKey) || (entry.restoreData && entry.restoreData.mKey);
+      let mLabel = mKey;
+      if (mKey) {
+        const parts = mKey.split('-');
+        const y = parseInt(parts[0], 10);
+        const m = parseInt(parts[1], 10) - 1;
+        if (!isNaN(y) && !isNaN(m) && MONTH_NAMES[m]) {
+          mLabel = `${MONTH_NAMES[m]} ${y}`;
+        }
       }
+      openFocusNoteModal(mKey, mLabel);
       return;
     }
 
@@ -4318,6 +4405,25 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
+  let currentEditingFocusKey = null;
+  let currentEditingFocusLabel = "";
+
+  function openFocusNoteModal(mKey, mLabel) {
+    currentEditingFocusKey = mKey;
+    currentEditingFocusLabel = mLabel || mKey;
+    const currentVal = (window.monthFocusNotes && window.monthFocusNotes[mKey]) || "";
+    const titleEl = document.getElementById("globalModalTitle");
+    if (titleEl) titleEl.textContent = `🎯 Фокус: ${currentEditingFocusLabel}`;
+    const inpEl = document.getElementById("globalModalInput");
+    if (inpEl) {
+      inpEl.value = currentVal;
+      setTimeout(() => { inpEl.focus(); }, 60);
+    }
+    const modal = document.getElementById("globalNoteModal");
+    if (modal) modal.classList.add("active");
+  }
+  window.openFocusNoteModal = openFocusNoteModal;
+
   function renderCalendar(season, todayKey) {
     const monthTabsContainer = document.getElementById("monthTabsContainer");
     monthTabsContainer.innerHTML = "";
@@ -4366,9 +4472,12 @@ document.addEventListener("DOMContentLoaded", function () {
       globalTextEl.className = "global-text placeholder";
     }
 
-    document.getElementById("btnEditGlobalNote").onclick = () => {
-      document.getElementById("globalModalInput").value = currentGlobalNote;
-      document.getElementById("globalNoteModal").classList.add("active");
+    document.getElementById("btnEditGlobalNote").onclick = (e) => {
+      e.stopPropagation();
+      openFocusNoteModal(activeMonthKey, `${MONTH_NAMES[activeMonthObj.month]} ${activeMonthObj.year}`);
+    };
+    globalBanner.onclick = () => {
+      openFocusNoteModal(activeMonthKey, `${MONTH_NAMES[activeMonthObj.month]} ${activeMonthObj.year}`);
     };
 
     const daysGrid = document.getElementById("daysGrid");
@@ -4389,7 +4498,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const dNum = prevMonthDays - i;
         const padCard = document.createElement("div");
         padCard.className = "day-card other-month";
-        padCard.innerHTML = `<div class="day-card-header"><span class="day-num">${dNum}</span></div>`;
+        padCard.innerHTML = `<div class="day-card-header"><span class="day-num">${dNum}</span></div><div class="day-tasks-container"></div>`;
         daysGrid.appendChild(padCard);
       }
     }
@@ -4417,11 +4526,7 @@ document.addEventListener("DOMContentLoaded", function () {
           <span class="day-num">${day}</span>
           ${assignment.isEdited ? `<span class="swap-badge" title="Зміна змінена вручну: ${assignment.worker}">⇄</span>` : ''}
         </div>
-        <div class="worker-pill ${assignment.worker === 'Артем' ? 'artem-pill' : 'oleksandr-pill'}">
-          <span class="worker-dot"></span>
-          <span class="worker-name-desktop">${assignment.worker}</span>
-          <span class="worker-name-mobile">${workerShort}</span>
-        </div>
+        <div class="day-tasks-container">
       `;
 
       if (tasks.length > 0) {
@@ -4443,14 +4548,21 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         inner += `
-          <div class="day-tasks-container">
-            <div class="day-task-counter ${isDone ? 'done' : 'active'}" title="${hasActiveTasks ? 'Активних справ: ' + activeTasksCount + ' (всього: ' + tasks.length + ')' : 'Всі ' + tasks.length + ' справ виконано'}">
-              <span class="counter-desktop">${counterDesktop}</span>
-              <span class="counter-mobile">${counterMobile}</span>
-            </div>
+          <div class="day-task-counter ${isDone ? 'done' : 'active'}" title="${hasActiveTasks ? 'Активних справ: ' + activeTasksCount + ' (всього: ' + tasks.length + ')' : 'Всі ' + tasks.length + ' справ виконано'}">
+            <span class="counter-desktop">${counterDesktop}</span>
+            <span class="counter-mobile">${counterMobile}</span>
           </div>
         `;
       }
+
+      inner += `
+        </div>
+        <div class="worker-pill ${assignment.worker === 'Артем' ? 'artem-pill' : 'oleksandr-pill'}">
+          <span class="worker-dot"></span>
+          <span class="worker-name-desktop">${assignment.worker}</span>
+          <span class="worker-name-mobile">${workerShort}</span>
+        </div>
+      `;
 
       card.innerHTML = inner;
       daysGrid.appendChild(card);
@@ -4462,7 +4574,7 @@ document.addEventListener("DOMContentLoaded", function () {
     for (let d = 1; d <= trailingCount; d++) {
       const padCard = document.createElement("div");
       padCard.className = "day-card other-month";
-      padCard.innerHTML = `<div class="day-card-header"><span class="day-num">${d}</span></div>`;
+      padCard.innerHTML = `<div class="day-card-header"><span class="day-num">${d}</span></div><div class="day-tasks-container"></div>`;
       daysGrid.appendChild(padCard);
     }
   }
@@ -4485,11 +4597,21 @@ document.addEventListener("DOMContentLoaded", function () {
           <span>📅 ${MONTH_NAMES[mObj.month]} ${mObj.year}</span>
           <span class="debt-active-badge">${activeCount} активних</span>
         </div>
-        <div class="month-target-field">
-          <label>🎯 Головний фокус місяця:</label>
-          <div class="month-target-val ${globalNote ? 'has-val' : 'empty-val'}">${escapeHtml(globalNote) || 'Не задано'}</div>
+        <div class="month-target-field" title="Натисніть щоб редагувати фокус місяця">
+          <div class="month-target-header">
+            <label>🎯 Головний фокус місяця:</label>
+            <button type="button" class="btn btn-edit-focus-action">✏️ Змінити</button>
+          </div>
+          <div class="month-target-val ${globalNote ? 'has-val' : 'empty-val'}">${escapeHtml(globalNote) || 'Не задано (натисніть щоб додати)'}</div>
         </div>
       `;
+
+      const focusField = box.querySelector(".month-target-field");
+      if (focusField) {
+        focusField.onclick = () => {
+          openFocusNoteModal(mKey, `${MONTH_NAMES[mObj.month]} ${mObj.year}`);
+        };
+      }
 
       const list = document.createElement("div");
       list.className = "debt-items-list";
@@ -4565,28 +4687,43 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Фокус місяця
   document.getElementById("globalModalSaveBtn").onclick = () => {
-    const activeMonthObj = getSeasonDetails(currentSeasonIndex).months[selectedMonthRelative];
-    const activeMonthKey = formatMonthKey(activeMonthObj.year, activeMonthObj.month);
+    let mKey = currentEditingFocusKey;
+    let mLabel = currentEditingFocusLabel;
+    if (!mKey) {
+      const activeMonthObj = getSeasonDetails(currentSeasonIndex).months[selectedMonthRelative];
+      mKey = formatMonthKey(activeMonthObj.year, activeMonthObj.month);
+      mLabel = `${MONTH_NAMES[activeMonthObj.month]} ${activeMonthObj.year}`;
+    }
     const val = document.getElementById("globalModalInput").value.trim();
-    const oldVal = (window.monthFocusNotes && window.monthFocusNotes[activeMonthKey]) || "";
-    if (val) window.monthFocusNotes[activeMonthKey] = val;
-    else delete window.monthFocusNotes[activeMonthKey];
-    logAction('focus_edit', `Оновлено фокус на ${MONTH_NAMES[activeMonthObj.month]} ${activeMonthObj.year}`, `Новий фокус: «${val || 'очищено'}» (було: «${oldVal || 'порожньо'}»)`, {
-      mKey: activeMonthKey, prevVal: oldVal
-    }, { editRef: { module: 'schedule', type: 'focus', mKey: activeMonthKey } });
+    const oldVal = (window.monthFocusNotes && window.monthFocusNotes[mKey]) || "";
+    if (val) {
+      window.monthFocusNotes[mKey] = val;
+    } else {
+      delete window.monthFocusNotes[mKey];
+    }
+    logAction('focus_edit', `Оновлено фокус на ${mLabel}`, `Новий фокус: «${val || 'очищено'}» (було: «${oldVal || 'порожньо'}»)`, {
+      mKey: mKey, prevVal: oldVal
+    }, { editRef: { module: 'schedule', type: 'focus', mKey: mKey } });
     saveLocalData();
     document.getElementById("globalNoteModal").classList.remove("active");
     renderApp();
   };
 
   document.getElementById("globalModalClearBtn").onclick = () => {
-    const activeMonthObj = getSeasonDetails(currentSeasonIndex).months[selectedMonthRelative];
-    const activeMonthKey = formatMonthKey(activeMonthObj.year, activeMonthObj.month);
-    const oldVal = (window.monthFocusNotes && window.monthFocusNotes[activeMonthKey]) || "";
-    delete window.monthFocusNotes[activeMonthKey];
-    logAction('focus_edit', `Очищено фокус на ${MONTH_NAMES[activeMonthObj.month]} ${activeMonthObj.year}`, `Видалено текст: «${oldVal}»`, {
-      mKey: activeMonthKey, prevVal: oldVal
-    }, { editRef: { module: 'schedule', type: 'focus', mKey: activeMonthKey } });
+    let mKey = currentEditingFocusKey;
+    let mLabel = currentEditingFocusLabel;
+    if (!mKey) {
+      const activeMonthObj = getSeasonDetails(currentSeasonIndex).months[selectedMonthRelative];
+      mKey = formatMonthKey(activeMonthObj.year, activeMonthObj.month);
+      mLabel = `${MONTH_NAMES[activeMonthObj.month]} ${activeMonthObj.year}`;
+    }
+    const oldVal = (window.monthFocusNotes && window.monthFocusNotes[mKey]) || "";
+    delete window.monthFocusNotes[mKey];
+    const inputEl = document.getElementById("globalModalInput");
+    if (inputEl) inputEl.value = "";
+    logAction('focus_edit', `Очищено фокус на ${mLabel}`, `Видалено текст: «${oldVal}»`, {
+      mKey: mKey, prevVal: oldVal
+    }, { editRef: { module: 'schedule', type: 'focus', mKey: mKey } });
     saveLocalData();
     document.getElementById("globalNoteModal").classList.remove("active");
     renderApp();
@@ -4595,6 +4732,15 @@ document.addEventListener("DOMContentLoaded", function () {
   document.getElementById("globalModalCloseX").onclick = () => {
     document.getElementById("globalNoteModal").classList.remove("active");
   };
+
+  const globalModalInputEl = document.getElementById("globalModalInput");
+  if (globalModalInputEl) {
+    globalModalInputEl.onkeydown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+        document.getElementById("globalModalSaveBtn").click();
+      }
+    };
+  }
 
   // Скидання підмін (Адмін)
   document.getElementById("btnOpenResetModal").onclick = () => {
