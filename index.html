@@ -1325,6 +1325,155 @@
       background: #059669;
       color: #ffffff;
     }
+
+    .history-module-group {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      flex-wrap: wrap;
+    }
+    .history-module-btn {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 5px 11px;
+      font-size: 11.5px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .history-module-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text);
+    }
+    .history-module-btn.active {
+      background: #3b82f6;
+      color: #ffffff;
+      border-color: #3b82f6;
+      box-shadow: 0 0 10px rgba(59, 130, 246, 0.35);
+    }
+    [data-theme="light"] .history-module-btn.active {
+      background: #2563eb;
+      color: #ffffff;
+      border-color: #2563eb;
+    }
+
+    .history-tab-pills {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      flex-wrap: wrap;
+      padding-top: 4px;
+    }
+    .history-tab-btn {
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 4px 9px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .history-tab-btn:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text);
+    }
+    .history-tab-btn.active {
+      background: rgba(139, 92, 246, 0.22);
+      color: #c084fc;
+      border-color: #8b5cf6;
+      font-weight: 700;
+    }
+    [data-theme="light"] .history-tab-btn.active {
+      background: #ede9fe;
+      color: #6d28d9;
+      border-color: #8b5cf6;
+    }
+
+    .history-actions-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .history-edit-btn {
+      background: rgba(59, 130, 246, 0.15);
+      color: #60a5fa;
+      border: 1px solid rgba(59, 130, 246, 0.35);
+      padding: 6px 10px;
+      font-size: 11px;
+      font-weight: 700;
+      border-radius: 6px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      text-decoration: none;
+    }
+    .history-edit-btn:hover {
+      background: #3b82f6;
+      color: #ffffff;
+    }
+    [data-theme="light"] .history-edit-btn {
+      background: #dbeafe;
+      color: #1d4ed8;
+      border-color: #93c5fd;
+    }
+    [data-theme="light"] .history-edit-btn:hover {
+      background: #2563eb;
+      color: #ffffff;
+    }
+
+    .history-module-tag {
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: rgba(59, 130, 246, 0.15);
+      color: #60a5fa;
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .history-module-tag.tracker {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border-color: rgba(16, 185, 129, 0.3);
+    }
+    [data-theme="light"] .history-module-tag {
+      background: #dbeafe;
+      color: #1e40af;
+      border-color: #93c5fd;
+    }
+    [data-theme="light"] .history-module-tag.tracker {
+      background: #d1fae5;
+      color: #065f46;
+      border-color: #6ee7b7;
+    }
+
+    .history-tab-tag {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: rgba(139, 92, 246, 0.15);
+      color: #c084fc;
+      border: 1px solid rgba(139, 92, 246, 0.3);
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+    }
+    [data-theme="light"] .history-tab-tag {
+      background: #ede9fe;
+      color: #6d28d9;
+      border-color: #c4b5fd;
+    }
   </style>
 </head>
 <body>
@@ -1483,21 +1632,36 @@
     </div>
 
     <div class="history-controls-bar">
-      <div class="history-filters" id="historyFiltersGroup">
-        <button class="history-filter-btn active" data-filter="all">Всі дії</button>
-        <button class="history-filter-btn" data-filter="shift_swap">🔄 Підміни</button>
-        <button class="history-filter-btn" data-filter="tasks">📋 Завдання дня</button>
-        <button class="history-filter-btn" data-filter="debts">📝 Нотатки</button>
-        <button class="history-filter-btn" data-filter="focus">🎯 Фокус</button>
-        <button class="history-filter-btn" data-filter="admin">🛡️ Адмін / Інше</button>
-      </div>
-      <div class="history-search-wrap">
-        <input type="text" id="historySearchInput" class="debt-input" style="font-size: 12px; padding: 6px 12px; width: 220px;" placeholder="🔍 Пошук (автор, дія, дата)...">
+      <div style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+          <div class="history-module-group" id="historyModuleFilters">
+            <span style="font-size: 11px; font-weight: 800; color: var(--text-muted); margin-right: 2px;">РОЗДІЛ:</span>
+            <button type="button" class="history-module-btn active" data-module="all">🌐 Всі розділи</button>
+            <button type="button" class="history-module-btn" data-module="schedule">📅 Справи Системника</button>
+            <button type="button" class="history-module-btn" data-module="tracker_hub">🛰️ Tracker Hub</button>
+          </div>
+
+          <div class="history-search-wrap">
+            <input type="text" id="historySearchInput" class="debt-input" style="font-size: 12px; padding: 6px 12px; width: 230px;" placeholder="🔍 Пошук (авто, S/N, автор, дія)...">
+          </div>
+        </div>
+
+        <div class="history-tab-pills" id="historyTabFilters">
+          <span style="font-size: 11px; font-weight: 800; color: var(--text-muted); margin-right: 2px;">ВКЛАДКА:</span>
+          <button type="button" class="history-tab-btn active" data-tab="all">Усі вкладки</button>
+          <button type="button" class="history-tab-btn" data-tab="calendar">🔄 Підміни (Графік)</button>
+          <button type="button" class="history-tab-btn" data-tab="day_tasks">📋 Завдання дня</button>
+          <button type="button" class="history-tab-btn" data-tab="notes">📝 Загальні нотатки</button>
+          <button type="button" class="history-tab-btn" data-tab="focus">🎯 Фокус місяця</button>
+          <button type="button" class="history-tab-btn" data-tab="repairs">🔧 Ремонт трекерів</button>
+          <button type="button" class="history-tab-btn" data-tab="inventory">📦 Склад і трекери</button>
+          <button type="button" class="history-tab-btn" data-tab="admin">🛡️ Адмін / Інше</button>
+        </div>
       </div>
     </div>
 
     <div class="history-hint-banner">
-      💡 <strong>Контроль змін:</strong> Тут фіксується кожна зміна зміни, завдання чи нотатки із зазначенням автора та точного часу. Якщо хтось випадково видалив пункт або переплутав чергування — натисніть <strong>«↩️ Відновити»</strong> або <strong>«↩️ Скасувати підміну»</strong> поруч із записом.
+      💡 <strong>Контроль змін (Tracker Hub + Справи Системника):</strong> Тут фіксуються зміни по ремонту трекерів, складу, змінах чергувань, завданнях та нотатках. Оберіть вкладку для точного перегляду. Для повернення випадкової дії натисніть <strong>«↩️ Відкотити»</strong>, або <strong>«✏️ Редагувати»</strong> щоб змінити запис.
     </div>
 
     <div class="history-list" id="historyListContainer"></div>
@@ -1637,6 +1801,8 @@ document.addEventListener("DOMContentLoaded", function () {
   let db = null;
   let DB_SCHEDULE_DOC = null;
   let DB_USERS_DOC = null;
+  let DB_HISTORY_DOC = null;
+  let DB_TRACKERS_DOC = null;
   let isFirebaseReady = false;
 
   try {
@@ -1647,6 +1813,8 @@ document.addEventListener("DOMContentLoaded", function () {
       db = firebase.firestore();
       DB_SCHEDULE_DOC = db.collection("szvk_app").doc("schedule");
       DB_USERS_DOC = db.collection("szvk_app").doc("users");
+      DB_HISTORY_DOC = db.collection("szvk_app").doc("history");
+      DB_TRACKERS_DOC = db.collection("szvk_app").doc("trackers");
       isFirebaseReady = true;
     }
   } catch(e) {
@@ -1654,6 +1822,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   const STORAGE_KEY = "szvk_schedule_local_data";
+  const UNIFIED_HISTORY_STORAGE_KEY = "szvk_action_history_unified";
   const USERS_STORAGE_KEY = "szvk_custom_users";
   const SESSION_USER_KEY = "szvk_internal_session";
   const AUTH_TOKEN_KEY = "szvk_auth_token";
@@ -1747,8 +1916,10 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   let saveDebounceTimer = null;
+  let historyDebounceTimer = null;
   let unsubscribeSchedule = null;
   let unsubscribeUsers = null;
+  let unsubscribeHistory = null;
 
   function updateSyncIndicator(state, text) {
     const dot = document.getElementById("cloudSyncDot");
@@ -1938,6 +2109,7 @@ document.addEventListener("DOMContentLoaded", function () {
   document.getElementById("btnLogoutBtn").onclick = function() {
     if (unsubscribeSchedule) unsubscribeSchedule();
     if (unsubscribeUsers) unsubscribeUsers();
+    if (unsubscribeHistory) unsubscribeHistory();
     clearAuth();
     document.getElementById("passwordInput").value = "";
     applyAccessState();
@@ -2115,9 +2287,6 @@ document.addEventListener("DOMContentLoaded", function () {
           window.dayNotes = data.dayNotes || {};
           window.monthlyDebts = data.monthlyDebts || {};
           window.monthFocusNotes = data.monthFocusNotes || {};
-          if (Array.isArray(data.actionHistory)) {
-            window.actionHistory = data.actionHistory;
-          }
           try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
           } catch(e) {}
@@ -2125,13 +2294,32 @@ document.addEventListener("DOMContentLoaded", function () {
           renderApp();
         }
       } else {
-        // Документ ще не створено у Firebase — ініціалізуємо його наявними локальними даними!
         pushScheduleToFirestore();
       }
     }, (error) => {
-      console.warn("Firestore sync notice:", error);
+      console.warn("Firestore schedule sync notice:", error);
       updateSyncIndicator("error", "Офлайн");
     });
+
+    // Real-time listener for Unified History (Trackers + Schedule)
+    if (unsubscribeHistory) unsubscribeHistory();
+    if (DB_HISTORY_DOC) {
+      unsubscribeHistory = DB_HISTORY_DOC.onSnapshot((docSnapshot) => {
+        if (docSnapshot.exists) {
+          const data = docSnapshot.data();
+          if (data && Array.isArray(data.items)) {
+            window.actionHistory = data.items;
+            try {
+              localStorage.setItem(UNIFIED_HISTORY_STORAGE_KEY, JSON.stringify(data.items));
+            } catch(e) {}
+            updateHistoryBadge();
+            if (activeTab === "history") renderHistoryView();
+          }
+        }
+      }, (err) => {
+        console.warn("Firestore history sync notice:", err);
+      });
+    }
 
     if (currentUser.role === "admin") {
       if (unsubscribeUsers) unsubscribeUsers();
@@ -2153,7 +2341,6 @@ document.addEventListener("DOMContentLoaded", function () {
       dayNotes: window.dayNotes || {},
       monthlyDebts: window.monthlyDebts || {},
       monthFocusNotes: window.monthFocusNotes || {},
-      actionHistory: (window.actionHistory || []).slice(0, 300),
       updatedAt: Date.now()
     };
     try {
@@ -2175,6 +2362,26 @@ document.addEventListener("DOMContentLoaded", function () {
     }, 350);
   }
 
+  function pushHistoryToFirestore() {
+    try {
+      localStorage.setItem(UNIFIED_HISTORY_STORAGE_KEY, JSON.stringify(window.actionHistory || []));
+    } catch(e) {}
+
+    if (!isFirebaseReady || !DB_HISTORY_DOC) return;
+
+    clearTimeout(historyDebounceTimer);
+    historyDebounceTimer = setTimeout(async () => {
+      try {
+        await DB_HISTORY_DOC.set({
+          items: (window.actionHistory || []).slice(0, 300),
+          updatedAt: Date.now()
+        }, { merge: true });
+      } catch(err) {
+        console.warn("Error pushing unified history to Firestore:", err);
+      }
+    }, 300);
+  }
+
   function saveLocalData() {
     pushScheduleToFirestore();
   }
@@ -2188,7 +2395,18 @@ document.addEventListener("DOMContentLoaded", function () {
   window.dayNotes = initialData.dayNotes || {};
   window.monthlyDebts = initialData.monthlyDebts || {};
   window.monthFocusNotes = initialData.monthFocusNotes || {};
-  window.actionHistory = Array.isArray(initialData.actionHistory) ? initialData.actionHistory : [];
+
+  function loadLocalUnifiedHistory() {
+    try {
+      const savedUnified = localStorage.getItem(UNIFIED_HISTORY_STORAGE_KEY);
+      if (savedUnified) return JSON.parse(savedUnified);
+    } catch(e) {}
+    if (Array.isArray(initialData.actionHistory) && initialData.actionHistory.length > 0) {
+      return initialData.actionHistory;
+    }
+    return [];
+  }
+  window.actionHistory = loadLocalUnifiedHistory();
 
   function formatHistoryTime(timestamp) {
     if (!timestamp) return "";
@@ -2201,25 +2419,67 @@ document.addEventListener("DOMContentLoaded", function () {
     return `${day}.${month}.${year} о ${hours}:${minutes}`;
   }
 
-  function logAction(type, description, details, restoreData) {
+  function logAction(typeOrObj, description, details, restoreData, options = {}) {
     if (!Array.isArray(window.actionHistory)) {
       window.actionHistory = [];
     }
-    const entry = {
-      id: "act_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7),
-      timestamp: Date.now(),
-      user: currentUser ? (currentUser.name || currentUser.username) : "Користувач",
-      username: currentUser ? currentUser.username : "unknown",
-      type: type,
-      description: description,
-      details: details || "",
-      restoreData: restoreData || null
-    };
+    let entry = {};
+    if (typeof typeOrObj === "object" && typeOrObj !== null) {
+      entry = {
+        id: "act_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7),
+        timestamp: Date.now(),
+        user: currentUser ? (currentUser.name || currentUser.username) : "Користувач",
+        username: currentUser ? currentUser.username : "unknown",
+        module: typeOrObj.module || "schedule",
+        tab: typeOrObj.tab || "calendar",
+        type: typeOrObj.type || "general",
+        description: typeOrObj.description || "",
+        details: typeOrObj.details || "",
+        restoreData: typeOrObj.restoreData || null,
+        editRef: typeOrObj.editRef || null
+      };
+    } else {
+      const type = typeOrObj;
+      let module = "schedule";
+      let tab = "calendar";
+      if (type.startsWith("repair_")) {
+        module = "tracker_hub";
+        tab = "repairs";
+      } else if (type.startsWith("inv_") || type.startsWith("bulk_")) {
+        module = "tracker_hub";
+        tab = "inventory";
+      } else if (type.startsWith("task_")) {
+        tab = "day_tasks";
+      } else if (type.startsWith("debt_")) {
+        tab = "notes";
+      } else if (type === "focus_edit") {
+        tab = "focus";
+      } else if (type === "user_manage" || type === "reset_shifts") {
+        tab = "admin";
+      }
+
+      entry = {
+        id: "act_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7),
+        timestamp: Date.now(),
+        user: currentUser ? (currentUser.name || currentUser.username) : "Користувач",
+        username: currentUser ? currentUser.username : "unknown",
+        module: options.module || module,
+        tab: options.tab || tab,
+        type: type,
+        description: description || "",
+        details: details || "",
+        restoreData: restoreData || null,
+        editRef: options.editRef || null
+      };
+    }
+
     window.actionHistory.unshift(entry);
     if (window.actionHistory.length > 300) {
       window.actionHistory.length = 300;
     }
     updateHistoryBadge();
+    pushHistoryToFirestore();
+    return entry;
   }
 
   function updateHistoryBadge() {
@@ -2234,58 +2494,425 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  function restoreAction(actionId) {
+  async function restoreAction(actionId) {
     const entry = (window.actionHistory || []).find(a => a.id === actionId);
     if (!entry || !entry.restoreData) {
-      alert("Немає збережених даних для автоматичного відновлення.");
+      alert("Немає збережених даних для автоматичного відновлення цієї дії.");
       return;
     }
 
-    if (entry.type === "task_delete") {
-      const { dateKey, task } = entry.restoreData;
-      if (!window.dayNotes[dateKey]) window.dayNotes[dateKey] = [];
-      const restoredTask = {
-        id: Date.now().toString(),
-        text: task.text,
-        done: task.done || false,
-        author: task.author || "Відновлено"
-      };
-      window.dayNotes[dateKey].push(restoredTask);
-      logAction("restore", `Відновлено завдання на ${dateKey}`, `«${task.text}»`);
-      saveLocalData();
-      renderApp();
-      alert(`✅ Завдання «${task.text}» успішно відновлено на день ${dateKey}!`);
-    } else if (entry.type === "debt_delete") {
-      const { mKey, item } = entry.restoreData;
-      if (!window.monthlyDebts[mKey]) window.monthlyDebts[mKey] = [];
-      const restoredItem = {
-        id: Date.now().toString(),
-        text: item.text,
-        settled: item.settled || false,
-        author: item.author || "Відновлено"
-      };
-      window.monthlyDebts[mKey].push(restoredItem);
-      logAction("restore", `Відновлено таскбар на ${mKey}`, `«${item.text}»`);
-      saveLocalData();
-      renderApp();
-      alert(`✅ Таскбар «${item.text}» успішно відновлено!`);
-    } else if (entry.type === "shift_swap") {
-      const { year, month, day, prevWorker } = entry.restoreData;
-      const key = formatDateKey(year, month, day);
-      const base = getBaseWorker(new Date(year, month, day));
-      if (prevWorker === base) {
-        delete window.overrides[key];
-      } else {
-        window.overrides[key] = prevWorker;
+    if (!confirm(`Відкотити дію:\n«${entry.description}»?`)) return;
+
+    try {
+      // 1. Task actions
+      if (entry.type === "task_delete") {
+        const { dateKey, task } = entry.restoreData;
+        if (!window.dayNotes[dateKey]) window.dayNotes[dateKey] = [];
+        const restoredTask = {
+          id: Date.now().toString(),
+          text: task.text,
+          done: task.done || false,
+          author: task.author || "Відновлено"
+        };
+        window.dayNotes[dateKey].push(restoredTask);
+        logAction({
+          module: "schedule",
+          tab: "day_tasks",
+          type: "restore",
+          description: `Відновлено завдання на ${dateKey}`,
+          details: `«${task.text}»`
+        });
+        saveLocalData();
+        renderApp();
+        alert(`✅ Завдання «${task.text}» успішно відновлено на день ${dateKey}!`);
+        return;
       }
-      logAction("restore", `Скасовано підміну на ${day} ${MONTH_NAMES[month]} ${year}`, `Повернено чергового: ${prevWorker}`);
-      saveLocalData();
-      renderApp();
-      alert(`✅ Чергування на ${day}.${month + 1}.${year} повернуто: ${prevWorker}!`);
+
+      if (entry.type === "task_toggle") {
+        const { dateKey, taskId, prevDone } = entry.restoreData || {};
+        const tasks = window.dayNotes[dateKey] || [];
+        const target = tasks.find(t => t.id === taskId);
+        if (target) {
+          target.done = prevDone;
+          logAction({
+            module: "schedule",
+            tab: "day_tasks",
+            type: "restore",
+            description: `Відкочено статус завдання на ${dateKey}`,
+            details: `«${target.text}» ➔ ${prevDone ? 'Виконано' : 'В роботі'}`
+          });
+          saveLocalData();
+          renderApp();
+          alert(`✅ Статус завдання повернено: ${prevDone ? 'Виконано' : 'В роботі'}!`);
+          return;
+        }
+      }
+
+      if (entry.type === "task_edit") {
+        const { dateKey, taskId, prevText } = entry.restoreData || {};
+        const tasks = window.dayNotes[dateKey] || [];
+        const target = tasks.find(t => t.id === taskId);
+        if (target && prevText) {
+          const old = target.text;
+          target.text = prevText;
+          logAction({
+            module: "schedule",
+            tab: "day_tasks",
+            type: "restore",
+            description: `Відкочено текст завдання на ${dateKey}`,
+            details: `«${prevText}» (було: «${old}»)`
+          });
+          saveLocalData();
+          renderApp();
+          alert(`✅ Текст завдання повернено!`);
+          return;
+        }
+      }
+
+      // 2. Debt / Note actions
+      if (entry.type === "debt_delete") {
+        const { mKey, item } = entry.restoreData;
+        if (!window.monthlyDebts[mKey]) window.monthlyDebts[mKey] = [];
+        const restoredItem = {
+          id: Date.now().toString(),
+          text: item.text,
+          settled: item.settled || false,
+          author: item.author || "Відновлено"
+        };
+        window.monthlyDebts[mKey].push(restoredItem);
+        logAction({
+          module: "schedule",
+          tab: "notes",
+          type: "restore",
+          description: `Відновлено нотатку на ${mKey}`,
+          details: `«${item.text}»`
+        });
+        saveLocalData();
+        renderApp();
+        alert(`✅ Нотатку «${item.text}» успішно відновлено!`);
+        return;
+      }
+
+      if (entry.type === "debt_toggle") {
+        const { mKey, itemId, prevSettled } = entry.restoreData || {};
+        const items = window.monthlyDebts[mKey] || [];
+        const target = items.find(i => i.id === itemId);
+        if (target) {
+          target.settled = prevSettled;
+          logAction({
+            module: "schedule",
+            tab: "notes",
+            type: "restore",
+            description: `Відкочено статус нотатки на ${mKey}`,
+            details: `«${target.text}» ➔ ${prevSettled ? 'Вирішено' : 'В роботі'}`
+          });
+          saveLocalData();
+          renderApp();
+          alert(`✅ Статус нотатки повернено!`);
+          return;
+        }
+      }
+
+      // 3. Shift swap action
+      if (entry.type === "shift_swap") {
+        const { year, month, day, prevWorker } = entry.restoreData;
+        const key = formatDateKey(year, month, day);
+        const base = getBaseWorker(new Date(year, month, day));
+        if (prevWorker === base) {
+          delete window.overrides[key];
+        } else {
+          window.overrides[key] = prevWorker;
+        }
+        logAction({
+          module: "schedule",
+          tab: "calendar",
+          type: "restore",
+          description: `Скасовано підміну на ${day} ${MONTH_NAMES[month]} ${year}`,
+          details: `Повернено чергового: ${prevWorker}`
+        });
+        saveLocalData();
+        renderApp();
+        alert(`✅ Чергування на ${day}.${month + 1}.${year} повернуто: ${prevWorker}!`);
+        return;
+      }
+
+      // 4. Focus edit
+      if (entry.type === "focus_edit" && entry.restoreData && entry.restoreData.mKey) {
+        const { mKey, prevVal } = entry.restoreData;
+        if (prevVal) window.monthFocusNotes[mKey] = prevVal;
+        else delete window.monthFocusNotes[mKey];
+        logAction({
+          module: "schedule",
+          tab: "focus",
+          type: "restore",
+          description: `Відкочено фокус місяця (${mKey})`,
+          details: `Повернено: «${prevVal || 'порожньо'}»`
+        });
+        saveLocalData();
+        renderApp();
+        alert(`✅ Фокус місяця успішно повернуто!`);
+        return;
+      }
+
+      // 5. Tracker Hub Repairs Revert (Direct Cross-Module Sync)
+      if (entry.type === "repair_delete" && entry.restoreData && entry.restoreData.repair) {
+        const restoredRep = entry.restoreData.repair;
+        if (isFirebaseReady && DB_TRACKERS_DOC) {
+          const docSnap = await DB_TRACKERS_DOC.get();
+          let currentRepairs = (docSnap.exists && docSnap.data().repairs) || [];
+          if (!currentRepairs.some(r => r.id === restoredRep.id)) {
+            currentRepairs.unshift(restoredRep);
+            await DB_TRACKERS_DOC.set({ repairs: currentRepairs, updatedAt: Date.now() }, { merge: true });
+          }
+        }
+        try {
+          const raw = localStorage.getItem("szvk_trackers_data");
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed && Array.isArray(parsed.repairs) && !parsed.repairs.some(r => r.id === restoredRep.id)) {
+              parsed.repairs.unshift(restoredRep);
+              localStorage.setItem("szvk_trackers_data", JSON.stringify(parsed));
+            }
+          }
+        } catch(e) {}
+
+        logAction({
+          module: "tracker_hub",
+          tab: "repairs",
+          type: "restore",
+          description: `Відновлено ремонт авто #${restoredRep.vehicle || restoredRep.id}`,
+          details: `S/N: ${restoredRep.serial || '—'} | Перевізник: ${restoredRep.carrier || '—'}`
+        });
+        renderHistoryView();
+        alert(`✅ Запис ремонту для авто #${restoredRep.vehicle || restoredRep.id} успішно відновлено в Tracker Hub!`);
+        return;
+      }
+
+      if (entry.type === "repair_edit" && entry.restoreData && entry.restoreData.prevRepair) {
+        const prevRep = entry.restoreData.prevRepair;
+        if (isFirebaseReady && DB_TRACKERS_DOC) {
+          const docSnap = await DB_TRACKERS_DOC.get();
+          let currentRepairs = (docSnap.exists && docSnap.data().repairs) || [];
+          const idx = currentRepairs.findIndex(r => r.id === prevRep.id);
+          if (idx !== -1) {
+            currentRepairs[idx] = prevRep;
+          } else {
+            currentRepairs.unshift(prevRep);
+          }
+          await DB_TRACKERS_DOC.set({ repairs: currentRepairs, updatedAt: Date.now() }, { merge: true });
+        }
+        try {
+          const raw = localStorage.getItem("szvk_trackers_data");
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed && Array.isArray(parsed.repairs)) {
+              const idx = parsed.repairs.findIndex(r => r.id === prevRep.id);
+              if (idx !== -1) parsed.repairs[idx] = prevRep;
+              localStorage.setItem("szvk_trackers_data", JSON.stringify(parsed));
+            }
+          }
+        } catch(e) {}
+
+        logAction({
+          module: "tracker_hub",
+          tab: "repairs",
+          type: "restore",
+          description: `Скасовано зміни в ремонті авто #${prevRep.vehicle || prevRep.id}`,
+          details: `Повернено попередній стан запису`
+        });
+        renderHistoryView();
+        alert(`✅ Зміни в ремонті авто #${prevRep.vehicle || prevRep.id} успішно скасовано!`);
+        return;
+      }
+
+      // 6. Tracker Hub Inventory Revert
+      if (entry.type === "inv_delete" && entry.restoreData && entry.restoreData.item) {
+        const restoredItem = entry.restoreData.item;
+        if (isFirebaseReady && DB_TRACKERS_DOC) {
+          const docSnap = await DB_TRACKERS_DOC.get();
+          let currentInv = (docSnap.exists && docSnap.data().inventory) || [];
+          if (!currentInv.some(i => i.id === restoredItem.id)) {
+            currentInv.unshift(restoredItem);
+            await DB_TRACKERS_DOC.set({ inventory: currentInv, updatedAt: Date.now() }, { merge: true });
+          }
+        }
+        logAction({
+          module: "tracker_hub",
+          tab: "inventory",
+          type: "restore",
+          description: `Відновлено трекер на склад: S/N ${restoredItem.serial}`,
+          details: `Статус: ${restoredItem.status} | Призначено: ${restoredItem.assignedTo || 'Офіс'}`
+        });
+        renderHistoryView();
+        alert(`✅ Трекер S/N ${restoredItem.serial} успішно відновлено на склад Tracker Hub!`);
+        return;
+      }
+
+      if (entry.type === "inv_return" && entry.restoreData && entry.restoreData.itemId) {
+        const { itemId, prevStatus, prevAssignedTo } = entry.restoreData;
+        if (isFirebaseReady && DB_TRACKERS_DOC) {
+          const docSnap = await DB_TRACKERS_DOC.get();
+          let currentInv = (docSnap.exists && docSnap.data().inventory) || [];
+          const it = currentInv.find(i => i.id === itemId);
+          if (it) {
+            it.status = prevStatus || 'Встановлено';
+            it.assignedTo = prevAssignedTo || '';
+            await DB_TRACKERS_DOC.set({ inventory: currentInv, updatedAt: Date.now() }, { merge: true });
+          }
+        }
+        logAction({
+          module: "tracker_hub",
+          tab: "inventory",
+          type: "restore",
+          description: `Скасовано повернення трекера в офіс`,
+          details: `Повернено статус: ${prevStatus}`
+        });
+        renderHistoryView();
+        alert(`✅ Статус трекера повернено!`);
+        return;
+      }
+
+      alert("Для цієї дії відкочування не передбачено або запис уже був оновлений.");
+    } catch(err) {
+      console.error("Помилка відкочування:", err);
+      alert("Помилка при відновленні: " + err.message);
     }
   }
 
-  let currentHistoryFilter = "all";
+  function editAction(actionId) {
+    const entry = (window.actionHistory || []).find(a => a.id === actionId);
+    if (!entry) return;
+
+    // 1. Tracker Hub Repairs
+    if (entry.tab === "repairs" || (entry.type && entry.type.startsWith("repair_"))) {
+      const repId = (entry.editRef && entry.editRef.id) || (entry.restoreData && (entry.restoreData.repairId || (entry.restoreData.repair && entry.restoreData.repair.id) || (entry.restoreData.prevRepair && entry.restoreData.prevRepair.id)));
+      if (repId) {
+        window.location.href = `trackers.html?editRepair=${repId}`;
+      } else {
+        window.location.href = `trackers.html`;
+      }
+      return;
+    }
+
+    // 2. Tracker Hub Inventory
+    if (entry.tab === "inventory" || (entry.type && (entry.type.startsWith("inv_") || entry.type.startsWith("bulk_")))) {
+      window.location.href = `trackers.html?tab=inventory`;
+      return;
+    }
+
+    // 3. Schedule Day Tasks
+    if (entry.tab === "day_tasks" || (entry.type && entry.type.startsWith("task_"))) {
+      const dateKey = (entry.editRef && entry.editRef.dateKey) || (entry.restoreData && entry.restoreData.dateKey);
+      const taskId = (entry.editRef && entry.editRef.taskId) || (entry.restoreData && entry.restoreData.task && entry.restoreData.task.id);
+      if (dateKey && window.dayNotes && window.dayNotes[dateKey]) {
+        const tasks = window.dayNotes[dateKey];
+        let task = taskId ? tasks.find(t => t.id === taskId) : tasks[0];
+        if (!task && tasks.length > 0) task = tasks[0];
+        if (task) {
+          const newText = prompt(`Редагувати текст завдання на ${dateKey}:`, task.text);
+          if (newText !== null && newText.trim() && newText.trim() !== task.text) {
+            const oldText = task.text;
+            task.text = newText.trim();
+            logAction({
+              module: "schedule",
+              tab: "day_tasks",
+              type: "task_edit",
+              description: `Відредаговано завдання на ${dateKey}`,
+              details: `«${task.text}» (було: «${oldText}»)`,
+              restoreData: { dateKey, taskId: task.id, prevText: oldText },
+              editRef: { module: "schedule", type: "task", dateKey, taskId: task.id }
+            });
+            saveLocalData();
+            renderApp();
+            renderHistoryView();
+            alert("✅ Завдання успішно оновлено!");
+            return;
+          }
+        }
+      }
+      activeTab = "tasks";
+      renderApp();
+      return;
+    }
+
+    // 4. Notes / Debts
+    if (entry.tab === "notes" || (entry.type && entry.type.startsWith("debt_"))) {
+      const mKey = (entry.editRef && entry.editRef.mKey) || (entry.restoreData && entry.restoreData.mKey);
+      const itemId = (entry.editRef && entry.editRef.itemId) || (entry.restoreData && entry.restoreData.item && entry.restoreData.item.id);
+      if (mKey && window.monthlyDebts && window.monthlyDebts[mKey]) {
+        const items = window.monthlyDebts[mKey];
+        let item = itemId ? items.find(i => i.id === itemId) : items[0];
+        if (!item && items.length > 0) item = items[0];
+        if (item) {
+          const newText = prompt(`Редагувати нотатку (${mKey}):`, item.text);
+          if (newText !== null && newText.trim() && newText.trim() !== item.text) {
+            const oldText = item.text;
+            item.text = newText.trim();
+            logAction({
+              module: "schedule",
+              tab: "notes",
+              type: "debt_edit",
+              description: `Відредаговано нотатку на ${mKey}`,
+              details: `«${item.text}» (було: «${oldText}»)`,
+              restoreData: { mKey, itemId: item.id, prevText: oldText },
+              editRef: { module: "schedule", type: "debt", mKey, itemId: item.id }
+            });
+            saveLocalData();
+            renderApp();
+            renderHistoryView();
+            alert("✅ Нотатку успішно оновлено!");
+            return;
+          }
+        }
+      }
+      activeTab = "debts";
+      renderApp();
+      return;
+    }
+
+    // 5. Month Focus
+    if (entry.tab === "focus" || entry.type === "focus_edit") {
+      activeTab = "calendar";
+      renderApp();
+      const season = getSeasonDetails(currentSeasonIndex);
+      const mObj = season.months[selectedMonthRelative];
+      const mKey = formatMonthKey(mObj.year, mObj.month);
+      const currentVal = (window.monthFocusNotes && window.monthFocusNotes[mKey]) || "";
+      const newVal = prompt(`Редагувати фокус на ${MONTH_NAMES[mObj.month]} ${mObj.year}:`, currentVal);
+      if (newVal !== null) {
+        if (newVal.trim()) window.monthFocusNotes[mKey] = newVal.trim();
+        else delete window.monthFocusNotes[mKey];
+        logAction({
+          module: "schedule",
+          tab: "focus",
+          type: "focus_edit",
+          description: `Оновлено фокус на ${MONTH_NAMES[mObj.month]} ${mObj.year}`,
+          details: `«${newVal.trim() || 'очищено'}» (було: «${currentVal || 'порожньо'}»)`,
+          restoreData: { mKey, prevVal: currentVal },
+          editRef: { module: "schedule", type: "focus", mKey }
+        });
+        saveLocalData();
+        renderApp();
+        renderHistoryView();
+        alert("✅ Фокус місяця оновлено!");
+      }
+      return;
+    }
+
+    // 6. Calendar shift
+    if (entry.tab === "calendar" || entry.type === "shift_swap") {
+      activeTab = "calendar";
+      renderApp();
+      if (entry.restoreData) {
+        const { year, month, day } = entry.restoreData;
+        openDayModal(year, month, day);
+      }
+      return;
+    }
+  }
+
+  let currentHistoryModule = "all";
+  let currentHistoryTab = "all";
   let historySearchQuery = "";
 
   function renderHistoryView() {
@@ -2301,12 +2928,28 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     const filtered = list.filter(item => {
-      if (currentHistoryFilter === "shift_swap" && item.type !== "shift_swap") return false;
-      if (currentHistoryFilter === "tasks" && !["task_add", "task_toggle", "task_delete"].includes(item.type)) return false;
-      if (currentHistoryFilter === "debts" && !["debt_add", "debt_toggle", "debt_delete"].includes(item.type)) return false;
-      if (currentHistoryFilter === "focus" && item.type !== "focus_edit") return false;
-      if (currentHistoryFilter === "admin" && !["user_manage", "reset_shifts", "restore", "admin"].includes(item.type)) return false;
+      // 1. Module filter
+      if (currentHistoryModule !== "all") {
+        const itemMod = item.module || (item.type && (item.type.startsWith("repair_") || item.type.startsWith("inv_") || item.type.startsWith("bulk_")) ? "tracker_hub" : "schedule");
+        if (itemMod !== currentHistoryModule) return false;
+      }
 
+      // 2. Tab filter
+      if (currentHistoryTab !== "all") {
+        let itemTab = item.tab;
+        if (!itemTab) {
+          if (item.type === "shift_swap") itemTab = "calendar";
+          else if (item.type && item.type.startsWith("task_")) itemTab = "day_tasks";
+          else if (item.type && item.type.startsWith("debt_")) itemTab = "notes";
+          else if (item.type === "focus_edit") itemTab = "focus";
+          else if (item.type && item.type.startsWith("repair_")) itemTab = "repairs";
+          else if (item.type && (item.type.startsWith("inv_") || item.type.startsWith("bulk_"))) itemTab = "inventory";
+          else itemTab = "admin";
+        }
+        if (itemTab !== currentHistoryTab) return false;
+      }
+
+      // 3. Search query
       if (historySearchQuery) {
         const q = historySearchQuery.toLowerCase();
         const matchDesc = (item.description || "").toLowerCase().includes(q);
@@ -2323,7 +2966,7 @@ document.addEventListener("DOMContentLoaded", function () {
         <div style="text-align: center; padding: 36px 12px; color: var(--text-muted);">
           <div style="font-size: 32px; margin-bottom: 8px;">🔍</div>
           <div style="font-size: 14px; font-weight: 700; color: var(--text);">Записів у журналі не знайдено</div>
-          <div style="font-size: 12px; margin-top: 4px;">Спробуйте змінити фільтр або ввести інший пошуковий запит.</div>
+          <div style="font-size: 12px; margin-top: 4px;">Спробуйте змінити фільтр розділу/вкладки або ввести інший пошуковий запит.</div>
         </div>
       `;
       return;
@@ -2334,81 +2977,161 @@ document.addEventListener("DOMContentLoaded", function () {
       const card = document.createElement("div");
       card.className = "history-item-card";
 
+      const isTrackerHub = (item.module === "tracker_hub" || (item.type && (item.type.startsWith("repair_") || item.type.startsWith("inv_") || item.type.startsWith("bulk_"))));
+      const moduleTagHtml = isTrackerHub
+        ? `<span class="history-module-tag tracker">🛰️ Tracker Hub</span>`
+        : `<span class="history-module-tag">📅 Справи</span>`;
+
       let icon = "📝";
       let badgeLabel = "Дія";
       let badgeBg = "rgba(148, 163, 184, 0.2)";
       let badgeColor = "#94a3b8";
+      let tabName = "Загальне";
 
+      // Detect badges & icons
       if (item.type === "shift_swap") {
         icon = "⇄";
         badgeLabel = "Підміна";
+        tabName = "Графік";
         badgeBg = "rgba(139, 92, 246, 0.2)";
         badgeColor = "#c084fc";
       } else if (item.type === "task_add") {
         icon = "➕";
         badgeLabel = "Нове завдання";
+        tabName = "Завдання дня";
         badgeBg = "rgba(16, 185, 129, 0.2)";
         badgeColor = "#34d399";
       } else if (item.type === "task_toggle") {
         icon = "☑️";
         badgeLabel = "Статус завдання";
+        tabName = "Завдання дня";
         badgeBg = "rgba(59, 130, 246, 0.2)";
         badgeColor = "#60a5fa";
+      } else if (item.type === "task_edit") {
+        icon = "✏️";
+        badgeLabel = "Зміна завдання";
+        tabName = "Завдання дня";
+        badgeBg = "rgba(245, 158, 11, 0.2)";
+        badgeColor = "#fbbf24";
       } else if (item.type === "task_delete") {
         icon = "🗑️";
         badgeLabel = "Видалено завдання";
+        tabName = "Завдання дня";
         badgeBg = "rgba(239, 68, 68, 0.2)";
         badgeColor = "#f87171";
       } else if (item.type === "debt_add") {
         icon = "📌";
-        badgeLabel = "Новий таскбар";
+        badgeLabel = "Нова нотатка";
+        tabName = "Нотатки";
         badgeBg = "rgba(16, 185, 129, 0.2)";
         badgeColor = "#34d399";
       } else if (item.type === "debt_toggle") {
         icon = "☑️";
-        badgeLabel = "Статус таскбара";
+        badgeLabel = "Статус нотатки";
+        tabName = "Нотатки";
+        badgeBg = "rgba(245, 158, 11, 0.2)";
+        badgeColor = "#fbbf24";
+      } else if (item.type === "debt_edit") {
+        icon = "✏️";
+        badgeLabel = "Зміна нотатки";
+        tabName = "Нотатки";
         badgeBg = "rgba(245, 158, 11, 0.2)";
         badgeColor = "#fbbf24";
       } else if (item.type === "debt_delete") {
         icon = "🗑️";
-        badgeLabel = "Видалено таскбар";
+        badgeLabel = "Видалено нотатку";
+        tabName = "Нотатки";
         badgeBg = "rgba(239, 68, 68, 0.2)";
         badgeColor = "#f87171";
       } else if (item.type === "focus_edit") {
         icon = "🎯";
         badgeLabel = "Фокус місяця";
+        tabName = "Фокус";
         badgeBg = "rgba(56, 189, 248, 0.2)";
         badgeColor = "#38bdf8";
+      } else if (item.type === "repair_add") {
+        icon = "🔧";
+        badgeLabel = "Новий ремонт";
+        tabName = "Ремонт";
+        badgeBg = "rgba(16, 185, 129, 0.2)";
+        badgeColor = "#34d399";
+      } else if (item.type === "repair_edit") {
+        icon = "✏️";
+        badgeLabel = "Зміна ремонту";
+        tabName = "Ремонт";
+        badgeBg = "rgba(59, 130, 246, 0.2)";
+        badgeColor = "#60a5fa";
+      } else if (item.type === "repair_delete") {
+        icon = "🗑️";
+        badgeLabel = "Видалено ремонт";
+        tabName = "Ремонт";
+        badgeBg = "rgba(239, 68, 68, 0.2)";
+        badgeColor = "#f87171";
+      } else if (item.type === "inv_add" || item.type === "bulk_inv_add") {
+        icon = "📦";
+        badgeLabel = "Склад трекерів";
+        tabName = "Склад";
+        badgeBg = "rgba(16, 185, 129, 0.2)";
+        badgeColor = "#34d399";
+      } else if (item.type === "inv_status" || item.type === "inv_return") {
+        icon = "🔄";
+        badgeLabel = "Рух трекера";
+        tabName = "Склад";
+        badgeBg = "rgba(245, 158, 11, 0.2)";
+        badgeColor = "#fbbf24";
+      } else if (item.type === "inv_delete") {
+        icon = "🗑️";
+        badgeLabel = "Видалено зі складу";
+        tabName = "Склад";
+        badgeBg = "rgba(239, 68, 68, 0.2)";
+        badgeColor = "#f87171";
       } else if (item.type === "reset_shifts") {
         icon = "⚠️";
         badgeLabel = "Скидання графіка";
+        tabName = "Адмін";
         badgeBg = "rgba(239, 68, 68, 0.2)";
         badgeColor = "#f87171";
       } else if (item.type === "user_manage") {
         icon = "🛡️";
         badgeLabel = "Користувач";
+        tabName = "Адмін";
         badgeBg = "rgba(59, 130, 246, 0.2)";
         badgeColor = "#60a5fa";
       } else if (item.type === "restore") {
         icon = "↩️";
         badgeLabel = "Відновлено";
+        tabName = item.tab || "Історія";
         badgeBg = "rgba(20, 184, 166, 0.2)";
         badgeColor = "#2dd4bf";
       }
 
-      let restoreBtnHtml = "";
-      if ((item.type === "task_delete" || item.type === "debt_delete") && item.restoreData) {
-        restoreBtnHtml = `
-          <button class="history-restore-btn" data-restore-id="${item.id}" title="Відновити цей пункт назад у список">
-            ↩️ Відновити
-          </button>
-        `;
-      } else if (item.type === "shift_swap" && item.restoreData) {
-        restoreBtnHtml = `
-          <button class="history-restore-btn" data-restore-id="${item.id}" title="Повернути зміну назад">
-            ↩️ Скасувати підміну
-          </button>
-        `;
+      // Check if item can be reverted
+      const canRevert = Boolean(item.restoreData && item.type !== "restore");
+
+      // Check if item can be edited
+      let canEdit = false;
+      if (item.type && (item.type.startsWith("repair_") || item.type.startsWith("task_") || item.type.startsWith("debt_") || item.type === "focus_edit" || item.type.startsWith("inv_"))) {
+        canEdit = true;
+      }
+
+      let actionsHtml = "";
+      if (canRevert || canEdit) {
+        actionsHtml = `<div class="history-actions-group">`;
+        if (canRevert) {
+          actionsHtml += `
+            <button class="history-restore-btn" data-restore-id="${item.id}" title="Відкотити цю зміну назад">
+              ↩️ Відкотити
+            </button>
+          `;
+        }
+        if (canEdit) {
+          actionsHtml += `
+            <button class="history-edit-btn" data-edit-id="${item.id}" title="Відредагувати запис">
+              ✏️ Редагувати
+            </button>
+          `;
+        }
+        actionsHtml += `</div>`;
       }
 
       card.innerHTML = `
@@ -2416,6 +3139,8 @@ document.addEventListener("DOMContentLoaded", function () {
           <div class="history-item-icon">${icon}</div>
           <div class="history-item-content">
             <div class="history-item-title-row">
+              ${moduleTagHtml}
+              <span class="history-tab-tag">${tabName}</span>
               <span class="history-type-badge" style="background: ${badgeBg}; color: ${badgeColor}; border: 1px solid ${badgeColor}33;">${badgeLabel}</span>
               <span class="history-item-desc">${escapeHtml(item.description)}</span>
             </div>
@@ -2427,12 +3152,23 @@ document.addEventListener("DOMContentLoaded", function () {
             </div>
           </div>
         </div>
-        ${restoreBtnHtml}
+        ${actionsHtml}
       `;
 
       const restoreBtn = card.querySelector(".history-restore-btn");
       if (restoreBtn) {
-        restoreBtn.onclick = () => restoreAction(item.id);
+        restoreBtn.onclick = (e) => {
+          e.stopPropagation();
+          restoreAction(item.id);
+        };
+      }
+
+      const editBtn = card.querySelector(".history-edit-btn");
+      if (editBtn) {
+        editBtn.onclick = (e) => {
+          e.stopPropagation();
+          editAction(item.id);
+        };
       }
 
       container.appendChild(card);
@@ -2568,7 +3304,9 @@ document.addEventListener("DOMContentLoaded", function () {
       item.querySelector(".task-modal-checkbox").onchange = (e) => {
         task.done = e.target.checked;
         window.dayNotes[dateKey] = tasks;
-        logAction('task_toggle', `${task.done ? 'Виконано' : 'Повернуто в роботу'} завдання на ${dateKey}`, `«${task.text}»`);
+        logAction('task_toggle', `${task.done ? 'Виконано' : 'Повернуто в роботу'} завдання на ${dateKey}`, `«${task.text}»`, {
+          dateKey, taskId: task.id, prevDone: !task.done
+        }, { editRef: { module: 'schedule', type: 'task', dateKey, taskId: task.id } });
         saveLocalData();
         renderModalTasks(tasks, dateKey);
         renderApp();
@@ -2641,7 +3379,7 @@ document.addEventListener("DOMContentLoaded", function () {
     window.dayNotes[dateKey] = tasks;
     logAction('task_add', `Додано завдання на ${day} ${MONTH_NAMES[month]} ${year}`, `«${newTask.text}» (автор: ${newTask.author})`, {
       dateKey, task: newTask
-    });
+    }, { editRef: { module: 'schedule', type: 'task', dateKey, taskId: newTask.id } });
 
     saveLocalData();
     dayInputEl.value = "";
@@ -2979,7 +3717,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
         row.querySelector(".task-modal-checkbox").onchange = (e) => {
           item.settled = e.target.checked;
-          logAction('debt_toggle', `${item.settled ? 'Вирішено' : 'Повернуто в роботу'} таскбар на ${MONTH_NAMES[mObj.month]} ${mObj.year}`, `«${item.text}»`);
+          logAction('debt_toggle', `${item.settled ? 'Вирішено' : 'Повернуто в роботу'} таскбар на ${MONTH_NAMES[mObj.month]} ${mObj.year}`, `«${item.text}»`, {
+            mKey, itemId: item.id, prevSettled: !item.settled
+          }, { editRef: { module: 'schedule', type: 'debt', mKey, itemId: item.id } });
           saveLocalData();
           renderDebts(season);
         };
@@ -3019,7 +3759,7 @@ document.addEventListener("DOMContentLoaded", function () {
         window.monthlyDebts[mKey].push(newItem);
         logAction('debt_add', `Додано таскбар на ${MONTH_NAMES[mObj.month]} ${mObj.year}`, `«${v}» (автор: ${newItem.author})`, {
           mKey, item: newItem
-        });
+        }, { editRef: { module: 'schedule', type: 'debt', mKey, itemId: newItem.id } });
         saveLocalData();
         renderDebts(season);
       };
@@ -3040,7 +3780,9 @@ document.addEventListener("DOMContentLoaded", function () {
     const oldVal = (window.monthFocusNotes && window.monthFocusNotes[activeMonthKey]) || "";
     if (val) window.monthFocusNotes[activeMonthKey] = val;
     else delete window.monthFocusNotes[activeMonthKey];
-    logAction('focus_edit', `Оновлено фокус на ${MONTH_NAMES[activeMonthObj.month]} ${activeMonthObj.year}`, `Новий фокус: «${val || 'очищено'}» (було: «${oldVal || 'порожньо'}»)`);
+    logAction('focus_edit', `Оновлено фокус на ${MONTH_NAMES[activeMonthObj.month]} ${activeMonthObj.year}`, `Новий фокус: «${val || 'очищено'}» (було: «${oldVal || 'порожньо'}»)`, {
+      mKey: activeMonthKey, prevVal: oldVal
+    }, { editRef: { module: 'schedule', type: 'focus', mKey: activeMonthKey } });
     saveLocalData();
     document.getElementById("globalNoteModal").classList.remove("active");
     renderApp();
@@ -3051,7 +3793,9 @@ document.addEventListener("DOMContentLoaded", function () {
     const activeMonthKey = formatMonthKey(activeMonthObj.year, activeMonthObj.month);
     const oldVal = (window.monthFocusNotes && window.monthFocusNotes[activeMonthKey]) || "";
     delete window.monthFocusNotes[activeMonthKey];
-    logAction('focus_edit', `Очищено фокус на ${MONTH_NAMES[activeMonthObj.month]} ${activeMonthObj.year}`, `Видалено текст: «${oldVal}»`);
+    logAction('focus_edit', `Очищено фокус на ${MONTH_NAMES[activeMonthObj.month]} ${activeMonthObj.year}`, `Видалено текст: «${oldVal}»`, {
+      mKey: activeMonthKey, prevVal: oldVal
+    }, { editRef: { module: 'schedule', type: 'focus', mKey: activeMonthKey } });
     saveLocalData();
     document.getElementById("globalNoteModal").classList.remove("active");
     renderApp();
@@ -3118,12 +3862,32 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   };
 
-  const filterBtns = document.querySelectorAll(".history-filter-btn");
-  filterBtns.forEach(btn => {
+  const moduleBtns = document.querySelectorAll(".history-module-btn");
+  moduleBtns.forEach(btn => {
     btn.onclick = () => {
-      filterBtns.forEach(b => b.classList.remove("active"));
+      moduleBtns.forEach(b => b.classList.remove("active"));
       btn.classList.add("active");
-      currentHistoryFilter = btn.getAttribute("data-filter") || "all";
+      currentHistoryModule = btn.getAttribute("data-module") || "all";
+      renderHistoryView();
+    };
+  });
+
+  const tabFilterBtns = document.querySelectorAll(".history-tab-btn");
+  tabFilterBtns.forEach(btn => {
+    btn.onclick = () => {
+      tabFilterBtns.forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      currentHistoryTab = btn.getAttribute("data-tab") || "all";
+
+      // Auto synchronize module selection if user clicks a tab specific to a module
+      if (["repairs", "inventory"].includes(currentHistoryTab)) {
+        currentHistoryModule = "tracker_hub";
+        moduleBtns.forEach(b => b.classList.toggle("active", b.getAttribute("data-module") === "tracker_hub"));
+      } else if (["calendar", "day_tasks", "notes", "focus"].includes(currentHistoryTab)) {
+        currentHistoryModule = "schedule";
+        moduleBtns.forEach(b => b.classList.toggle("active", b.getAttribute("data-module") === "schedule"));
+      }
+
       renderHistoryView();
     };
   });

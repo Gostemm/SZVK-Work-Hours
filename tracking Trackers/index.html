@@ -11,7 +11,7 @@
       if (window.location.protocol.startsWith("http")) {
         var token = localStorage.getItem('szvk_auth_token') || sessionStorage.getItem('szvk_auth_token');
         if (!token) {
-          window.location.replace("../index.html");
+          window.location.replace("index.html");
           return;
         }
       }
@@ -402,6 +402,12 @@
       border-color: #f59e0b;
       color: #000;
       box-shadow: 0 2px 10px rgba(245, 158, 11, 0.4);
+    }
+    .main-tab-btn.history-tab.active {
+      background: #8b5cf6;
+      border-color: #8b5cf6;
+      color: #fff;
+      box-shadow: 0 2px 10px rgba(139, 92, 246, 0.4);
     }
 
     .tab-counter {
@@ -897,6 +903,7 @@
     [data-theme="light"] .main-tab-btn.active { background: #2563eb; color: #ffffff; border-color: #2563eb; }
     [data-theme="light"] .main-tab-btn.inventory-tab.active { background: #059669; color: #ffffff; border-color: #059669; }
     [data-theme="light"] .main-tab-btn.at-tab.active { background: #d97706; color: #ffffff; border-color: #d97706; }
+    [data-theme="light"] .main-tab-btn.history-tab.active { background: #7c3aed; color: #ffffff; border-color: #7c3aed; }
     [data-theme="light"] .tab-counter { background: #e2e8f0; color: #0f172a; font-weight: 900; }
     [data-theme="light"] .main-tab-btn.active .tab-counter { background: rgba(255, 255, 255, 0.3); color: #ffffff; }
 
@@ -1756,14 +1763,321 @@
       gap: 6px;
     }
 
-    @media (max-width: 768px) {
-      .top-header-bar { flex-direction: column; align-items: stretch; }
-      .header-actions { justify-content: space-between; }
-      .nav-toolbar { flex-direction: column; align-items: stretch; }
-      .search-wrap { width: 100%; min-width: auto; }
-      .form-grid { grid-template-columns: 1fr; }
-      .form-col-2 { grid-column: span 1; }
-      .dashboard { grid-template-columns: repeat(2, 1fr); }
+    /* HISTORY VIEW STYLES (TRACKER HUB + SCHEDULE) */
+    .history-controls-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 4px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .history-module-group {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      flex-wrap: wrap;
+    }
+    .history-module-btn {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 5px 11px;
+      font-size: 11.5px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .history-module-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text);
+    }
+    .history-module-btn.active {
+      background: #3b82f6;
+      color: #ffffff;
+      border-color: #3b82f6;
+      box-shadow: 0 0 10px rgba(59, 130, 246, 0.35);
+    }
+    [data-theme="light"] .history-module-btn.active {
+      background: #2563eb;
+      color: #ffffff;
+      border-color: #2563eb;
+    }
+
+    .history-tab-pills {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      flex-wrap: wrap;
+      padding-top: 4px;
+    }
+    .history-tab-btn {
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 4px 9px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .history-tab-btn:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text);
+    }
+    .history-tab-btn.active {
+      background: rgba(139, 92, 246, 0.22);
+      color: #c084fc;
+      border-color: #8b5cf6;
+      font-weight: 700;
+    }
+    [data-theme="light"] .history-tab-btn.active {
+      background: #ede9fe;
+      color: #6d28d9;
+      border-color: #8b5cf6;
+    }
+
+    .history-hint-banner {
+      background: rgba(59, 130, 246, 0.08);
+      border: 1px solid rgba(59, 130, 246, 0.25);
+      border-left: 3px solid #3b82f6;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 12px;
+      color: #93c5fd;
+      line-height: 1.4;
+      margin-top: 4px;
+    }
+    [data-theme="light"] .history-hint-banner {
+      background: #eff6ff;
+      border-color: #bfdbfe;
+      border-left: 3px solid #2563eb;
+      color: #1e40af;
+    }
+
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 6px;
+      max-height: 560px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+    .history-item-card {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 14px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      transition: all 0.2s;
+    }
+    .history-item-card:hover {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: rgba(139, 92, 246, 0.4);
+    }
+    [data-theme="light"] .history-item-card {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+    }
+    [data-theme="light"] .history-item-card:hover {
+      background: #f1f5f9;
+      border-color: #8b5cf6;
+    }
+
+    .history-item-main {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      flex: 1;
+      min-width: 0;
+    }
+    .history-item-icon {
+      font-size: 18px;
+      line-height: 1;
+      padding: 6px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.05);
+      flex-shrink: 0;
+    }
+    [data-theme="light"] .history-item-icon {
+      background: rgba(0, 0, 0, 0.05);
+    }
+
+    .history-item-content {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      flex: 1;
+      min-width: 0;
+    }
+    .history-item-title-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .history-item-desc {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+      word-break: break-word;
+    }
+    .history-type-badge {
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .history-item-details {
+      font-size: 12px;
+      color: var(--text-muted);
+      word-break: break-word;
+      line-height: 1.35;
+    }
+    .history-item-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 3px;
+      font-size: 11px;
+      color: var(--text-muted);
+      flex-wrap: wrap;
+    }
+    .history-item-user {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-weight: 700;
+      color: #38bdf8;
+    }
+    [data-theme="light"] .history-item-user {
+      color: #0284c7;
+    }
+    .history-item-time {
+      opacity: 0.85;
+    }
+
+    .history-actions-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .history-restore-btn {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      padding: 6px 11px;
+      font-size: 11px;
+      font-weight: 700;
+      border-radius: 6px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    .history-restore-btn:hover {
+      background: #10b981;
+      color: #ffffff;
+      border-color: #10b981;
+    }
+    [data-theme="light"] .history-restore-btn {
+      background: #d1fae5;
+      color: #065f46;
+      border-color: #6ee7b7;
+    }
+    [data-theme="light"] .history-restore-btn:hover {
+      background: #059669;
+      color: #ffffff;
+    }
+
+    .history-edit-btn {
+      background: rgba(59, 130, 246, 0.15);
+      color: #60a5fa;
+      border: 1px solid rgba(59, 130, 246, 0.35);
+      padding: 6px 10px;
+      font-size: 11px;
+      font-weight: 700;
+      border-radius: 6px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      text-decoration: none;
+    }
+    .history-edit-btn:hover {
+      background: #3b82f6;
+      color: #ffffff;
+    }
+    [data-theme="light"] .history-edit-btn {
+      background: #dbeafe;
+      color: #1d4ed8;
+      border-color: #93c5fd;
+    }
+    [data-theme="light"] .history-edit-btn:hover {
+      background: #2563eb;
+      color: #ffffff;
+    }
+
+    .history-module-tag {
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: rgba(59, 130, 246, 0.15);
+      color: #60a5fa;
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .history-module-tag.tracker {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border-color: rgba(16, 185, 129, 0.3);
+    }
+    [data-theme="light"] .history-module-tag {
+      background: #dbeafe;
+      color: #1e40af;
+      border-color: #93c5fd;
+    }
+    [data-theme="light"] .history-module-tag.tracker {
+      background: #d1fae5;
+      color: #065f46;
+      border-color: #6ee7b7;
+    }
+
+    .history-tab-tag {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: rgba(139, 92, 246, 0.15);
+      color: #c084fc;
+      border: 1px solid rgba(139, 92, 246, 0.3);
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+    }
+    [data-theme="light"] .history-tab-tag {
+      background: #ede9fe;
+      color: #6d28d9;
+      border-color: #c4b5fd;
     }
   </style>
 </head>
@@ -1859,6 +2173,11 @@
       <button class="main-tab-btn at-tab" id="tabBtnAtCommands">
         <span>⚡ АТ Команди (Ремайндер)</span>
         <span class="tab-counter" id="tabCounterAt">56</span>
+      </button>
+
+      <button class="main-tab-btn history-tab" id="tabBtnHistory">
+        <span>🕒 Історія дій</span>
+        <span class="tab-counter" id="tabCounterHistory">0</span>
       </button>
     </div>
 
@@ -2054,6 +2373,54 @@
     <div class="at-grid" id="atCommandsGrid">
       <!-- Filled by JS -->
     </div>
+  </div>
+
+  <!-- VIEW 4: ACTION HISTORY -->
+  <div class="view-card" id="viewHistory" style="display: none; flex-direction: column; gap: 14px;">
+    <div class="card-header-row" style="margin-bottom: 0;">
+      <div class="card-title">
+        <span>🕒 Історія дій та аудит змін</span>
+        <span id="historyTotalBadgeTrackers" style="font-size: 11px; color: var(--text-muted); font-weight: 700;">(0 дій)</span>
+      </div>
+      <button class="btn" id="btnClearHistoryBtnTrackers" style="font-size: 11px; padding: 4px 10px; background: rgba(239, 68, 68, 0.15); color: #f87171; border-color: rgba(239, 68, 68, 0.3);">
+        🗑️ Очистити журнал
+      </button>
+    </div>
+
+    <div class="history-controls-bar">
+      <div style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+          <div class="history-module-group" id="historyModuleFilters">
+            <span style="font-size: 11px; font-weight: 800; color: var(--text-muted); margin-right: 2px;">РОЗДІЛ:</span>
+            <button type="button" class="history-module-btn active" data-module="all">🌐 Всі розділи</button>
+            <button type="button" class="history-module-btn" data-module="tracker_hub">🛰️ Tracker Hub</button>
+            <button type="button" class="history-module-btn" data-module="schedule">📅 Справи Системника</button>
+          </div>
+
+          <div class="history-search-wrap">
+            <input type="text" id="historySearchInputTrackers" class="search-input" style="font-size: 12px; padding: 6px 12px; width: 240px;" placeholder="🔍 Пошук (авто, S/N, автор, дія)...">
+          </div>
+        </div>
+
+        <div class="history-tab-pills" id="historyTabFilters">
+          <span style="font-size: 11px; font-weight: 800; color: var(--text-muted); margin-right: 2px;">ВКЛАДКА:</span>
+          <button type="button" class="history-tab-btn active" data-tab="all">Усі вкладки</button>
+          <button type="button" class="history-tab-btn" data-tab="repairs">🔧 Ремонт трекерів</button>
+          <button type="button" class="history-tab-btn" data-tab="inventory">📦 Склад і трекери</button>
+          <button type="button" class="history-tab-btn" data-tab="calendar">🔄 Підміни (Графік)</button>
+          <button type="button" class="history-tab-btn" data-tab="day_tasks">📋 Завдання дня</button>
+          <button type="button" class="history-tab-btn" data-tab="notes">📝 Загальні нотатки</button>
+          <button type="button" class="history-tab-btn" data-tab="focus">🎯 Фокус місяця</button>
+          <button type="button" class="history-tab-btn" data-tab="admin">🛡️ Адмін / Інше</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="history-hint-banner">
+      💡 <strong>Контроль змін (Tracker Hub + Справи Системника):</strong> Тут фіксуються зміни по ремонту трекерів, складу, графіку та нотатках. Оберіть потрібну вкладку для швидкого пошуку. Для повернення випадкової дії натисніть <strong>«↩️ Відкотити»</strong>, або <strong>«✏️ Редагувати»</strong> щоб внести корективи.
+    </div>
+
+    <div class="history-list" id="historyListContainerTrackers"></div>
   </div>
 
 </div>
@@ -2414,6 +2781,9 @@
   const tabBtnJournal = document.getElementById('tabBtnJournal');
   const tabBtnInventory = document.getElementById('tabBtnInventory');
   const tabBtnAtCommands = document.getElementById('tabBtnAtCommands');
+  const tabBtnHistory = document.getElementById('tabBtnHistory');
+  const viewHistory = document.getElementById('viewHistory');
+  const tabCounterHistory = document.getElementById('tabCounterHistory');
 
   const tableModeContainer = document.getElementById('tableModeContainer');
   const cardsModeContainer = document.getElementById('cardsModeContainer');
@@ -2832,6 +3202,25 @@
 
   let dbTrackers = null;
   let DB_TRACKERS_DOC = null;
+  let DB_HISTORY_DOC = null;
+  let DB_SCHEDULE_DOC = null;
+  const UNIFIED_HISTORY_STORAGE_KEY = 'szvk_action_history_unified';
+
+  let currentUser = null;
+  try {
+    const sess = localStorage.getItem('szvk_internal_session');
+    if (sess) currentUser = JSON.parse(sess);
+  } catch(e) {}
+
+  function loadLocalUnifiedHistory() {
+    try {
+      const data = localStorage.getItem(UNIFIED_HISTORY_STORAGE_KEY);
+      if (data) return JSON.parse(data);
+    } catch(e) {}
+    return [];
+  }
+  window.actionHistory = loadLocalUnifiedHistory();
+
   try {
     if (typeof firebase !== 'undefined') {
       if (!firebase.apps || !firebase.apps.length) {
@@ -2839,6 +3228,8 @@
       }
       dbTrackers = firebase.firestore();
       DB_TRACKERS_DOC = dbTrackers.collection('szvk_app').doc('trackers');
+      DB_HISTORY_DOC = dbTrackers.collection('szvk_app').doc('history');
+      DB_SCHEDULE_DOC = dbTrackers.collection('szvk_app').doc('schedule');
     }
   } catch(e) {}
 
@@ -2853,6 +3244,23 @@
       }
       cloudSyncDot.className = 'status-dot syncing';
       cloudSyncText.textContent = 'З\'єднання...';
+
+      // Realtime listener for unified history
+      if (DB_HISTORY_DOC) {
+        DB_HISTORY_DOC.onSnapshot((hSnap) => {
+          if (hSnap.exists) {
+            const hData = hSnap.data();
+            if (hData && Array.isArray(hData.items)) {
+              window.actionHistory = hData.items;
+              try {
+                localStorage.setItem(UNIFIED_HISTORY_STORAGE_KEY, JSON.stringify(hData.items));
+              } catch(e) {}
+              updateHistoryCounter();
+              if (activeTab === 'history') renderHistory();
+            }
+          }
+        }, (err) => console.warn('Trackers history listener notice:', err));
+      }
 
       if (DB_TRACKERS_DOC) {
         const docSnap = await DB_TRACKERS_DOC.get();
@@ -3596,6 +4004,504 @@
     grid.innerHTML = html;
   }
 
+  // --- UNIFIED ACTION HISTORY (TRACKER HUB + SCHEDULE) ---
+  let currentHistoryModule = 'all';
+  let currentHistoryTab = 'all';
+  let historySearchQuery = '';
+
+  function updateHistoryCounter() {
+    const list = window.actionHistory || [];
+    if (tabCounterHistory) tabCounterHistory.textContent = list.length;
+    const badge = document.getElementById('historyTotalBadgeTrackers');
+    if (badge) badge.textContent = `(${list.length} дій)`;
+  }
+
+  function formatHistoryTime(timestamp) {
+    if (!timestamp) return '';
+    const d = new Date(timestamp);
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    return `${day}.${month}.${year} о ${hours}:${minutes}`;
+  }
+
+  function logAction(data) {
+    if (!Array.isArray(window.actionHistory)) window.actionHistory = [];
+    const entry = {
+      id: 'act_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+      timestamp: Date.now(),
+      user: currentUser ? (currentUser.name || currentUser.username) : 'Користувач',
+      username: currentUser ? currentUser.username : 'unknown',
+      module: data.module || 'tracker_hub',
+      tab: data.tab || 'repairs',
+      type: data.type || 'general',
+      description: data.description || '',
+      details: data.details || '',
+      restoreData: data.restoreData || null,
+      editRef: data.editRef || null
+    };
+    window.actionHistory.unshift(entry);
+    if (window.actionHistory.length > 300) window.actionHistory.length = 300;
+    updateHistoryCounter();
+    pushHistoryToFirestore();
+    return entry;
+  }
+
+  let historyPushDebounceTimer = null;
+  function pushHistoryToFirestore() {
+    try {
+      localStorage.setItem(UNIFIED_HISTORY_STORAGE_KEY, JSON.stringify(window.actionHistory || []));
+    } catch(e) {}
+    if (!DB_HISTORY_DOC) return;
+    clearTimeout(historyPushDebounceTimer);
+    historyPushDebounceTimer = setTimeout(async () => {
+      try {
+        await DB_HISTORY_DOC.set({
+          items: (window.actionHistory || []).slice(0, 300),
+          updatedAt: Date.now()
+        }, { merge: true });
+      } catch(err) {
+        console.warn('Error pushing history from Tracker Hub:', err);
+      }
+    }, 300);
+  }
+
+  async function restoreAction(actionId) {
+    const entry = (window.actionHistory || []).find(a => a.id === actionId);
+    if (!entry || !entry.restoreData) {
+      alert('Немає збережених даних для відновлення цієї дії.');
+      return;
+    }
+
+    if (!confirm(`Відкотити дію:\n«${entry.description}»?`)) return;
+
+    try {
+      // 1. Tracker Hub Repairs
+      if (entry.type === 'repair_delete' && entry.restoreData && entry.restoreData.repair) {
+        const rep = entry.restoreData.repair;
+        if (!appData.repairs.some(r => r.id === rep.id)) {
+          appData.repairs.unshift(rep);
+          saveLocalData();
+          renderRepairs();
+          updateDashboardStats();
+        }
+        logAction({
+          module: 'tracker_hub',
+          tab: 'repairs',
+          type: 'restore',
+          description: `Відновлено ремонт авто #${rep.vehicle || rep.id}`,
+          details: `S/N: ${rep.serial || '—'} | Перевізник: ${rep.carrier || '—'}`
+        });
+        renderHistory();
+        showToast(`Запис ремонту авто #${rep.vehicle || rep.id} успішно відновлено!`);
+        return;
+      }
+
+      if (entry.type === 'repair_edit' && entry.restoreData && entry.restoreData.prevRepair) {
+        const prevRep = entry.restoreData.prevRepair;
+        const idx = appData.repairs.findIndex(r => r.id === prevRep.id);
+        if (idx !== -1) {
+          appData.repairs[idx] = prevRep;
+        } else {
+          appData.repairs.unshift(prevRep);
+        }
+        saveLocalData();
+        renderRepairs();
+        updateDashboardStats();
+        logAction({
+          module: 'tracker_hub',
+          tab: 'repairs',
+          type: 'restore',
+          description: `Скасовано зміни в ремонті авто #${prevRep.vehicle || prevRep.id}`,
+          details: `Повернено попередній стан запису`
+        });
+        renderHistory();
+        showToast(`Зміни в ремонті авто #${prevRep.vehicle || prevRep.id} скасовано!`);
+        return;
+      }
+
+      // 2. Tracker Hub Inventory
+      if (entry.type === 'inv_delete' && entry.restoreData && entry.restoreData.item) {
+        const it = entry.restoreData.item;
+        if (!appData.inventory.some(i => i.id === it.id)) {
+          appData.inventory.unshift(it);
+          saveLocalData();
+          renderInventory();
+        }
+        logAction({
+          module: 'tracker_hub',
+          tab: 'inventory',
+          type: 'restore',
+          description: `Відновлено трекер на склад: S/N ${it.serial}`,
+          details: `Статус: ${it.status} | Призначено: ${it.assignedTo || 'Офіс'}`
+        });
+        renderHistory();
+        showToast(`Трекер ${it.serial} відновлено на склад!`);
+        return;
+      }
+
+      if (entry.type === 'inv_return' && entry.restoreData && entry.restoreData.itemId) {
+        const { itemId, prevStatus, prevAssignedTo } = entry.restoreData;
+        const it = appData.inventory.find(i => i.id === itemId);
+        if (it) {
+          it.status = prevStatus || 'Встановлено';
+          it.assignedTo = prevAssignedTo || '';
+          saveLocalData();
+          renderInventory();
+          logAction({
+            module: 'tracker_hub',
+            tab: 'inventory',
+            type: 'restore',
+            description: `Скасовано повернення трекера в офіс`,
+            details: `Повернено статус: ${prevStatus}`
+          });
+          renderHistory();
+          showToast(`Статус трекера повернено: ${prevStatus}!`);
+          return;
+        }
+      }
+
+      // 3. Schedule cross-revert via DB_SCHEDULE_DOC
+      if (DB_SCHEDULE_DOC && (entry.module === 'schedule' || entry.tab === 'calendar' || entry.tab === 'day_tasks' || entry.tab === 'notes' || entry.tab === 'focus')) {
+        const sSnap = await DB_SCHEDULE_DOC.get();
+        if (sSnap.exists) {
+          const sData = sSnap.data() || {};
+          let changed = false;
+
+          if (entry.type === 'shift_swap') {
+            const { year, month, day, prevWorker } = entry.restoreData;
+            const key = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            if (!sData.overrides) sData.overrides = {};
+            sData.overrides[key] = prevWorker;
+            changed = true;
+          } else if (entry.type === 'task_delete') {
+            const { dateKey, task } = entry.restoreData;
+            if (!sData.dayNotes) sData.dayNotes = {};
+            if (!sData.dayNotes[dateKey]) sData.dayNotes[dateKey] = [];
+            sData.dayNotes[dateKey].push(task);
+            changed = true;
+          } else if (entry.type === 'debt_delete') {
+            const { mKey, item } = entry.restoreData;
+            if (!sData.monthlyDebts) sData.monthlyDebts = {};
+            if (!sData.monthlyDebts[mKey]) sData.monthlyDebts[mKey] = [];
+            sData.monthlyDebts[mKey].push(item);
+            changed = true;
+          }
+
+          if (changed) {
+            sData.updatedAt = Date.now();
+            await DB_SCHEDULE_DOC.set(sData, { merge: true });
+            logAction({
+              module: 'schedule',
+              tab: entry.tab || 'calendar',
+              type: 'restore',
+              description: `Відновлено пункт розкладу: «${entry.description}»`,
+              details: `Успішно повернено в базу Справ Системника`
+            });
+            renderHistory();
+            showToast(`Пункт розкладу успішно відновлено!`);
+            return;
+          }
+        }
+      }
+
+      alert('Для цієї дії відкочування не передбачено або запис уже був оновлений.');
+    } catch(err) {
+      console.error('Помилка відкочування:', err);
+      alert('Помилка: ' + err.message);
+    }
+  }
+
+  function editAction(actionId) {
+    const entry = (window.actionHistory || []).find(a => a.id === actionId);
+    if (!entry) return;
+
+    // 1. Tracker Hub Repairs: open modal right away!
+    if (entry.tab === 'repairs' || (entry.type && entry.type.startsWith('repair_'))) {
+      const repId = (entry.editRef && entry.editRef.id) || (entry.restoreData && (entry.restoreData.repairId || (entry.restoreData.repair && entry.restoreData.repair.id) || (entry.restoreData.prevRepair && entry.restoreData.prevRepair.id)));
+      if (repId) {
+        tabBtnJournal.click();
+        setTimeout(() => {
+          if (typeof window.editRepair === 'function') {
+            window.editRepair(repId);
+          }
+        }, 100);
+      }
+      return;
+    }
+
+    // 2. Inventory: switch to inventory tab
+    if (entry.tab === 'inventory' || (entry.type && (entry.type.startsWith('inv_') || entry.type.startsWith('bulk_')))) {
+      tabBtnInventory.click();
+      return;
+    }
+
+    // 3. Schedule items: navigate to index.html
+    window.location.href = 'index.html?tab=history';
+  }
+
+  function renderHistory() {
+    const container = document.getElementById('historyListContainerTrackers');
+    if (!container) return;
+
+    updateHistoryCounter();
+
+    const list = window.actionHistory || [];
+    const filtered = list.filter(item => {
+      // 1. Module filter
+      if (currentHistoryModule !== 'all') {
+        const itemMod = item.module || (item.type && (item.type.startsWith('repair_') || item.type.startsWith('inv_') || item.type.startsWith('bulk_')) ? 'tracker_hub' : 'schedule');
+        if (itemMod !== currentHistoryModule) return false;
+      }
+
+      // 2. Tab filter
+      if (currentHistoryTab !== 'all') {
+        let itemTab = item.tab;
+        if (!itemTab) {
+          if (item.type === 'shift_swap') itemTab = 'calendar';
+          else if (item.type && item.type.startsWith('task_')) itemTab = 'day_tasks';
+          else if (item.type && item.type.startsWith('debt_')) itemTab = 'notes';
+          else if (item.type === 'focus_edit') itemTab = 'focus';
+          else if (item.type && item.type.startsWith('repair_')) itemTab = 'repairs';
+          else if (item.type && (item.type.startsWith('inv_') || item.type.startsWith('bulk_'))) itemTab = 'inventory';
+          else itemTab = 'admin';
+        }
+        if (itemTab !== currentHistoryTab) return false;
+      }
+
+      // 3. Search query
+      if (historySearchQuery) {
+        const q = historySearchQuery.toLowerCase();
+        const matchDesc = (item.description || '').toLowerCase().includes(q);
+        const matchDetails = (item.details || '').toLowerCase().includes(q);
+        const matchUser = (item.user || '').toLowerCase().includes(q);
+        const matchTime = formatHistoryTime(item.timestamp).toLowerCase().includes(q);
+        if (!matchDesc && !matchDetails && !matchUser && !matchTime) return false;
+      }
+      return true;
+    });
+
+    if (filtered.length === 0) {
+      container.innerHTML = `
+        <div style="text-align: center; padding: 36px 12px; color: var(--text-muted);">
+          <div style="font-size: 32px; margin-bottom: 8px;">🔍</div>
+          <div style="font-size: 14px; font-weight: 700; color: var(--text);">Записів у журналі не знайдено</div>
+          <div style="font-size: 12px; margin-top: 4px;">Спробуйте обрати інший розділ або очистити пошуковий рядок.</div>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = '';
+    filtered.forEach(item => {
+      const card = document.createElement('div');
+      card.className = 'history-item-card';
+
+      const isTrackerHub = (item.module === 'tracker_hub' || (item.type && (item.type.startsWith('repair_') || item.type.startsWith('inv_') || item.type.startsWith('bulk_'))));
+      const moduleTagHtml = isTrackerHub
+        ? `<span class="history-module-tag tracker">🛰️ Tracker Hub</span>`
+        : `<span class="history-module-tag">📅 Справи</span>`;
+
+      let icon = '📝';
+      let badgeLabel = 'Дія';
+      let badgeBg = 'rgba(148, 163, 184, 0.2)';
+      let badgeColor = '#94a3b8';
+      let tabName = 'Загальне';
+
+      if (item.type === 'repair_add') {
+        icon = '🔧';
+        badgeLabel = 'Новий ремонт';
+        tabName = 'Ремонт';
+        badgeBg = 'rgba(16, 185, 129, 0.2)';
+        badgeColor = '#34d399';
+      } else if (item.type === 'repair_edit') {
+        icon = '✏️';
+        badgeLabel = 'Зміна ремонту';
+        tabName = 'Ремонт';
+        badgeBg = 'rgba(59, 130, 246, 0.2)';
+        badgeColor = '#60a5fa';
+      } else if (item.type === 'repair_delete') {
+        icon = '🗑️';
+        badgeLabel = 'Видалено ремонт';
+        tabName = 'Ремонт';
+        badgeBg = 'rgba(239, 68, 68, 0.2)';
+        badgeColor = '#f87171';
+      } else if (item.type === 'inv_add' || item.type === 'bulk_inv_add') {
+        icon = '📦';
+        badgeLabel = 'Склад трекерів';
+        tabName = 'Склад';
+        badgeBg = 'rgba(16, 185, 129, 0.2)';
+        badgeColor = '#34d399';
+      } else if (item.type === 'inv_status' || item.type === 'inv_return') {
+        icon = '🔄';
+        badgeLabel = 'Рух трекера';
+        tabName = 'Склад';
+        badgeBg = 'rgba(245, 158, 11, 0.2)';
+        badgeColor = '#fbbf24';
+      } else if (item.type === 'inv_delete') {
+        icon = '🗑️';
+        badgeLabel = 'Видалено зі складу';
+        tabName = 'Склад';
+        badgeBg = 'rgba(239, 68, 68, 0.2)';
+        badgeColor = '#f87171';
+      } else if (item.type === 'shift_swap') {
+        icon = '⇄';
+        badgeLabel = 'Підміна';
+        tabName = 'Графік';
+        badgeBg = 'rgba(139, 92, 246, 0.2)';
+        badgeColor = '#c084fc';
+      } else if (item.type && item.type.startsWith('task_')) {
+        icon = '📋';
+        badgeLabel = 'Завдання';
+        tabName = 'Завдання дня';
+        badgeBg = 'rgba(59, 130, 246, 0.2)';
+        badgeColor = '#60a5fa';
+      } else if (item.type && item.type.startsWith('debt_')) {
+        icon = '📌';
+        badgeLabel = 'Нотатка';
+        tabName = 'Нотатки';
+        badgeBg = 'rgba(16, 185, 129, 0.2)';
+        badgeColor = '#34d399';
+      } else if (item.type === 'focus_edit') {
+        icon = '🎯';
+        badgeLabel = 'Фокус місяця';
+        tabName = 'Фокус';
+        badgeBg = 'rgba(56, 189, 248, 0.2)';
+        badgeColor = '#38bdf8';
+      } else if (item.type === 'restore') {
+        icon = '↩️';
+        badgeLabel = 'Відновлено';
+        tabName = item.tab || 'Історія';
+        badgeBg = 'rgba(20, 184, 166, 0.2)';
+        badgeColor = '#2dd4bf';
+      }
+
+      const canRevert = Boolean(item.restoreData && item.type !== 'restore');
+      let canEdit = false;
+      if (item.type && (item.type.startsWith('repair_') || item.type.startsWith('task_') || item.type.startsWith('debt_') || item.type === 'focus_edit' || item.type.startsWith('inv_'))) {
+        canEdit = true;
+      }
+
+      let actionsHtml = '';
+      if (canRevert || canEdit) {
+        actionsHtml = `<div class="history-actions-group">`;
+        if (canRevert) {
+          actionsHtml += `
+            <button class="history-restore-btn" data-restore-id="${item.id}" title="Відкотити цю дію">
+              ↩️ Відкотити
+            </button>
+          `;
+        }
+        if (canEdit) {
+          actionsHtml += `
+            <button class="history-edit-btn" data-edit-id="${item.id}" title="Відредагувати запис">
+              ✏️ Редагувати
+            </button>
+          `;
+        }
+        actionsHtml += `</div>`;
+      }
+
+      card.innerHTML = `
+        <div class="history-item-main">
+          <div class="history-item-icon">${icon}</div>
+          <div class="history-item-content">
+            <div class="history-item-title-row">
+              ${moduleTagHtml}
+              <span class="history-tab-tag">${tabName}</span>
+              <span class="history-type-badge" style="background: ${badgeBg}; color: ${badgeColor}; border: 1px solid ${badgeColor}33;">${badgeLabel}</span>
+              <span class="history-item-desc">${escapeHtml(item.description)}</span>
+            </div>
+            ${item.details ? `<div class="history-item-details">${escapeHtml(item.details)}</div>` : ''}
+            <div class="history-item-meta">
+              <span class="history-item-user">👤 ${escapeHtml(item.user || 'Користувач')}</span>
+              <span>•</span>
+              <span class="history-item-time">🕒 ${formatHistoryTime(item.timestamp)}</span>
+            </div>
+          </div>
+        </div>
+        ${actionsHtml}
+      `;
+
+      const restoreBtn = card.querySelector('.history-restore-btn');
+      if (restoreBtn) {
+        restoreBtn.onclick = (e) => {
+          e.stopPropagation();
+          restoreAction(item.id);
+        };
+      }
+
+      const editBtn = card.querySelector('.history-edit-btn');
+      if (editBtn) {
+        editBtn.onclick = (e) => {
+          e.stopPropagation();
+          editAction(item.id);
+        };
+      }
+
+      container.appendChild(card);
+    });
+  }
+
+  function initHistoryEventsTrackers() {
+    const moduleBtns = document.querySelectorAll('#historyModuleFilters .history-module-btn');
+    moduleBtns.forEach(btn => {
+      btn.onclick = () => {
+        moduleBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentHistoryModule = btn.getAttribute('data-module') || 'all';
+        renderHistory();
+      };
+    });
+
+    const tabBtns = document.querySelectorAll('#historyTabFilters .history-tab-btn');
+    tabBtns.forEach(btn => {
+      btn.onclick = () => {
+        tabBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentHistoryTab = btn.getAttribute('data-tab') || 'all';
+
+        if (['repairs', 'inventory'].includes(currentHistoryTab)) {
+          currentHistoryModule = 'tracker_hub';
+          moduleBtns.forEach(b => b.classList.toggle('active', b.getAttribute('data-module') === 'tracker_hub'));
+        } else if (['calendar', 'day_tasks', 'notes', 'focus'].includes(currentHistoryTab)) {
+          currentHistoryModule = 'schedule';
+          moduleBtns.forEach(b => b.classList.toggle('active', b.getAttribute('data-module') === 'schedule'));
+        }
+
+        renderHistory();
+      };
+    });
+
+    const searchInp = document.getElementById('historySearchInputTrackers');
+    if (searchInp) {
+      searchInp.oninput = (e) => {
+        historySearchQuery = e.target.value.trim();
+        renderHistory();
+      };
+    }
+
+    const clearBtn = document.getElementById('btnClearHistoryBtnTrackers');
+    if (clearBtn) {
+      clearBtn.onclick = () => {
+        if (confirm('Очистити спільний журнал дій?')) {
+          window.actionHistory = [];
+          logAction({
+            module: 'tracker_hub',
+            tab: 'admin',
+            type: 'admin',
+            description: 'Журнал дій очищено користувачем',
+            details: `Очищено користувачем @${currentUser ? currentUser.username : 'користувач'}`
+          });
+          renderHistory();
+          showToast('Журнал дій очищено');
+        }
+      };
+    }
+  }
+
   // Global Actions for Window
   window.editRepair = function(id) {
     const item = appData.repairs.find(r => r.id === id);
@@ -3671,16 +4577,39 @@
   };
 
   window.deleteRepair = function(id) {
-    if (!confirm('Видалити цей запис ремонту?')) return;
+    const toDelete = appData.repairs.find(r => r.id === id);
+    if (!toDelete) return;
+    if (!confirm(`Видалити цей запис ремонту (Авто #${toDelete.vehicle || id})?`)) return;
     appData.repairs = appData.repairs.filter(r => r.id !== id);
+    logAction({
+      module: 'tracker_hub',
+      tab: 'repairs',
+      type: 'repair_delete',
+      description: `Видалено ремонт авто #${toDelete.vehicle || id} (${toDelete.carrier || '—'})`,
+      details: `S/N: ${toDelete.serial || '—'} | Заявник: ${toDelete.reportedBy || '—'} | Несправність: ${toDelete.issue || '—'}`,
+      restoreData: { repair: toDelete },
+      editRef: null
+    });
     saveLocalData();
     renderRepairs();
+    updateDashboardStats();
     showToast('Запис видалено');
   };
 
   window.deleteInventoryItem = function(id) {
-    if (!confirm('Видалити цей трекер зі складу?')) return;
+    const toDelete = appData.inventory.find(i => i.id === id);
+    if (!toDelete) return;
+    if (!confirm(`Видалити цей трекер (S/N: ${toDelete.serial}) зі складу?`)) return;
     appData.inventory = appData.inventory.filter(i => i.id !== id);
+    logAction({
+      module: 'tracker_hub',
+      tab: 'inventory',
+      type: 'inv_delete',
+      description: `Видалено трекер S/N ${toDelete.serial} зі складу`,
+      details: `Статус був: ${toDelete.status} | Призначено: ${toDelete.assignedTo || 'Офіс'}`,
+      restoreData: { item: toDelete },
+      editRef: null
+    });
     saveLocalData();
     renderInventory();
     showToast('Трекер видалено зі складу');
@@ -3689,8 +4618,19 @@
   window.returnTrackerToOffice = function(id) {
     const item = appData.inventory.find(i => i.id === id);
     if (!item) return;
+    const prevStatus = item.status;
+    const prevAssignedTo = item.assignedTo;
     item.status = 'Офіс';
     item.assignedTo = '';
+    logAction({
+      module: 'tracker_hub',
+      tab: 'inventory',
+      type: 'inv_return',
+      description: `Трекер S/N ${item.serial} повернуто в офіс`,
+      details: `Попередній статус: ${prevStatus} | Був у: ${prevAssignedTo || '—'}`,
+      restoreData: { itemId: item.id, prevStatus, prevAssignedTo },
+      editRef: { module: 'tracker_hub', type: 'inventory', id: item.id }
+    });
     saveLocalData();
     renderInventory();
     showToast(`Трекер ${item.serial} повернуто в офіс`);
@@ -3731,9 +4671,11 @@
     tabBtnJournal.className = 'main-tab-btn active';
     tabBtnInventory.className = 'main-tab-btn inventory-tab';
     tabBtnAtCommands.className = 'main-tab-btn at-tab';
+    tabBtnHistory.className = 'main-tab-btn history-tab';
     viewJournal.style.display = 'flex';
     viewInventory.style.display = 'none';
     viewAtCommands.style.display = 'none';
+    viewHistory.style.display = 'none';
   });
 
   tabBtnInventory.addEventListener('click', () => {
@@ -3741,9 +4683,11 @@
     tabBtnJournal.className = 'main-tab-btn';
     tabBtnInventory.className = 'main-tab-btn inventory-tab active';
     tabBtnAtCommands.className = 'main-tab-btn at-tab';
+    tabBtnHistory.className = 'main-tab-btn history-tab';
     viewJournal.style.display = 'none';
     viewInventory.style.display = 'flex';
     viewAtCommands.style.display = 'none';
+    viewHistory.style.display = 'none';
     renderInventory();
   });
 
@@ -3752,10 +4696,25 @@
     tabBtnJournal.className = 'main-tab-btn';
     tabBtnInventory.className = 'main-tab-btn inventory-tab';
     tabBtnAtCommands.className = 'main-tab-btn at-tab active';
+    tabBtnHistory.className = 'main-tab-btn history-tab';
     viewJournal.style.display = 'none';
     viewInventory.style.display = 'none';
     viewAtCommands.style.display = 'flex';
+    viewHistory.style.display = 'none';
     renderAtCommands();
+  });
+
+  tabBtnHistory.addEventListener('click', () => {
+    activeTab = 'history';
+    tabBtnJournal.className = 'main-tab-btn';
+    tabBtnInventory.className = 'main-tab-btn inventory-tab';
+    tabBtnAtCommands.className = 'main-tab-btn at-tab';
+    tabBtnHistory.className = 'main-tab-btn history-tab active';
+    viewJournal.style.display = 'none';
+    viewInventory.style.display = 'none';
+    viewAtCommands.style.display = 'none';
+    viewHistory.style.display = 'flex';
+    renderHistory();
   });
 
   // Toggle Table / Cards View
@@ -3960,6 +4919,7 @@
       // Edit existing
       const rec = appData.repairs.find(r => r.id === parseInt(editId, 10));
       if (rec) {
+        const prevRepair = JSON.parse(JSON.stringify(rec));
         rec.date = date;
         rec.carrier = carrier;
         rec.reportedBy = reportedBy;
@@ -3970,6 +4930,16 @@
         rec.specialist = specialist;
         rec.solution = solution;
         rec.notes = notes;
+
+        logAction({
+          module: 'tracker_hub',
+          tab: 'repairs',
+          type: 'repair_edit',
+          description: `Оновлено ремонт авто #${vehicle || editId} (${carrier || 'Без перевізника'})`,
+          details: `S/N: ${serial || '—'} | Проблема: ${issue || '—'} | Робота: ${solution || '—'}${repairDate ? ' | Дата: ' + repairDate : ''}`,
+          restoreData: { prevRepair },
+          editRef: { module: 'tracker_hub', type: 'repair', id: parseInt(editId, 10) }
+        });
       }
       showToast('Запис успішно оновлено!');
     } else {
@@ -3989,6 +4959,16 @@
         notes
       };
       appData.repairs.unshift(newRec);
+
+      logAction({
+        module: 'tracker_hub',
+        tab: 'repairs',
+        type: 'repair_add',
+        description: `Нова заявка на ремонт: авто #${vehicle} (${carrier || 'Без перевізника'})`,
+        details: `S/N: ${serial || '—'} | Заявник: ${reportedBy || '—'} | Несправність: ${issue || '—'}`,
+        restoreData: { repairId: newRec.id, repair: newRec },
+        editRef: { module: 'tracker_hub', type: 'repair', id: newRec.id }
+      });
 
       // If replacement serial was used from office, mark it as installed
       if (serial.includes('➜')) {
@@ -4033,12 +5013,23 @@
     const assignedTo = document.getElementById('invInputAssigned').value.trim();
 
     const maxId = appData.inventory.reduce((max, i) => Math.max(max, i.id || 0), 0);
-    appData.inventory.unshift({
+    const newItem = {
       id: maxId + 1,
       receivedDate,
       serial,
       status,
       assignedTo
+    };
+    appData.inventory.unshift(newItem);
+
+    logAction({
+      module: 'tracker_hub',
+      tab: 'inventory',
+      type: 'inv_add',
+      description: `Додано трекер на склад: S/N ${serial}`,
+      details: `Статус: ${status} | Призначено: ${assignedTo || 'Офіс'} | Дата: ${receivedDate}`,
+      restoreData: { itemId: newItem.id, item: newItem },
+      editRef: { module: 'tracker_hub', type: 'inventory', id: newItem.id }
     });
 
     saveLocalData();
@@ -4225,6 +5216,16 @@
 
       appData.inventory.unshift(...newItems);
 
+      logAction({
+        module: 'tracker_hub',
+        tab: 'inventory',
+        type: 'bulk_inv_add',
+        description: `Масове додавання трекерів: +${uniqueSerials.length} шт`,
+        details: `S/N: ${uniqueSerials.slice(0, 5).join(', ')}${uniqueSerials.length > 5 ? ' ... (+ще ' + (uniqueSerials.length - 5) + ')' : ''}`,
+        restoreData: { itemIds: newItems.map(i => i.id) },
+        editRef: null
+      });
+
       saveLocalData();
       populateCarriersDatalist();
       populateCarriersFilter();
@@ -4370,11 +5371,28 @@
 
   // Initial Run
   initData();
+  initHistoryEventsTrackers();
+  updateHistoryCounter();
 
   if (urlParams.get('tab') === 'at') {
     tabBtnAtCommands.click();
   } else if (urlParams.get('tab') === 'inventory') {
     tabBtnInventory.click();
+  } else if (urlParams.get('tab') === 'history') {
+    tabBtnHistory.click();
+  }
+
+  const editRepairParam = urlParams.get('editRepair');
+  if (editRepairParam) {
+    const repId = parseInt(editRepairParam, 10);
+    if (!isNaN(repId)) {
+      tabBtnJournal.click();
+      setTimeout(() => {
+        if (typeof window.editRepair === 'function') {
+          window.editRepair(repId);
+        }
+      }, 300);
+    }
   }
 
 })();
