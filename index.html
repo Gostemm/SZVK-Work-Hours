@@ -488,6 +488,16 @@
       color: #ffffff !important;
       font-weight: 900;
     }
+    [data-theme="light"] .tab-btn.history-tab {
+      border-color: #8b5cf6;
+      color: #6d28d9 !important;
+      font-weight: 800;
+    }
+    [data-theme="light"] .tab-btn.history-tab.active {
+      background: #8b5cf6;
+      color: #ffffff !important;
+      font-weight: 900;
+    }
     [data-theme="light"] .global-month-banner {
       background: #eff6ff;
       border: 1.5px solid #bfdbfe;
@@ -1112,6 +1122,209 @@
       border-radius: 10px;
       cursor: pointer;
     }
+    .tab-btn.history-tab {
+      border-color: #8b5cf6;
+      color: #c084fc;
+    }
+    .tab-btn.history-tab.active {
+      background: #8b5cf6;
+      color: #ffffff;
+      font-weight: 900;
+    }
+
+    /* HISTORY VIEW STYLES */
+    .history-controls-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 4px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .history-filters {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .history-filter-btn {
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 5px 10px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .history-filter-btn:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text);
+    }
+    .history-filter-btn.active {
+      background: rgba(139, 92, 246, 0.25);
+      color: #c084fc;
+      border-color: #8b5cf6;
+    }
+    [data-theme="light"] .history-filter-btn.active {
+      background: #ede9fe;
+      color: #6d28d9;
+      border-color: #8b5cf6;
+    }
+    .history-hint-banner {
+      background: rgba(59, 130, 246, 0.08);
+      border: 1px solid rgba(59, 130, 246, 0.25);
+      border-left: 3px solid #3b82f6;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 12px;
+      color: #93c5fd;
+      line-height: 1.4;
+      margin-top: 6px;
+    }
+    [data-theme="light"] .history-hint-banner {
+      background: #eff6ff;
+      border-color: #bfdbfe;
+      border-left: 3px solid #2563eb;
+      color: #1e40af;
+    }
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 10px;
+      max-height: 560px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+    .history-item-card {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 14px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      transition: all 0.2s;
+    }
+    .history-item-card:hover {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: rgba(139, 92, 246, 0.4);
+    }
+    [data-theme="light"] .history-item-card {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+    }
+    [data-theme="light"] .history-item-card:hover {
+      background: #f1f5f9;
+      border-color: #8b5cf6;
+    }
+    .history-item-main {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      flex: 1;
+      min-width: 0;
+    }
+    .history-item-icon {
+      font-size: 18px;
+      line-height: 1;
+      padding: 6px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.05);
+      flex-shrink: 0;
+    }
+    [data-theme="light"] .history-item-icon {
+      background: rgba(0, 0, 0, 0.05);
+    }
+    .history-item-content {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      flex: 1;
+      min-width: 0;
+    }
+    .history-item-title-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .history-item-desc {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+      word-break: break-word;
+    }
+    .history-type-badge {
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .history-item-details {
+      font-size: 12px;
+      color: var(--text-muted);
+      word-break: break-word;
+      line-height: 1.35;
+    }
+    .history-item-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 3px;
+      font-size: 11px;
+      color: var(--text-muted);
+      flex-wrap: wrap;
+    }
+    .history-item-user {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-weight: 700;
+      color: #38bdf8;
+    }
+    [data-theme="light"] .history-item-user {
+      color: #0284c7;
+    }
+    .history-item-time {
+      opacity: 0.85;
+    }
+    .history-restore-btn {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      padding: 6px 11px;
+      font-size: 11px;
+      font-weight: 700;
+      border-radius: 6px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    .history-restore-btn:hover {
+      background: #10b981;
+      color: #ffffff;
+      border-color: #10b981;
+    }
+    [data-theme="light"] .history-restore-btn {
+      background: #d1fae5;
+      color: #065f46;
+      border-color: #6ee7b7;
+    }
+    [data-theme="light"] .history-restore-btn:hover {
+      background: #059669;
+      color: #ffffff;
+    }
   </style>
 </head>
 <body>
@@ -1217,6 +1430,11 @@
         <span class="tab-badge" id="debtsTabBadge" style="display: none;"></span>
       </button>
 
+      <button class="tab-btn history-tab" id="btnTabHistory">
+        <span>📜 Історія дій</span>
+        <span class="tab-badge" id="historyTabBadge" style="display: none;"></span>
+      </button>
+
       <button class="btn" id="btnOpenResetModal" style="display: none; background: rgba(239,68,68,0.2); color: #f87171;">
         Скинути підміни
       </button>
@@ -1250,6 +1468,39 @@
       </div>
       <div class="debt-grid" id="debtsGrid"></div>
     </div>
+  </div>
+
+  <div class="view-card" id="historyView" style="display: none;">
+    <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <div class="section-title">📜 Журнал дій та змін</div>
+        <span id="historyTotalBadge" style="font-size: 11px; padding: 2px 8px; border-radius: 10px; background: rgba(139, 92, 246, 0.2); color: #c084fc; font-weight: 800; border: 1px solid rgba(139, 92, 246, 0.35);">0 дій</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <button class="btn" id="btnClearHistoryBtn" style="background: rgba(239, 68, 68, 0.15); color: #f87171; font-size: 11px; padding: 5px 9px; border: 1px solid rgba(239, 68, 68, 0.3);" title="Очистити історію змін">🗑️ Очистити журнал</button>
+        <button class="btn" id="btnCloseHistory">⬅ Назад до графіка</button>
+      </div>
+    </div>
+
+    <div class="history-controls-bar">
+      <div class="history-filters" id="historyFiltersGroup">
+        <button class="history-filter-btn active" data-filter="all">Всі дії</button>
+        <button class="history-filter-btn" data-filter="shift_swap">🔄 Підміни</button>
+        <button class="history-filter-btn" data-filter="tasks">📋 Завдання дня</button>
+        <button class="history-filter-btn" data-filter="debts">📝 Нотатки</button>
+        <button class="history-filter-btn" data-filter="focus">🎯 Фокус</button>
+        <button class="history-filter-btn" data-filter="admin">🛡️ Адмін / Інше</button>
+      </div>
+      <div class="history-search-wrap">
+        <input type="text" id="historySearchInput" class="debt-input" style="font-size: 12px; padding: 6px 12px; width: 220px;" placeholder="🔍 Пошук (автор, дія, дата)...">
+      </div>
+    </div>
+
+    <div class="history-hint-banner">
+      💡 <strong>Контроль змін:</strong> Тут фіксується кожна зміна зміни, завдання чи нотатки із зазначенням автора та точного часу. Якщо хтось випадково видалив пункт або переплутав чергування — натисніть <strong>«↩️ Відновити»</strong> або <strong>«↩️ Скасувати підміну»</strong> поруч із записом.
+    </div>
+
+    <div class="history-list" id="historyListContainer"></div>
   </div>
 </div>
 
@@ -1762,6 +2013,7 @@ document.addEventListener("DOMContentLoaded", function () {
       if (isFirebaseReady) {
         await DB_USERS_DOC.set({ usersList: customUsers }, { merge: true });
       }
+      logAction('user_manage', `Створено користувача @${username}`, `Ім'я: ${name}`);
       renderAdminUsersList();
       this.reset();
     } catch(err) {
@@ -1812,6 +2064,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (isFirebaseReady) {
           await DB_USERS_DOC.set({ usersList: customUsers }, { merge: true });
         }
+        logAction('user_manage', `Змінено пароль для @${u.username}`, `Встановлено новий пароль`);
         alert(`Пароль для @${u.username} успішно змінено!`);
       };
 
@@ -1820,6 +2073,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (isFirebaseReady) {
           await DB_USERS_DOC.set({ usersList: customUsers }, { merge: true });
         }
+        logAction('user_manage', `${u.active ? 'Розблоковано' : 'Заблоковано'} користувача @${u.username}`, `Статус акаунта змінено`);
         renderAdminUsersList();
       };
 
@@ -1829,6 +2083,7 @@ document.addEventListener("DOMContentLoaded", function () {
           if (isFirebaseReady) {
             await DB_USERS_DOC.set({ usersList: customUsers }, { merge: true });
           }
+          logAction('user_manage', `Видалено користувача @${u.username}`, `Акаунт видалено`);
           renderAdminUsersList();
         }
       };
@@ -1843,7 +2098,7 @@ document.addEventListener("DOMContentLoaded", function () {
       const data = localStorage.getItem(STORAGE_KEY);
       if (data) return JSON.parse(data);
     } catch (e) {}
-    return { overrides: {}, dayNotes: {}, monthlyDebts: {}, monthFocusNotes: {} };
+    return { overrides: {}, dayNotes: {}, monthlyDebts: {}, monthFocusNotes: {}, actionHistory: [] };
   }
 
   function initRealtimeSync() {
@@ -1860,6 +2115,9 @@ document.addEventListener("DOMContentLoaded", function () {
           window.dayNotes = data.dayNotes || {};
           window.monthlyDebts = data.monthlyDebts || {};
           window.monthFocusNotes = data.monthFocusNotes || {};
+          if (Array.isArray(data.actionHistory)) {
+            window.actionHistory = data.actionHistory;
+          }
           try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
           } catch(e) {}
@@ -1895,6 +2153,7 @@ document.addEventListener("DOMContentLoaded", function () {
       dayNotes: window.dayNotes || {},
       monthlyDebts: window.monthlyDebts || {},
       monthFocusNotes: window.monthFocusNotes || {},
+      actionHistory: (window.actionHistory || []).slice(0, 300),
       updatedAt: Date.now()
     };
     try {
@@ -1929,6 +2188,256 @@ document.addEventListener("DOMContentLoaded", function () {
   window.dayNotes = initialData.dayNotes || {};
   window.monthlyDebts = initialData.monthlyDebts || {};
   window.monthFocusNotes = initialData.monthFocusNotes || {};
+  window.actionHistory = Array.isArray(initialData.actionHistory) ? initialData.actionHistory : [];
+
+  function formatHistoryTime(timestamp) {
+    if (!timestamp) return "";
+    const d = new Date(timestamp);
+    const day = String(d.getDate()).padStart(2, "0");
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const year = d.getFullYear();
+    const hours = String(d.getHours()).padStart(2, "0");
+    const minutes = String(d.getMinutes()).padStart(2, "0");
+    return `${day}.${month}.${year} о ${hours}:${minutes}`;
+  }
+
+  function logAction(type, description, details, restoreData) {
+    if (!Array.isArray(window.actionHistory)) {
+      window.actionHistory = [];
+    }
+    const entry = {
+      id: "act_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7),
+      timestamp: Date.now(),
+      user: currentUser ? (currentUser.name || currentUser.username) : "Користувач",
+      username: currentUser ? currentUser.username : "unknown",
+      type: type,
+      description: description,
+      details: details || "",
+      restoreData: restoreData || null
+    };
+    window.actionHistory.unshift(entry);
+    if (window.actionHistory.length > 300) {
+      window.actionHistory.length = 300;
+    }
+    updateHistoryBadge();
+  }
+
+  function updateHistoryBadge() {
+    const tabBadge = document.getElementById("historyTabBadge");
+    const totalBadge = document.getElementById("historyTotalBadge");
+    const count = (window.actionHistory || []).length;
+    if (tabBadge) {
+      tabBadge.style.display = count > 0 ? "inline-block" : "none";
+    }
+    if (totalBadge) {
+      totalBadge.textContent = `${count} дій`;
+    }
+  }
+
+  function restoreAction(actionId) {
+    const entry = (window.actionHistory || []).find(a => a.id === actionId);
+    if (!entry || !entry.restoreData) {
+      alert("Немає збережених даних для автоматичного відновлення.");
+      return;
+    }
+
+    if (entry.type === "task_delete") {
+      const { dateKey, task } = entry.restoreData;
+      if (!window.dayNotes[dateKey]) window.dayNotes[dateKey] = [];
+      const restoredTask = {
+        id: Date.now().toString(),
+        text: task.text,
+        done: task.done || false,
+        author: task.author || "Відновлено"
+      };
+      window.dayNotes[dateKey].push(restoredTask);
+      logAction("restore", `Відновлено завдання на ${dateKey}`, `«${task.text}»`);
+      saveLocalData();
+      renderApp();
+      alert(`✅ Завдання «${task.text}» успішно відновлено на день ${dateKey}!`);
+    } else if (entry.type === "debt_delete") {
+      const { mKey, item } = entry.restoreData;
+      if (!window.monthlyDebts[mKey]) window.monthlyDebts[mKey] = [];
+      const restoredItem = {
+        id: Date.now().toString(),
+        text: item.text,
+        settled: item.settled || false,
+        author: item.author || "Відновлено"
+      };
+      window.monthlyDebts[mKey].push(restoredItem);
+      logAction("restore", `Відновлено таскбар на ${mKey}`, `«${item.text}»`);
+      saveLocalData();
+      renderApp();
+      alert(`✅ Таскбар «${item.text}» успішно відновлено!`);
+    } else if (entry.type === "shift_swap") {
+      const { year, month, day, prevWorker } = entry.restoreData;
+      const key = formatDateKey(year, month, day);
+      const base = getBaseWorker(new Date(year, month, day));
+      if (prevWorker === base) {
+        delete window.overrides[key];
+      } else {
+        window.overrides[key] = prevWorker;
+      }
+      logAction("restore", `Скасовано підміну на ${day} ${MONTH_NAMES[month]} ${year}`, `Повернено чергового: ${prevWorker}`);
+      saveLocalData();
+      renderApp();
+      alert(`✅ Чергування на ${day}.${month + 1}.${year} повернуто: ${prevWorker}!`);
+    }
+  }
+
+  let currentHistoryFilter = "all";
+  let historySearchQuery = "";
+
+  function renderHistoryView() {
+    const container = document.getElementById("historyListContainer");
+    const totalBadge = document.getElementById("historyTotalBadge");
+    const tabBadge = document.getElementById("historyTabBadge");
+    if (!container) return;
+
+    const list = window.actionHistory || [];
+    if (totalBadge) totalBadge.textContent = `${list.length} дій`;
+    if (tabBadge) {
+      tabBadge.style.display = list.length > 0 ? "inline-block" : "none";
+    }
+
+    const filtered = list.filter(item => {
+      if (currentHistoryFilter === "shift_swap" && item.type !== "shift_swap") return false;
+      if (currentHistoryFilter === "tasks" && !["task_add", "task_toggle", "task_delete"].includes(item.type)) return false;
+      if (currentHistoryFilter === "debts" && !["debt_add", "debt_toggle", "debt_delete"].includes(item.type)) return false;
+      if (currentHistoryFilter === "focus" && item.type !== "focus_edit") return false;
+      if (currentHistoryFilter === "admin" && !["user_manage", "reset_shifts", "restore", "admin"].includes(item.type)) return false;
+
+      if (historySearchQuery) {
+        const q = historySearchQuery.toLowerCase();
+        const matchDesc = (item.description || "").toLowerCase().includes(q);
+        const matchDetails = (item.details || "").toLowerCase().includes(q);
+        const matchUser = (item.user || "").toLowerCase().includes(q);
+        const matchTime = formatHistoryTime(item.timestamp).toLowerCase().includes(q);
+        if (!matchDesc && !matchDetails && !matchUser && !matchTime) return false;
+      }
+      return true;
+    });
+
+    if (filtered.length === 0) {
+      container.innerHTML = `
+        <div style="text-align: center; padding: 36px 12px; color: var(--text-muted);">
+          <div style="font-size: 32px; margin-bottom: 8px;">🔍</div>
+          <div style="font-size: 14px; font-weight: 700; color: var(--text);">Записів у журналі не знайдено</div>
+          <div style="font-size: 12px; margin-top: 4px;">Спробуйте змінити фільтр або ввести інший пошуковий запит.</div>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = "";
+    filtered.forEach(item => {
+      const card = document.createElement("div");
+      card.className = "history-item-card";
+
+      let icon = "📝";
+      let badgeLabel = "Дія";
+      let badgeBg = "rgba(148, 163, 184, 0.2)";
+      let badgeColor = "#94a3b8";
+
+      if (item.type === "shift_swap") {
+        icon = "⇄";
+        badgeLabel = "Підміна";
+        badgeBg = "rgba(139, 92, 246, 0.2)";
+        badgeColor = "#c084fc";
+      } else if (item.type === "task_add") {
+        icon = "➕";
+        badgeLabel = "Нове завдання";
+        badgeBg = "rgba(16, 185, 129, 0.2)";
+        badgeColor = "#34d399";
+      } else if (item.type === "task_toggle") {
+        icon = "☑️";
+        badgeLabel = "Статус завдання";
+        badgeBg = "rgba(59, 130, 246, 0.2)";
+        badgeColor = "#60a5fa";
+      } else if (item.type === "task_delete") {
+        icon = "🗑️";
+        badgeLabel = "Видалено завдання";
+        badgeBg = "rgba(239, 68, 68, 0.2)";
+        badgeColor = "#f87171";
+      } else if (item.type === "debt_add") {
+        icon = "📌";
+        badgeLabel = "Новий таскбар";
+        badgeBg = "rgba(16, 185, 129, 0.2)";
+        badgeColor = "#34d399";
+      } else if (item.type === "debt_toggle") {
+        icon = "☑️";
+        badgeLabel = "Статус таскбара";
+        badgeBg = "rgba(245, 158, 11, 0.2)";
+        badgeColor = "#fbbf24";
+      } else if (item.type === "debt_delete") {
+        icon = "🗑️";
+        badgeLabel = "Видалено таскбар";
+        badgeBg = "rgba(239, 68, 68, 0.2)";
+        badgeColor = "#f87171";
+      } else if (item.type === "focus_edit") {
+        icon = "🎯";
+        badgeLabel = "Фокус місяця";
+        badgeBg = "rgba(56, 189, 248, 0.2)";
+        badgeColor = "#38bdf8";
+      } else if (item.type === "reset_shifts") {
+        icon = "⚠️";
+        badgeLabel = "Скидання графіка";
+        badgeBg = "rgba(239, 68, 68, 0.2)";
+        badgeColor = "#f87171";
+      } else if (item.type === "user_manage") {
+        icon = "🛡️";
+        badgeLabel = "Користувач";
+        badgeBg = "rgba(59, 130, 246, 0.2)";
+        badgeColor = "#60a5fa";
+      } else if (item.type === "restore") {
+        icon = "↩️";
+        badgeLabel = "Відновлено";
+        badgeBg = "rgba(20, 184, 166, 0.2)";
+        badgeColor = "#2dd4bf";
+      }
+
+      let restoreBtnHtml = "";
+      if ((item.type === "task_delete" || item.type === "debt_delete") && item.restoreData) {
+        restoreBtnHtml = `
+          <button class="history-restore-btn" data-restore-id="${item.id}" title="Відновити цей пункт назад у список">
+            ↩️ Відновити
+          </button>
+        `;
+      } else if (item.type === "shift_swap" && item.restoreData) {
+        restoreBtnHtml = `
+          <button class="history-restore-btn" data-restore-id="${item.id}" title="Повернути зміну назад">
+            ↩️ Скасувати підміну
+          </button>
+        `;
+      }
+
+      card.innerHTML = `
+        <div class="history-item-main">
+          <div class="history-item-icon">${icon}</div>
+          <div class="history-item-content">
+            <div class="history-item-title-row">
+              <span class="history-type-badge" style="background: ${badgeBg}; color: ${badgeColor}; border: 1px solid ${badgeColor}33;">${badgeLabel}</span>
+              <span class="history-item-desc">${escapeHtml(item.description)}</span>
+            </div>
+            ${item.details ? `<div class="history-item-details">${escapeHtml(item.details)}</div>` : ''}
+            <div class="history-item-meta">
+              <span class="history-item-user">👤 ${escapeHtml(item.user || 'Користувач')}</span>
+              <span>•</span>
+              <span class="history-item-time">🕒 ${formatHistoryTime(item.timestamp)}</span>
+            </div>
+          </div>
+        </div>
+        ${restoreBtnHtml}
+      `;
+
+      const restoreBtn = card.querySelector(".history-restore-btn");
+      if (restoreBtn) {
+        restoreBtn.onclick = () => restoreAction(item.id);
+      }
+
+      container.appendChild(card);
+    });
+  }
 
   const BASE_DATE = new Date(2026, 8, 1);
   let currentSeasonIndex = 0; 
@@ -1997,6 +2506,15 @@ document.addEventListener("DOMContentLoaded", function () {
     if (nextWorker === base) delete window.overrides[key];
     else window.overrides[key] = nextWorker;
 
+    const dateLabel = `${day} ${MONTH_NAMES[month]} ${year}`;
+    const desc = nextWorker === base 
+      ? `Повернено чергування за графіком: ${nextWorker} на ${dateLabel}`
+      : `Підміна чергування на ${dateLabel}: ${current} ➔ ${nextWorker}`;
+
+    logAction('shift_swap', desc, `Базовий за графіком: ${base}`, {
+      year, month, day, prevWorker: current, newWorker: nextWorker
+    });
+
     saveLocalData();
     renderApp();
   }
@@ -2050,15 +2568,19 @@ document.addEventListener("DOMContentLoaded", function () {
       item.querySelector(".task-modal-checkbox").onchange = (e) => {
         task.done = e.target.checked;
         window.dayNotes[dateKey] = tasks;
+        logAction('task_toggle', `${task.done ? 'Виконано' : 'Повернуто в роботу'} завдання на ${dateKey}`, `«${task.text}»`);
         saveLocalData();
         renderModalTasks(tasks, dateKey);
         renderApp();
       };
 
       item.querySelector("button").onclick = () => {
-        tasks.splice(idx, 1);
+        const deletedTask = tasks.splice(idx, 1)[0];
         if (tasks.length === 0) delete window.dayNotes[dateKey];
         else window.dayNotes[dateKey] = tasks;
+        logAction('task_delete', `Видалено завдання на ${dateKey}`, `«${deletedTask.text}» (автор: ${deletedTask.author || '—'})`, {
+          dateKey, task: deletedTask
+        });
         saveLocalData();
         renderModalTasks(tasks, dateKey);
         renderApp();
@@ -2108,14 +2630,19 @@ document.addEventListener("DOMContentLoaded", function () {
     const dateKey = formatDateKey(year, month, day);
     const tasks = getDayTasks(dateKey);
 
-    tasks.push({
+    const newTask = {
       id: Date.now().toString(),
       text: val.slice(0, 70),
       done: false,
       author: currentUser ? currentUser.name : "Користувач"
-    });
+    };
+    tasks.push(newTask);
 
     window.dayNotes[dateKey] = tasks;
+    logAction('task_add', `Додано завдання на ${day} ${MONTH_NAMES[month]} ${year}`, `«${newTask.text}» (автор: ${newTask.author})`, {
+      dateKey, task: newTask
+    });
+
     saveLocalData();
     dayInputEl.value = "";
     renderModalTasks(tasks, dateKey);
@@ -2280,17 +2807,32 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const calView = document.getElementById("mainCalendarView");
     const debtsView = document.getElementById("debtsNotesView");
+    const historyView = document.getElementById("historyView");
     const debtsTabBtn = document.getElementById("btnTabDebts");
+    const historyTabBtn = document.getElementById("btnTabHistory");
+
+    updateHistoryBadge();
 
     if (activeTab === "debts") {
       calView.style.display = "none";
       debtsView.style.display = "block";
+      if (historyView) historyView.style.display = "none";
       debtsTabBtn.classList.add("active");
+      if (historyTabBtn) historyTabBtn.classList.remove("active");
       renderDebts(season);
+    } else if (activeTab === "history") {
+      calView.style.display = "none";
+      debtsView.style.display = "none";
+      if (historyView) historyView.style.display = "block";
+      debtsTabBtn.classList.remove("active");
+      if (historyTabBtn) historyTabBtn.classList.add("active");
+      renderHistoryView();
     } else {
       calView.style.display = "flex";
       debtsView.style.display = "none";
+      if (historyView) historyView.style.display = "none";
       debtsTabBtn.classList.remove("active");
+      if (historyTabBtn) historyTabBtn.classList.remove("active");
       renderCalendar(season, todayKey);
     }
   }
@@ -2437,12 +2979,16 @@ document.addEventListener("DOMContentLoaded", function () {
 
         row.querySelector(".task-modal-checkbox").onchange = (e) => {
           item.settled = e.target.checked;
+          logAction('debt_toggle', `${item.settled ? 'Вирішено' : 'Повернуто в роботу'} таскбар на ${MONTH_NAMES[mObj.month]} ${mObj.year}`, `«${item.text}»`);
           saveLocalData();
           renderDebts(season);
         };
 
         row.querySelector("button").onclick = () => {
-          items.splice(idx, 1);
+          const deletedItem = items.splice(idx, 1)[0];
+          logAction('debt_delete', `Видалено таскбар на ${MONTH_NAMES[mObj.month]} ${mObj.year}`, `«${deletedItem.text}» (автор: ${deletedItem.author || '—'})`, {
+            mKey, item: deletedItem
+          });
           saveLocalData();
           renderDebts(season);
         };
@@ -2464,11 +3010,15 @@ document.addEventListener("DOMContentLoaded", function () {
         const v = input.value.trim();
         if (!v) return;
         if (!window.monthlyDebts[mKey]) window.monthlyDebts[mKey] = [];
-        window.monthlyDebts[mKey].push({
+        const newItem = {
           id: Date.now().toString(),
           text: v,
           settled: false,
           author: currentUser ? currentUser.name : "Артем"
+        };
+        window.monthlyDebts[mKey].push(newItem);
+        logAction('debt_add', `Додано таскбар на ${MONTH_NAMES[mObj.month]} ${mObj.year}`, `«${v}» (автор: ${newItem.author})`, {
+          mKey, item: newItem
         });
         saveLocalData();
         renderDebts(season);
@@ -2487,8 +3037,10 @@ document.addEventListener("DOMContentLoaded", function () {
     const activeMonthObj = getSeasonDetails(currentSeasonIndex).months[selectedMonthRelative];
     const activeMonthKey = formatMonthKey(activeMonthObj.year, activeMonthObj.month);
     const val = document.getElementById("globalModalInput").value.trim();
+    const oldVal = (window.monthFocusNotes && window.monthFocusNotes[activeMonthKey]) || "";
     if (val) window.monthFocusNotes[activeMonthKey] = val;
     else delete window.monthFocusNotes[activeMonthKey];
+    logAction('focus_edit', `Оновлено фокус на ${MONTH_NAMES[activeMonthObj.month]} ${activeMonthObj.year}`, `Новий фокус: «${val || 'очищено'}» (було: «${oldVal || 'порожньо'}»)`);
     saveLocalData();
     document.getElementById("globalNoteModal").classList.remove("active");
     renderApp();
@@ -2497,7 +3049,9 @@ document.addEventListener("DOMContentLoaded", function () {
   document.getElementById("globalModalClearBtn").onclick = () => {
     const activeMonthObj = getSeasonDetails(currentSeasonIndex).months[selectedMonthRelative];
     const activeMonthKey = formatMonthKey(activeMonthObj.year, activeMonthObj.month);
+    const oldVal = (window.monthFocusNotes && window.monthFocusNotes[activeMonthKey]) || "";
     delete window.monthFocusNotes[activeMonthKey];
+    logAction('focus_edit', `Очищено фокус на ${MONTH_NAMES[activeMonthObj.month]} ${activeMonthObj.year}`, `Видалено текст: «${oldVal}»`);
     saveLocalData();
     document.getElementById("globalNoteModal").classList.remove("active");
     renderApp();
@@ -2518,9 +3072,14 @@ document.addEventListener("DOMContentLoaded", function () {
   document.getElementById("btnResetCurrentMonth").onclick = () => {
     const activeMonthObj = getSeasonDetails(currentSeasonIndex).months[selectedMonthRelative];
     const prefix = formatMonthKey(activeMonthObj.year, activeMonthObj.month);
+    let count = 0;
     Object.keys(window.overrides || {}).forEach(k => {
-      if (k.startsWith(prefix)) delete window.overrides[k];
+      if (k.startsWith(prefix)) {
+        delete window.overrides[k];
+        count++;
+      }
     });
+    logAction('reset_shifts', `Скинуто підміни за ${MONTH_NAMES[activeMonthObj.month]} ${activeMonthObj.year}`, `Скинуто ${count} підмін до базового графіка 3 через 3`);
     saveLocalData();
     document.getElementById("resetPeriodModal").classList.remove("active");
     renderApp();
@@ -2529,9 +3088,14 @@ document.addEventListener("DOMContentLoaded", function () {
   document.getElementById("btnResetCurrentSeason").onclick = () => {
     const season = getSeasonDetails(currentSeasonIndex);
     const prefixes = season.months.map(m => formatMonthKey(m.year, m.month));
+    let count = 0;
     Object.keys(window.overrides || {}).forEach(k => {
-      if (prefixes.some(p => k.startsWith(p))) delete window.overrides[k];
+      if (prefixes.some(p => k.startsWith(p))) {
+        delete window.overrides[k];
+        count++;
+      }
     });
+    logAction('reset_shifts', `Скинуто підміни за весь сезон «${season.name}»`, `Скинуто ${count} підмін до базового графіка 3 через 3`);
     saveLocalData();
     document.getElementById("resetPeriodModal").classList.remove("active");
     renderApp();
@@ -2541,6 +3105,36 @@ document.addEventListener("DOMContentLoaded", function () {
   document.getElementById("btnNextSeason").onclick = () => { currentSeasonIndex++; renderApp(); };
   document.getElementById("btnTabDebts").onclick = () => { activeTab = (activeTab === "debts") ? "calendar" : "debts"; renderApp(); };
   document.getElementById("btnCloseDebts").onclick = () => { activeTab = "calendar"; renderApp(); };
+
+  document.getElementById("btnTabHistory").onclick = () => { activeTab = (activeTab === "history") ? "calendar" : "history"; renderApp(); };
+  document.getElementById("btnCloseHistory").onclick = () => { activeTab = "calendar"; renderApp(); };
+
+  document.getElementById("btnClearHistoryBtn").onclick = () => {
+    if (confirm("Ви впевнені, що хочете очистити журнал дій?")) {
+      window.actionHistory = [];
+      logAction("admin", "Журнал дій було очищено користувачем", `Очищено користувачем @${currentUser ? currentUser.username : "admin"}`);
+      saveLocalData();
+      renderApp();
+    }
+  };
+
+  const filterBtns = document.querySelectorAll(".history-filter-btn");
+  filterBtns.forEach(btn => {
+    btn.onclick = () => {
+      filterBtns.forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      currentHistoryFilter = btn.getAttribute("data-filter") || "all";
+      renderHistoryView();
+    };
+  });
+
+  const searchInputEl = document.getElementById("historySearchInput");
+  if (searchInputEl) {
+    searchInputEl.oninput = (e) => {
+      historySearchQuery = e.target.value.trim();
+      renderHistoryView();
+    };
+  }
 
   document.getElementById("btnGoToToday").onclick = () => {
     const today = new Date();
@@ -2618,11 +3212,14 @@ document.addEventListener("DOMContentLoaded", function () {
   const currentSavedTheme = localStorage.getItem(THEME_STORAGE_KEY) || 'dark';
   applyTheme(currentSavedTheme);
 
-  // Підтримка прямого переходу на вкладку нотаток через URL (?tab=notes або #notes)
+  // Підтримка прямого переходу на вкладку нотаток або історії через URL (?tab=notes, ?tab=history або #notes, #history)
   try {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('tab') === 'notes' || window.location.hash === '#notes') {
       activeTab = 'debts';
+      renderApp();
+    } else if (urlParams.get('tab') === 'history' || window.location.hash === '#history') {
+      activeTab = 'history';
       renderApp();
     }
   } catch (e) {}
