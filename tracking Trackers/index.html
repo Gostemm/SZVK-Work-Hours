@@ -31,6 +31,10 @@
     })();
   </script>
 
+  <!-- Firebase App & Firestore SDKs (Compat) -->
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+
   <style>
     :root {
       --bg: #0f172a;
@@ -2817,6 +2821,28 @@
     }
   }
 
+  // Firebase Trackers Config
+  const firebaseConfig = {
+    apiKey: "AIzaSyD0HE2baTFHYCvm0d0cI_qNzLf6Ok7WMwA",
+    authDomain: "szvk-work-hours-af5ed.firebaseapp.com",
+    projectId: "szvk-work-hours-af5ed",
+    storageBucket: "szvk-work-hours-af5ed.firebasestorage.app",
+    messagingSenderId: "396427398813",
+    appId: "1:396427398813:web:ac80bcd0ac4240d0c74e74"
+  };
+
+  let dbTrackers = null;
+  let DB_TRACKERS_DOC = null;
+  try {
+    if (typeof firebase !== 'undefined') {
+      if (!firebase.apps || !firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+      }
+      dbTrackers = firebase.firestore();
+      DB_TRACKERS_DOC = dbTrackers.collection('szvk_app').doc('trackers');
+    }
+  } catch(e) {}
+
   // Cloud Sync Logic
   async function fetchCloudData() {
     try {
@@ -2829,36 +2855,27 @@
       cloudSyncDot.className = 'status-dot syncing';
       cloudSyncText.textContent = 'З\'єднання...';
 
-      const headers = {};
-      if (token) headers['Authorization'] = 'Bearer ' + token;
-
-      let res = await fetch(NETLIFY_SYNC_URL, { headers });
-      if (!res.ok && res.status !== 401 && res.status !== 403) {
-        res = await fetch('/api/sync', { headers });
-      }
-      if (res.status === 401) {
-        localStorage.removeItem('szvk_auth_token');
-        sessionStorage.removeItem('szvk_auth_token');
-        window.location.replace('../index.html');
-        return;
-      }
-      if (res.ok) {
-        const data = await res.json();
-        if (data && data.trackersData && data.trackersData.repairs && data.trackersData.repairs.length > 0) {
-          appData.repairs = data.trackersData.repairs.filter(r => (r.date && r.date.match(/\d/)) || (r.vehicle && r.vehicle.match(/\d/)));
-          if (data.trackersData.inventory) appData.inventory = data.trackersData.inventory;
-          if (data.trackersData.atCommands) appData.atCommands = data.trackersData.atCommands;
-          saveLocalData(false);
-          renderRepairs();
-          renderInventory();
-          updateDashboardStats();
+      if (DB_TRACKERS_DOC) {
+        const docSnap = await DB_TRACKERS_DOC.get();
+        if (docSnap.exists) {
+          const data = docSnap.data();
+          if (data && data.repairs && data.repairs.length > 0) {
+            appData.repairs = data.repairs.filter(r => (r.date && r.date.match(/\d/)) || (r.vehicle && r.vehicle.match(/\d/)));
+            if (data.inventory) appData.inventory = data.inventory;
+            if (data.atCommands) appData.atCommands = data.atCommands;
+            saveLocalData(false);
+            renderRepairs();
+            renderInventory();
+            updateDashboardStats();
+          }
+          cloudSyncDot.className = 'status-dot';
+          cloudSyncText.textContent = 'Хмара (Firebase)';
+          return;
         }
-        cloudSyncDot.className = 'status-dot';
-        cloudSyncText.textContent = 'Хмара Netlify';
-      } else {
-        cloudSyncDot.className = 'status-dot';
-        cloudSyncText.textContent = 'Локально';
       }
+
+      cloudSyncDot.className = 'status-dot';
+      cloudSyncText.textContent = 'Локально';
     } catch (e) {
       cloudSyncDot.className = 'status-dot';
       cloudSyncText.textContent = 'Локально';
@@ -2876,38 +2893,21 @@
       cloudSyncDot.className = 'status-dot syncing';
       cloudSyncText.textContent = 'Синхронізація...';
 
-      const payload = {
-        trackersData: {
+      if (DB_TRACKERS_DOC) {
+        const payload = {
           repairs: appData.repairs,
           inventory: appData.inventory,
           atCommands: appData.atCommands,
           updatedAt: Date.now()
-        }
-      };
-
-      const headers = { 'Content-Type': 'application/json' };
-      if (token) headers['Authorization'] = 'Bearer ' + token;
-
-      let res = await fetch(NETLIFY_SYNC_URL, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(payload)
-      });
-      if (!res.ok && res.status !== 401 && res.status !== 403) {
-        res = await fetch('/api/sync', {
-          method: 'POST',
-          headers,
-          body: JSON.stringify(payload)
-        });
+        };
+        await DB_TRACKERS_DOC.set(payload, { merge: true });
+        cloudSyncDot.className = 'status-dot';
+        cloudSyncText.textContent = 'Хмара (Firebase)';
+        return;
       }
 
-      if (res.ok) {
-        cloudSyncDot.className = 'status-dot';
-        cloudSyncText.textContent = 'Хмара Netlify';
-      } else {
-        cloudSyncDot.className = 'status-dot';
-        cloudSyncText.textContent = 'Локально';
-      }
+      cloudSyncDot.className = 'status-dot';
+      cloudSyncText.textContent = 'Локально';
     } catch (e) {
       cloudSyncDot.className = 'status-dot';
       cloudSyncText.textContent = 'Локально';

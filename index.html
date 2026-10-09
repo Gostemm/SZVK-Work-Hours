@@ -24,6 +24,10 @@
     })();
   </script>
 
+  <!-- Firebase App & Firestore SDKs (Compat) -->
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+
   <style>
     :root {
       --bg: #0f172a;
@@ -1369,14 +1373,88 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
+  // --- FIREBASE FIRESTORE CLOUD CONFIG ---
+  const firebaseConfig = {
+    apiKey: "AIzaSyD0HE2baTFHYCvm0d0cI_qNzLf6Ok7WMwA",
+    authDomain: "szvk-work-hours-af5ed.firebaseapp.com",
+    projectId: "szvk-work-hours-af5ed",
+    storageBucket: "szvk-work-hours-af5ed.firebasestorage.app",
+    messagingSenderId: "396427398813",
+    appId: "1:396427398813:web:ac80bcd0ac4240d0c74e74"
+  };
+
+  let db = null;
+  let DB_SCHEDULE_DOC = null;
+  let DB_USERS_DOC = null;
+  let isFirebaseReady = false;
+
+  try {
+    if (typeof firebase !== "undefined") {
+      if (!firebase.apps || !firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+      }
+      db = firebase.firestore();
+      DB_SCHEDULE_DOC = db.collection("szvk_app").doc("schedule");
+      DB_USERS_DOC = db.collection("szvk_app").doc("users");
+      isFirebaseReady = true;
+    }
+  } catch(e) {
+    console.warn("Firebase initialization notice:", e);
+  }
+
   const STORAGE_KEY = "szvk_schedule_local_data";
   const USERS_STORAGE_KEY = "szvk_custom_users";
   const SESSION_USER_KEY = "szvk_internal_session";
   const AUTH_TOKEN_KEY = "szvk_auth_token";
   const REMEMBER_USER_KEY = "szvk_remembered_username";
 
+  const SALT = "szvk_salt_2026_sec_";
+  const DEFAULT_ARTEM_HASH = "4112e2c2a0f2b35a3b023296ec0ecd7ad01cb7accaab2396bc4bf13a05e8f92c";
+  const DEFAULT_OPER_HASH = "771110e1ad008a5cdb57e82a3eac5f6e56cc64af6282bfd0972ecbae8fd9e8de";
+
+  const DEFAULT_CUSTOM_USERS = {
+    "oleksandr": {
+      username: "Oleksandr",
+      name: "Калетті",
+      role: "editor",
+      active: true,
+      passwordHash: DEFAULT_OPER_HASH
+    },
+    "kostas": {
+      username: "kostas",
+      name: "Костянтин",
+      role: "editor",
+      active: true,
+      passwordHash: DEFAULT_OPER_HASH
+    },
+    "oleksandr_jun": {
+      username: "Oleksandr_jun",
+      name: "Саша",
+      role: "editor",
+      active: true,
+      passwordHash: DEFAULT_OPER_HASH
+    }
+  };
+
   let currentUser = null;
   let customUsers = {};
+
+  async function hashPassword(plainText) {
+    try {
+      if (window.crypto && window.crypto.subtle) {
+        const msgBuffer = new TextEncoder().encode(SALT + plainText);
+        const hashBuffer = await window.crypto.subtle.digest("SHA-256", msgBuffer);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+      }
+    } catch(e) {}
+    let hash = 0;
+    for (let i = 0; i < plainText.length; i++) {
+      hash = ((hash << 5) - hash) + plainText.charCodeAt(i);
+      hash |= 0;
+    }
+    return "legacy_" + hash;
+  }
 
   function getAuthToken() {
     return localStorage.getItem(AUTH_TOKEN_KEY) || sessionStorage.getItem(AUTH_TOKEN_KEY) || "";
@@ -1417,9 +1495,9 @@ document.addEventListener("DOMContentLoaded", function () {
       .replace(/'/g, "&#039;");
   }
 
-  // СИНХРОНІЗАЦІЯ З ХМАРОЮ (Netlify Blobs)
-  const SYNC_API_URL = "/.netlify/functions/sync";
   let saveDebounceTimer = null;
+  let unsubscribeSchedule = null;
+  let unsubscribeUsers = null;
 
   function updateSyncIndicator(state, text) {
     const dot = document.getElementById("cloudSyncDot");
@@ -1447,88 +1525,6 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  async function fetchCloudData() {
-    if (!window.location.protocol.startsWith("http")) {
-      updateSyncIndicator("local", "Локально");
-      return null;
-    }
-    const token = getAuthToken();
-    if (!token) return null;
-
-    try {
-      updateSyncIndicator("syncing", "Оновлення...");
-      let res = await fetch(SYNC_API_URL, {
-        headers: {
-          "Authorization": "Bearer " + token,
-          "Cache-Control": "no-store"
-        }
-      });
-      if (!res.ok && res.status !== 401 && res.status !== 403) {
-        res = await fetch("/api/sync", {
-          headers: {
-            "Authorization": "Bearer " + token,
-            "Cache-Control": "no-store"
-          }
-        });
-      }
-      if (res.status === 401) {
-        clearAuth();
-        applyAccessState();
-        updateSyncIndicator("error", "Сесія завершилась");
-        return null;
-      }
-      if (!res.ok) throw new Error("HTTP " + res.status);
-      const data = await res.json();
-      updateSyncIndicator("synced", "Хмара");
-      return data;
-    } catch (e) {
-      console.warn("Помилка читання з хмари:", e);
-      updateSyncIndicator("error", "Офлайн");
-      return null;
-    }
-  }
-
-  async function pushCloudData(payload) {
-    if (!window.location.protocol.startsWith("http")) return false;
-    const token = getAuthToken();
-    if (!token) return false;
-
-    try {
-      updateSyncIndicator("syncing", "Збереження...");
-      let res = await fetch(SYNC_API_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer " + token
-        },
-        body: JSON.stringify(payload)
-      });
-      if (!res.ok && res.status !== 401 && res.status !== 403) {
-        res = await fetch("/api/sync", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": "Bearer " + token
-          },
-          body: JSON.stringify(payload)
-        });
-      }
-      if (res.status === 401) {
-        clearAuth();
-        applyAccessState();
-        updateSyncIndicator("error", "Сесія завершилась");
-        return false;
-      }
-      if (!res.ok) throw new Error("HTTP " + res.status);
-      updateSyncIndicator("synced", "Хмара");
-      return true;
-    } catch (e) {
-      console.warn("Помилка запису в хмару:", e);
-      updateSyncIndicator("error", "Офлайн");
-      return false;
-    }
-  }
-
   // Автозаповнення збереженого логіна (без пароля)
   try {
     const savedUser = localStorage.getItem(REMEMBER_USER_KEY);
@@ -1538,7 +1534,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   } catch(e) {}
 
-  // Авторизація через сервер
+  // Авторизація через Firebase / Хмару
   const loginForm = document.getElementById("loginForm");
   const loginError = document.getElementById("loginErrorMessage");
   const rememberCheckbox = document.getElementById("rememberMeCheckbox");
@@ -1563,39 +1559,63 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     try {
-      if (window.location.protocol.startsWith("http")) {
-        let res = await fetch(SYNC_API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "login", username: u, password: p })
-        });
-        if (!res.ok && res.status !== 401 && res.status !== 403) {
-          res = await fetch("/api/sync", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ action: "login", username: u, password: p })
-          });
-        }
-        const data = await res.json();
+      const enteredHash = await hashPassword(p);
+      let authenticatedUser = null;
 
-        if (!res.ok || !data.success) {
-          loginError.textContent = data.error || "Невірний логін або пароль";
-          loginError.style.display = "block";
-          return;
+      // 1. Check Artem (Super Admin)
+      if (u.toLowerCase() === "artem") {
+        let adminHash = DEFAULT_ARTEM_HASH;
+        if (isFirebaseReady) {
+          try {
+            const usersSnap = await DB_USERS_DOC.get();
+            if (usersSnap.exists && usersSnap.data() && usersSnap.data().adminPasswordHash) {
+              adminHash = usersSnap.data().adminPasswordHash;
+            }
+          } catch(e) {}
         }
-
-        setAuthToken(data.token, rememberCheckbox.checked);
-        currentUser = data.user;
-        localStorage.setItem(SESSION_USER_KEY, JSON.stringify(currentUser));
-      } else {
-        // Локальний режим file:///
-        if (u.toLowerCase() === "artem") {
-          currentUser = { username: "Artem", name: "Артем", role: "admin", active: true };
-        } else {
-          currentUser = { username: u, name: u, role: "editor", active: true };
+        if (enteredHash === adminHash) {
+          authenticatedUser = { username: "Artem", name: "Артем", role: "admin", active: true };
         }
-        localStorage.setItem(SESSION_USER_KEY, JSON.stringify(currentUser));
       }
+
+      // 2. Check Custom Users
+      if (!authenticatedUser && isFirebaseReady) {
+        let usersMap = DEFAULT_CUSTOM_USERS;
+        try {
+          const usersSnap = await DB_USERS_DOC.get();
+          if (usersSnap.exists && usersSnap.data() && usersSnap.data().usersList) {
+            usersMap = usersSnap.data().usersList;
+          } else {
+            // Seed initial users into Firestore
+            await DB_USERS_DOC.set({ usersList: DEFAULT_CUSTOM_USERS }, { merge: true });
+          }
+        } catch(e) {
+          console.warn("Firestore users read notice:", e);
+        }
+
+        const foundKey = Object.keys(usersMap).find(k => (usersMap[k].username || "").trim().toLowerCase() === u.toLowerCase());
+        if (foundKey) {
+          const found = usersMap[foundKey];
+          if (!found.active) {
+            loginError.textContent = "Акаунт деактивовано адміністратором";
+            loginError.style.display = "block";
+            return;
+          }
+          if (found.passwordHash === enteredHash || found.password === p) {
+            authenticatedUser = { username: found.username, name: found.name, role: found.role || "editor", active: true };
+          }
+        }
+      }
+
+      if (!authenticatedUser) {
+        loginError.textContent = "Невірний логін або пароль";
+        loginError.style.display = "block";
+        return;
+      }
+
+      currentUser = authenticatedUser;
+      localStorage.setItem(SESSION_USER_KEY, JSON.stringify(currentUser));
+      setAuthToken("fb_session_" + Date.now(), rememberCheckbox.checked);
 
       if (rememberCheckbox.checked) {
         localStorage.setItem(REMEMBER_USER_KEY, u);
@@ -1606,9 +1626,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
       document.getElementById("passwordInput").value = "";
       applyAccessState();
-      await syncAppFromCloud();
+      initRealtimeSync();
     } catch (err) {
-      loginError.textContent = "Помилка зв'язку з сервером: " + err.message;
+      loginError.textContent = "Помилка зв'язку з базою: " + err.message;
       loginError.style.display = "block";
     } finally {
       if (submitBtn) {
@@ -1656,6 +1676,8 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   document.getElementById("btnLogoutBtn").onclick = function() {
+    if (unsubscribeSchedule) unsubscribeSchedule();
+    if (unsubscribeUsers) unsubscribeUsers();
     clearAuth();
     document.getElementById("passwordInput").value = "";
     applyAccessState();
@@ -1680,18 +1702,22 @@ document.addEventListener("DOMContentLoaded", function () {
         forceStatus.style.color = "#f59e0b";
         forceStatus.textContent = "⏳ Оновлення...";
       }
-      const cloudData = await fetchCloudData();
-      if (cloudData && cloudData.customUsers) {
-        customUsers = cloudData.customUsers;
-        renderAdminUsersList();
-        if (forceStatus) {
-          forceStatus.style.color = "#34d399";
-          forceStatus.textContent = `✅ Оновлено (${Object.keys(customUsers).length} акаунтів)`;
-        }
-      } else {
-        if (forceStatus) {
-          forceStatus.style.color = "#f87171";
-          forceStatus.textContent = "❌ Помилка оновлення";
+      if (isFirebaseReady) {
+        try {
+          const snap = await DB_USERS_DOC.get();
+          if (snap.exists && snap.data().usersList) {
+            customUsers = snap.data().usersList;
+            renderAdminUsersList();
+          }
+          if (forceStatus) {
+            forceStatus.style.color = "#34d399";
+            forceStatus.textContent = `✅ Оновлено (${Object.keys(customUsers).length} акаунтів)`;
+          }
+        } catch(e) {
+          if (forceStatus) {
+            forceStatus.style.color = "#f87171";
+            forceStatus.textContent = "❌ Помилка оновлення";
+          }
         }
       }
       setTimeout(() => { if (forceStatus) forceStatus.textContent = ""; }, 4000);
@@ -1714,24 +1740,23 @@ document.addEventListener("DOMContentLoaded", function () {
     submitBtn.textContent = "Створення...";
 
     try {
-      const ok = await pushCloudData({
-        action: "saveUser",
-        targetUser: { username, password, name, role: "editor", active: true }
-      });
+      const pwdHash = await hashPassword(password);
+      const key = username.toLowerCase().replace(/[^a-z0-9_]/g, "_");
+      customUsers[key] = {
+        username: username,
+        name: name,
+        role: "editor",
+        active: true,
+        passwordHash: pwdHash
+      };
 
-      if (ok) {
-        const key = username.toLowerCase().replace(/[^a-z0-9_]/g, "_");
-        customUsers[key] = {
-          username: username,
-          name: name,
-          role: "editor",
-          active: true
-        };
-        renderAdminUsersList();
-        this.reset();
-      } else {
-        alert("Помилка збереження користувача на сервері");
+      if (isFirebaseReady) {
+        await DB_USERS_DOC.set({ usersList: customUsers }, { merge: true });
       }
+      renderAdminUsersList();
+      this.reset();
+    } catch(err) {
+      alert("Помилка збереження користувача: " + err.message);
     } finally {
       submitBtn.disabled = false;
       submitBtn.textContent = "+ Створити користувача";
@@ -1773,29 +1798,29 @@ document.addEventListener("DOMContentLoaded", function () {
       card.querySelector(".btn-pwd").onclick = async () => {
         const newPwd = prompt(`Введіть новий пароль для @${u.username}:`);
         if (!newPwd || !newPwd.trim()) return;
-        const ok = await pushCloudData({ action: "changePassword", username: u.username, newPassword: newPwd.trim() });
-        if (ok) {
-          alert(`Пароль для @${u.username} успішно змінено!`);
-        } else {
-          alert("Помилка зміни пароля на сервері");
+        const pwdHash = await hashPassword(newPwd.trim());
+        u.passwordHash = pwdHash;
+        if (isFirebaseReady) {
+          await DB_USERS_DOC.set({ usersList: customUsers }, { merge: true });
         }
+        alert(`Пароль для @${u.username} успішно змінено!`);
       };
 
       card.querySelector(".btn-toggle").onclick = async () => {
-        const ok = await pushCloudData({ action: "toggleUserActive", username: u.username });
-        if (ok) {
-          u.active = !u.active;
-          renderAdminUsersList();
+        u.active = !u.active;
+        if (isFirebaseReady) {
+          await DB_USERS_DOC.set({ usersList: customUsers }, { merge: true });
         }
+        renderAdminUsersList();
       };
 
       card.querySelector(".btn-delete").onclick = async () => {
         if (confirm(`Видалити користувача @${u.username}?`)) {
-          const ok = await pushCloudData({ action: "deleteUser", username: u.username });
-          if (ok) {
-            delete customUsers[k];
-            renderAdminUsersList();
+          delete customUsers[k];
+          if (isFirebaseReady) {
+            await DB_USERS_DOC.set({ usersList: customUsers }, { merge: true });
           }
+          renderAdminUsersList();
         }
       };
 
@@ -1812,71 +1837,82 @@ document.addEventListener("DOMContentLoaded", function () {
     return { overrides: {}, dayNotes: {}, monthlyDebts: {}, monthFocusNotes: {} };
   }
 
-  function saveLocalData() {
+  function initRealtimeSync() {
+    if (!isFirebaseReady || !currentUser) return;
+
+    updateSyncIndicator("syncing", "З'єднання...");
+
+    if (unsubscribeSchedule) unsubscribeSchedule();
+    unsubscribeSchedule = DB_SCHEDULE_DOC.onSnapshot((docSnapshot) => {
+      if (docSnapshot.exists) {
+        const data = docSnapshot.data();
+        if (data) {
+          window.overrides = data.overrides || {};
+          window.dayNotes = data.dayNotes || {};
+          window.monthlyDebts = data.monthlyDebts || {};
+          window.monthFocusNotes = data.monthFocusNotes || {};
+          try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+          } catch(e) {}
+          updateSyncIndicator("synced", "Хмара (Firebase)");
+          renderApp();
+        }
+      } else {
+        // Документ ще не створено у Firebase — ініціалізуємо його наявними локальними даними!
+        pushScheduleToFirestore();
+      }
+    }, (error) => {
+      console.warn("Firestore sync notice:", error);
+      updateSyncIndicator("error", "Офлайн");
+    });
+
+    if (currentUser.role === "admin") {
+      if (unsubscribeUsers) unsubscribeUsers();
+      unsubscribeUsers = DB_USERS_DOC.onSnapshot((docSnapshot) => {
+        if (docSnapshot.exists && docSnapshot.data() && docSnapshot.data().usersList) {
+          customUsers = docSnapshot.data().usersList;
+          renderAdminUsersList();
+        } else {
+          customUsers = DEFAULT_CUSTOM_USERS;
+          renderAdminUsersList();
+        }
+      }, () => {});
+    }
+  }
+
+  function pushScheduleToFirestore() {
     const payload = {
-      overrides: window.overrides,
-      dayNotes: window.dayNotes,
-      monthlyDebts: window.monthlyDebts,
-      monthFocusNotes: window.monthFocusNotes
+      overrides: window.overrides || {},
+      dayNotes: window.dayNotes || {},
+      monthlyDebts: window.monthlyDebts || {},
+      monthFocusNotes: window.monthFocusNotes || {},
+      updatedAt: Date.now()
     };
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-    } catch (e) {}
+    } catch(e) {}
+
+    if (!isFirebaseReady || !currentUser) return;
 
     clearTimeout(saveDebounceTimer);
-    saveDebounceTimer = setTimeout(() => {
-      pushCloudData({ schedule: payload });
+    saveDebounceTimer = setTimeout(async () => {
+      try {
+        updateSyncIndicator("syncing", "Збереження...");
+        await DB_SCHEDULE_DOC.set(payload, { merge: true });
+        updateSyncIndicator("synced", "Хмара (Firebase)");
+      } catch(err) {
+        console.warn("Error pushing schedule to Firestore:", err);
+        updateSyncIndicator("error", "Помилка хмари");
+      }
     }, 350);
   }
 
+  function saveLocalData() {
+    pushScheduleToFirestore();
+  }
+
   async function syncAppFromCloud() {
-    if (!window.location.protocol.startsWith("http")) {
-      updateSyncIndicator("local", "Локально");
-      return;
-    }
-    const token = getAuthToken();
-    if (!token) return;
-
-    const data = await fetchCloudData();
-    if (!data) return;
-
-    let scheduleUpdated = false;
-
-    // СИНХРОНІЗУЄМО КОРИСТУВАЧІВ (сервер надсилає тільки для admin без паролів):
-    if (data.customUsers && typeof data.customUsers === "object") {
-      customUsers = data.customUsers;
-      renderAdminUsersList();
-    }
-
-    // СИНХРОНІЗУЄМО РОЗКЛАД:
-    const cloudSchedule = (data && data.schedule && typeof data.schedule === "object") ? data.schedule : null;
-    const cloudScheduleCount = cloudSchedule ? Object.keys(cloudSchedule.overrides || {}).length + Object.keys(cloudSchedule.dayNotes || {}).length : 0;
-    const hasLocalSchedule = (window.overrides && Object.keys(window.overrides).length > 0) ||
-                             (window.dayNotes && Object.keys(window.dayNotes).length > 0);
-
-    if (cloudSchedule && cloudScheduleCount > 0) {
-      window.overrides = cloudSchedule.overrides || {};
-      window.dayNotes = cloudSchedule.dayNotes || {};
-      window.monthlyDebts = cloudSchedule.monthlyDebts || {};
-      window.monthFocusNotes = cloudSchedule.monthFocusNotes || {};
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(cloudSchedule));
-      } catch(e) {}
-      scheduleUpdated = true;
-    } else if (hasLocalSchedule) {
-      pushCloudData({
-        schedule: {
-          overrides: window.overrides,
-          dayNotes: window.dayNotes,
-          monthlyDebts: window.monthlyDebts,
-          monthFocusNotes: window.monthFocusNotes
-        }
-      });
-    }
-
-    if (scheduleUpdated) {
-      renderApp();
-    }
+    initRealtimeSync();
   }
 
   const initialData = loadLocalData();
@@ -2584,17 +2620,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Запуск хмарної синхронізації ТІЛЬКИ якщо користувач авторизований
   if (currentUser && getAuthToken()) {
-    syncAppFromCloud();
+    initRealtimeSync();
   }
-  window.addEventListener("focus", () => {
-    if (currentUser && getAuthToken()) syncAppFromCloud();
-  });
-  document.addEventListener("visibilitychange", () => {
-    if (!document.hidden && currentUser && getAuthToken()) syncAppFromCloud();
-  });
-  setInterval(() => {
-    if (currentUser && getAuthToken()) syncAppFromCloud();
-  }, 40000);
 });
 </script>
 
