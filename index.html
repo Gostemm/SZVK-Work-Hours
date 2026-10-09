@@ -274,12 +274,31 @@
       border-color: #e2e8f0;
       opacity: 0.35;
     }
-    [data-theme="light"] .task-mini-pill.active {
+    [data-theme="light"] .worker-pill.artem-pill {
+      background: rgba(139, 92, 246, 0.15);
+      border-color: rgba(139, 92, 246, 0.35);
+      color: #5b21b6;
+    }
+    [data-theme="light"] .worker-pill.artem-pill .worker-dot {
+      background: #7c3aed;
+      box-shadow: none;
+    }
+    [data-theme="light"] .worker-pill.oleksandr-pill {
+      background: rgba(16, 185, 129, 0.15);
+      border-color: rgba(16, 185, 129, 0.35);
+      color: #065f46;
+    }
+    [data-theme="light"] .worker-pill.oleksandr-pill .worker-dot {
+      background: #059669;
+      box-shadow: none;
+    }
+    [data-theme="light"] .day-task-counter.active {
       background: #e0f2fe;
       border-color: #38bdf8;
       color: #0369a1;
+      box-shadow: none;
     }
-    [data-theme="light"] .task-mini-pill.all-done {
+    [data-theme="light"] .day-task-counter.done {
       background: #dcfce7;
       border-color: #86efac;
       color: #15803d;
@@ -1023,86 +1042,95 @@
       line-height: 1;
     }
 
-    .day-worker {
+    /* Laconic Worker Pill */
+    .worker-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      padding: 2.5px 8px;
+      border-radius: 20px;
       font-size: 11px;
       font-weight: 800;
-      padding: 1.5px 5px;
-      border-radius: 5px;
-      background: rgba(0, 0, 0, 0.4);
+      line-height: 1.2;
+      align-self: center;
+      max-width: 95%;
       white-space: nowrap;
-      max-width: 100%;
       overflow: hidden;
       text-overflow: ellipsis;
-      text-align: center;
-      line-height: 1.2;
+      transition: all 0.2s ease;
     }
 
-    .worker-name-short { display: none; }
-    .worker-name-mini { display: none; }
-    .worker-name-full { display: inline; }
+    .worker-pill.artem-pill {
+      background: rgba(139, 92, 246, 0.22);
+      border: 1px solid rgba(167, 139, 250, 0.4);
+      color: #ede9fe;
+    }
+    .worker-pill.artem-pill .worker-dot {
+      background: #a78bfa;
+      box-shadow: 0 0 6px rgba(167, 139, 250, 0.8);
+    }
 
+    .worker-pill.oleksandr-pill {
+      background: rgba(16, 185, 129, 0.22);
+      border: 1px solid rgba(52, 211, 153, 0.4);
+      color: #d1fae5;
+    }
+    .worker-pill.oleksandr-pill .worker-dot {
+      background: #34d399;
+      box-shadow: 0 0 6px rgba(52, 211, 153, 0.8);
+    }
+
+    .worker-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .worker-name-mobile { display: none; }
+    .worker-name-desktop { display: inline; }
+
+    /* Day Tasks Counter */
     .day-tasks-container {
       width: 100%;
       display: flex;
-      flex-direction: column;
+      justify-content: center;
+      margin-top: 1px;
+    }
+
+    .day-task-counter {
+      display: inline-flex;
       align-items: center;
-      gap: 2px;
-      margin-top: 2px;
-    }
-
-    .day-tasks-desktop {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 2px;
-      width: 100%;
-    }
-
-    .day-tasks-mobile {
-      display: none;
-    }
-
-    .author-chip-badge {
-      font-size: 8.5px;
-      line-height: 1.1;
-      background: rgba(14, 165, 233, 0.25);
-      border: 1px solid rgba(56, 189, 248, 0.5);
-      color: #bae6fd;
-      border-radius: 4px;
-      padding: 1px 4px;
+      justify-content: center;
+      gap: 4px;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 7px;
+      border-radius: 6px;
+      line-height: 1.2;
       max-width: 96%;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      font-weight: 800;
-    }
-    .author-chip-badge.all-done {
-      background: rgba(100, 116, 139, 0.2);
-      border-color: rgba(100, 116, 139, 0.35);
-      color: #94a3b8;
-      opacity: 0.6;
+      transition: all 0.2s ease;
     }
 
-    .task-mini-pill {
-      font-size: 9px;
-      font-weight: 800;
-      padding: 1px 4px;
-      border-radius: 4px;
-      line-height: 1.1;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .task-mini-pill.active {
-      background: rgba(14, 165, 233, 0.35);
-      border: 1px solid rgba(56, 189, 248, 0.6);
+    .day-task-counter.active {
+      background: rgba(14, 165, 233, 0.25);
+      border: 1px solid rgba(56, 189, 248, 0.55);
       color: #bae6fd;
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.25);
     }
-    .task-mini-pill.all-done {
-      background: rgba(16, 185, 129, 0.25);
-      border: 1px solid rgba(16, 185, 129, 0.5);
+
+    .day-task-counter.done {
+      background: rgba(16, 185, 129, 0.2);
+      border: 1px solid rgba(16, 185, 129, 0.45);
       color: #6ee7b7;
     }
+
+    .counter-mobile { display: none; }
+    .counter-desktop { display: inline; }
 
     .swap-badge {
       font-size: 8.5px;
@@ -1871,31 +1899,30 @@
         font-size: 12.5px;
       }
 
-      .day-worker {
+      .worker-pill {
+        padding: 1px 4px;
         font-size: 8.5px;
-        padding: 1px 2px;
-        border-radius: 3px;
-        line-height: 1.1;
+        gap: 2.5px;
+        border-radius: 10px;
       }
 
-      .worker-name-full { display: none; }
-      .worker-name-short { display: inline; }
-      .worker-name-mini { display: none; }
-
-      .day-tasks-desktop {
-        display: none;
+      .worker-dot {
+        width: 4px;
+        height: 4px;
       }
 
-      .day-tasks-mobile {
-        display: flex;
-        justify-content: center;
-        width: 100%;
-      }
+      .worker-name-desktop { display: none; }
+      .worker-name-mobile { display: inline; }
 
-      .task-mini-pill {
+      .day-task-counter {
         font-size: 8px;
-        padding: 0 3px;
+        padding: 1px 4px;
+        border-radius: 4px;
+        gap: 2px;
       }
+
+      .counter-desktop { display: none; }
+      .counter-mobile { display: inline; }
 
       /* 5. Global Month Focus Banner */
       .global-month-banner {
@@ -2036,14 +2063,14 @@
         font-size: 11.5px;
       }
 
-      .day-worker {
+      .worker-pill {
         font-size: 8px;
-        padding: 0.5px 1px;
+        padding: 0.5px 3px;
       }
 
-      .task-mini-pill {
+      .day-task-counter {
         font-size: 7.5px;
-        padding: 0 2px;
+        padding: 0.5px 2px;
       }
 
       .nav-center .tab-btn {
@@ -2057,11 +2084,14 @@
     }
 
     @media (max-width: 380px) {
-      .day-worker {
+      .worker-pill {
         font-size: 7.5px;
+        padding: 0 2px;
       }
-      .worker-name-short { display: none; }
-      .worker-name-mini { display: inline; }
+      .worker-dot {
+        width: 3px;
+        height: 3px;
+      }
     }
   </style>
 </head>
@@ -3889,6 +3919,15 @@ document.addEventListener("DOMContentLoaded", function () {
     return Array.isArray(raw) ? raw : [];
   }
 
+  function getTaskWord(n) {
+    const mod10 = n % 10;
+    const mod100 = n % 100;
+    if (mod100 >= 11 && mod100 <= 19) return "справ";
+    if (mod10 === 1) return "справа";
+    if (mod10 >= 2 && mod10 <= 4) return "справи";
+    return "справ";
+  }
+
   function getSeasonDetails(sIndex) {
     const startTotalMonths = 8 + sIndex * 3;
     const startYear = 2026 + Math.floor(startTotalMonths / 12);
@@ -4371,53 +4410,46 @@ document.addEventListener("DOMContentLoaded", function () {
       card.onclick = () => openDayModal(activeMonthObj.year, activeMonthObj.month, day);
       card.title = `${assignment.worker} • ${day} ${MONTH_NAMES[activeMonthObj.month]} ${activeMonthObj.year}${assignment.isEdited ? ' (підміна)' : ''}`;
 
+      const workerShort = assignment.worker === "Артем" ? "Артем" : "Олекс";
+
       let inner = `
         <div class="day-card-header">
           <span class="day-num">${day}</span>
           ${assignment.isEdited ? `<span class="swap-badge" title="Зміна змінена вручну: ${assignment.worker}">⇄</span>` : ''}
         </div>
-        <div class="day-worker">
-          <span class="worker-name-full">${assignment.worker}</span>
-          <span class="worker-name-short">${assignment.worker === "Артем" ? "Артем" : "Олекс."}</span>
-          <span class="worker-name-mini">${assignment.worker === "Артем" ? "Арт" : "Ол"}</span>
+        <div class="worker-pill ${assignment.worker === 'Артем' ? 'artem-pill' : 'oleksandr-pill'}">
+          <span class="worker-dot"></span>
+          <span class="worker-name-desktop">${assignment.worker}</span>
+          <span class="worker-name-mobile">${workerShort}</span>
         </div>
       `;
 
       if (tasks.length > 0) {
-        inner += `<div class="day-tasks-container">`;
-        
-        // Desktop view: author chips
-        inner += `<div class="day-tasks-desktop">`;
-        const authorsMap = {};
-        tasks.forEach(t => {
-          const auth = t.author || 'Завдання';
-          if (!authorsMap[auth]) authorsMap[auth] = { hasActive: false };
-          if (!t.done) authorsMap[auth].hasActive = true;
-        });
+        let counterDesktop = "";
+        let counterMobile = "";
+        const isDone = !hasActiveTasks;
 
-        const authorsList = Object.keys(authorsMap).slice(0, 2);
-        authorsList.forEach(authName => {
-          const info = authorsMap[authName];
-          const badgeClass = info.hasActive ? '' : 'all-done';
-          const icon = info.hasActive ? '📝' : '✓';
-          inner += `
-            <div class="author-chip-badge ${badgeClass}" title="Завдання залишив: ${authName}">
-              <span>${icon} ${authName}</span>
-            </div>
-          `;
-        });
-        inner += `</div>`;
+        if (isDone) {
+          counterDesktop = `✓ ${tasks.length} ${getTaskWord(tasks.length)}`;
+          counterMobile = `✓ ${tasks.length}`;
+        } else {
+          if (tasks.length === activeTasksCount) {
+            counterDesktop = `📝 ${activeTasksCount} ${getTaskWord(activeTasksCount)}`;
+            counterMobile = `📝 ${activeTasksCount}`;
+          } else {
+            counterDesktop = `📝 ${activeTasksCount} з ${tasks.length}`;
+            counterMobile = `📝 ${activeTasksCount}/${tasks.length}`;
+          }
+        }
 
-        // Mobile view: compact pill badge
         inner += `
-          <div class="day-tasks-mobile">
-            <span class="task-mini-pill ${hasActiveTasks ? 'active' : 'all-done'}" title="${hasActiveTasks ? 'Активних завдань: ' + activeTasksCount : 'Всі завдання виконано'}">
-              ${hasActiveTasks ? `📝 ${activeTasksCount}` : `✓`}
-            </span>
+          <div class="day-tasks-container">
+            <div class="day-task-counter ${isDone ? 'done' : 'active'}" title="${hasActiveTasks ? 'Активних справ: ' + activeTasksCount + ' (всього: ' + tasks.length + ')' : 'Всі ' + tasks.length + ' справ виконано'}">
+              <span class="counter-desktop">${counterDesktop}</span>
+              <span class="counter-mobile">${counterMobile}</span>
+            </div>
           </div>
         `;
-
-        inner += `</div>`;
       }
 
       card.innerHTML = inner;
