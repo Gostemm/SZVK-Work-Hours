@@ -584,6 +584,100 @@
       color: #0369a1 !important;
       border: 1px solid #7dd3fc !important;
     }
+
+    /* Light Mode Overrides for Cycle Tasks Block */
+    [data-theme="light"] .cycle-tasks-card {
+      background: #ffffff;
+      border-color: #cbd5e1;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+    }
+    [data-theme="light"] .cycle-tasks-header {
+      background: #f8fafc;
+      border-bottom-color: #e2e8f0;
+    }
+    [data-theme="light"] .cycle-block-title {
+      color: #0f172a;
+    }
+    [data-theme="light"] .cycle-worker-badge.artem {
+      background: #ede9fe;
+      color: #6d28d9;
+      border-color: #c4b5fd;
+    }
+    [data-theme="light"] .cycle-worker-badge.oleksandr {
+      background: #d1fae5;
+      color: #047857;
+      border-color: #a7f3d0;
+    }
+    [data-theme="light"] .cycle-range-badge {
+      background: #f1f5f9;
+      border-color: #cbd5e1;
+      color: #475569;
+    }
+    [data-theme="light"] .cycle-btn-group {
+      background: #f1f5f9;
+      border-color: #cbd5e1;
+    }
+    [data-theme="light"] .cycle-ctrl-btn:hover {
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+    [data-theme="light"] .cycle-shift-col {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+    }
+    [data-theme="light"] .cycle-shift-col.is-today {
+      border: 2px solid #d97706;
+      background: #fefce8;
+      box-shadow: 0 0 16px rgba(217, 119, 6, 0.2);
+    }
+    [data-theme="light"] .cycle-shift-col.is-today .cycle-shift-num {
+      color: #b45309;
+    }
+    [data-theme="light"] .cycle-shift-col.is-today .cycle-shift-date {
+      color: #92400e;
+    }
+    [data-theme="light"] .cycle-shift-date {
+      color: #0f172a;
+    }
+    [data-theme="light"] .cycle-shift-header {
+      border-bottom-color: #e2e8f0;
+    }
+    [data-theme="light"] .cycle-task-row {
+      background: #ffffff;
+      border-color: #e2e8f0;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    }
+    [data-theme="light"] .cycle-task-row:hover {
+      background: #f1f5f9;
+      border-color: #cbd5e1;
+    }
+    [data-theme="light"] .cycle-task-row.done {
+      background: #f8fafc;
+      border-color: #e2e8f0;
+    }
+    [data-theme="light"] .cycle-task-text {
+      color: #0f172a;
+    }
+    [data-theme="light"] .cycle-quick-input {
+      background: #ffffff;
+      border-color: #cbd5e1;
+      color: #0f172a;
+    }
+    [data-theme="light"] .cycle-shift-worker-pill.artem {
+      background: #ede9fe;
+      color: #6b21a8;
+      border-color: #c4b5fd;
+    }
+    [data-theme="light"] .cycle-shift-worker-pill.oleksandr {
+      background: #d1fae5;
+      color: #065f46;
+      border-color: #a7f3d0;
+    }
+    [data-theme="light"] .cycle-open-day-btn {
+      background: #eff6ff;
+      color: #1d4ed8;
+      border-color: #bfdbfe;
+    }
     [data-theme="light"] a[href="trackers.html"] {
       background: #ede9fe !important;
       color: #6d28d9 !important;
@@ -966,6 +1060,373 @@
     .global-label { font-size: 11px; font-weight: 800; color: #38bdf8; text-transform: uppercase; }
     .global-text { font-size: 13.5px; color: #f1f5f9; line-height: 1.4; word-break: break-word; font-weight: 500; }
     .global-text.placeholder { color: var(--text-muted); font-style: italic; font-size: 12px; }
+
+    /* ==========================================================================
+       CYCLE TASKS BLOCK (3 РОБОЧІ ЗМІНИ ПРАЦІВНИКА)
+       ========================================================================== */
+    .cycle-tasks-card {
+      background: linear-gradient(145deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.98));
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      border-radius: 14px;
+      margin-bottom: 14px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      overflow: hidden;
+      transition: all 0.25s ease;
+    }
+    .cycle-tasks-card:hover {
+      border-color: rgba(148, 163, 184, 0.35);
+    }
+    .cycle-tasks-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 12px 16px;
+      background: rgba(15, 23, 42, 0.45);
+      border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+    }
+    .cycle-tasks-card.is-collapsed .cycle-tasks-header {
+      border-bottom: none;
+    }
+    .cycle-header-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .cycle-block-title {
+      font-size: 13.5px;
+      font-weight: 800;
+      color: #f8fafc;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .cycle-worker-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 9px;
+      border-radius: 8px;
+      font-size: 11.5px;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+    .cycle-worker-badge.artem {
+      background: rgba(139, 92, 246, 0.2);
+      color: #c084fc;
+      border: 1px solid rgba(139, 92, 246, 0.45);
+    }
+    .cycle-worker-badge.oleksandr {
+      background: rgba(16, 185, 129, 0.2);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.45);
+    }
+    .cycle-range-badge {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--text-muted);
+      background: rgba(255, 255, 255, 0.05);
+      padding: 3px 8px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+    }
+    .cycle-status-badge {
+      font-size: 11px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .cycle-status-badge.active {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(239, 68, 68, 0.2));
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.5);
+    }
+    .cycle-status-badge.done {
+      background: rgba(16, 185, 129, 0.2);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.45);
+    }
+    .cycle-status-badge.empty {
+      background: rgba(148, 163, 184, 0.12);
+      color: var(--text-muted);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+    }
+    .cycle-header-right {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .cycle-btn-group {
+      display: inline-flex;
+      align-items: center;
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 2px;
+      gap: 2px;
+    }
+    .cycle-ctrl-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      border-radius: 6px;
+      padding: 5px 9px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s ease;
+      line-height: 1;
+      user-select: none;
+    }
+    .cycle-ctrl-btn:hover {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.08);
+    }
+    .cycle-ctrl-btn.active {
+      background: var(--accent);
+      color: #ffffff;
+      border-color: var(--accent);
+    }
+    .cycle-shifts-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      padding: 14px 16px;
+    }
+    .cycle-shift-col {
+      background: rgba(15, 23, 42, 0.55);
+      border: 1px solid var(--border);
+      border-radius: 11px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      position: relative;
+      transition: all 0.2s ease;
+    }
+    .cycle-shift-col:hover {
+      border-color: rgba(148, 163, 184, 0.35);
+    }
+    .cycle-shift-col.is-today {
+      border: 2px solid #f59e0b;
+      background: rgba(245, 158, 11, 0.06);
+      box-shadow: 0 0 16px rgba(245, 158, 11, 0.22);
+    }
+    .cycle-shift-header {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+    }
+    .cycle-shift-top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+    }
+    .cycle-shift-num {
+      font-size: 11px;
+      font-weight: 800;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .cycle-shift-col.is-today .cycle-shift-num {
+      color: #fbbf24;
+    }
+    .cycle-today-tag {
+      font-size: 10px;
+      font-weight: 800;
+      background: #f59e0b;
+      color: #000000;
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+    .cycle-shift-date-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .cycle-shift-date {
+      font-size: 13.5px;
+      font-weight: 800;
+      color: #f8fafc;
+    }
+    .cycle-shift-col.is-today .cycle-shift-date {
+      color: #fde68a;
+    }
+    .cycle-shift-worker-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 7px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .cycle-shift-worker-pill.artem {
+      background: rgba(139, 92, 246, 0.2);
+      color: #c084fc;
+      border: 1px solid rgba(139, 92, 246, 0.35);
+    }
+    .cycle-shift-worker-pill.oleksandr {
+      background: rgba(16, 185, 129, 0.2);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.35);
+    }
+    .cycle-shift-tasks-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-height: 48px;
+    }
+    .cycle-task-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 7px 10px;
+      background: rgba(30, 41, 59, 0.7);
+      border: 1px solid rgba(148, 163, 184, 0.15);
+      border-radius: 8px;
+      transition: all 0.15s ease;
+    }
+    .cycle-task-row:hover {
+      background: rgba(51, 65, 85, 0.85);
+      border-color: rgba(148, 163, 184, 0.3);
+    }
+    .cycle-task-row.done {
+      opacity: 0.6;
+      background: rgba(15, 23, 42, 0.4);
+      border-color: rgba(148, 163, 184, 0.1);
+    }
+    .cycle-task-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      min-width: 0;
+    }
+    .cycle-task-cb {
+      width: 17px;
+      height: 17px;
+      cursor: pointer;
+      accent-color: #10b981;
+      flex-shrink: 0;
+    }
+    .cycle-task-text {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: #f1f5f9;
+      line-height: 1.35;
+      word-break: break-word;
+      transition: all 0.15s ease;
+    }
+    .cycle-task-row.done .cycle-task-text {
+      text-decoration: line-through;
+      color: var(--text-muted);
+    }
+    .cycle-task-author {
+      font-size: 10px;
+      color: var(--text-muted);
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    .cycle-task-del-btn {
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+      border: none;
+      border-radius: 5px;
+      padding: 3px 6px;
+      font-size: 10px;
+      font-weight: 800;
+      cursor: pointer;
+      opacity: 0.6;
+      transition: all 0.15s ease;
+      flex-shrink: 0;
+    }
+    .cycle-task-row:hover .cycle-task-del-btn {
+      opacity: 1;
+    }
+    .cycle-task-del-btn:hover {
+      background: rgba(239, 68, 68, 0.3);
+      color: #ef4444;
+    }
+    .cycle-shift-no-tasks {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-style: italic;
+      padding: 10px 4px;
+      text-align: center;
+    }
+    .cycle-shift-quick-add {
+      display: flex;
+      gap: 6px;
+      margin-top: auto;
+      padding-top: 6px;
+    }
+    .cycle-quick-input {
+      flex: 1;
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 6px 10px;
+      font-size: 11.5px;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .cycle-quick-input:focus {
+      border-color: #3b82f6;
+    }
+    .cycle-quick-btn {
+      background: #10b981;
+      color: #ffffff;
+      border: none;
+      border-radius: 7px;
+      padding: 6px 11px;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .cycle-quick-btn:hover {
+      background: #059669;
+    }
+    .cycle-shift-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 6px;
+      border-top: 1px solid rgba(148, 163, 184, 0.12);
+    }
+    .cycle-open-day-btn {
+      width: 100%;
+      justify-content: center;
+      background: rgba(59, 130, 246, 0.12);
+      color: #60a5fa;
+      border: 1px solid rgba(59, 130, 246, 0.25);
+      font-size: 11px;
+      padding: 5px 8px;
+    }
+    .cycle-open-day-btn:hover {
+      background: rgba(59, 130, 246, 0.25);
+      color: #93c5fd;
+    }
 
     /* 7-Days Calendar Weekday Header */
     .calendar-weekdays {
@@ -2024,6 +2485,24 @@
         justify-content: center;
       }
 
+      /* 5b. Cycle Tasks Block Mobile */
+      .cycle-shifts-grid {
+        grid-template-columns: 1fr;
+        padding: 10px;
+        gap: 10px;
+      }
+      .cycle-tasks-header {
+        padding: 10px 12px;
+        gap: 8px;
+      }
+      .cycle-header-left, .cycle-header-right {
+        width: 100%;
+        justify-content: space-between;
+      }
+      .cycle-shift-col {
+        padding: 10px;
+      }
+
       /* 6. History View Filters & Cards */
       .history-controls-bar {
         padding: 10px;
@@ -2322,6 +2801,9 @@
       </div>
       <button class="btn" id="btnEditGlobalNote" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8;">✏️</button>
     </div>
+
+    <!-- Блок списку активних тасків на 3 робочих зміни працівника -->
+    <div class="cycle-tasks-card" id="cycleTasksBlock"></div>
 
     <div class="calendar-weekdays" id="calendarWeekdays">
       <div class="weekday-col">Пн</div>
@@ -4334,6 +4816,395 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById("seasonOverviewModal").classList.remove("active");
   };
 
+  // --- БЛОК АКТИВНИХ ТАСКІВ НА 3 РОБОЧИХ ЗМІНИ ПРАЦІВНИКА ---
+  let currentViewingCycleOffset = 0;
+  let cycleTasksOnlyActive = false;
+  let cycleTasksCollapsed = false;
+  try {
+    cycleTasksCollapsed = (localStorage.getItem("szvk_cycle_tasks_collapsed") === "true");
+  } catch (e) {}
+
+  function getCycleInfo(refDate, offset = 0) {
+    const d = refDate || new Date();
+    const targetUtc = Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
+    const baseUtc = Date.UTC(2026, 8, 1);
+    const diffDays = Math.round((targetUtc - baseUtc) / (1000 * 60 * 60 * 24));
+    const currentBaseCycleIndex = Math.floor(diffDays / 3);
+    const cycleIndex = currentBaseCycleIndex + offset;
+
+    const scheduledWorker = (((cycleIndex % 2) + 2) % 2 === 0) ? "Артем" : "Олександр";
+    const startDiffDays = cycleIndex * 3;
+
+    const shifts = [];
+    const now = new Date();
+    const todayKey = formatDateKey(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    for (let i = 0; i < 3; i++) {
+      const shiftDate = new Date(2026, 8, 1 + startDiffDays + i);
+      const y = shiftDate.getFullYear();
+      const m = shiftDate.getMonth();
+      const day = shiftDate.getDate();
+      const dateKey = formatDateKey(y, m, day);
+      const assignment = getAssignedWorker(y, m, day);
+      const tasks = getDayTasks(dateKey);
+      const isToday = (dateKey === todayKey);
+      const isPast = (shiftDate < todayMidnight);
+      const dayOfWeek = WEEKDAYS[shiftDate.getDay()];
+
+      shifts.push({
+        shiftNum: i + 1,
+        date: shiftDate,
+        year: y,
+        month: m,
+        day: day,
+        dateKey: dateKey,
+        dayOfWeek: dayOfWeek,
+        assignment: assignment,
+        tasks: tasks,
+        activeTasksCount: tasks.filter(t => !t.done).length,
+        isToday: isToday,
+        isPast: isPast
+      });
+    }
+
+    const totalTasks = shifts.reduce((acc, s) => acc + s.tasks.length, 0);
+    const activeTasks = shifts.reduce((acc, s) => acc + s.activeTasksCount, 0);
+
+    return {
+      cycleIndex,
+      currentBaseCycleIndex,
+      offset,
+      isCurrentCycle: (offset === 0),
+      scheduledWorker,
+      shifts,
+      totalTasks,
+      activeTasks
+    };
+  }
+
+  function renderCycleTasksBlock(todayKey) {
+    const block = document.getElementById("cycleTasksBlock");
+    if (!block) return;
+
+    const today = new Date();
+    const cycleInfo = getCycleInfo(today, currentViewingCycleOffset);
+
+    // Format date range
+    const d1 = cycleInfo.shifts[0].day;
+    const m1 = MONTH_NAMES[cycleInfo.shifts[0].month];
+    const d2 = cycleInfo.shifts[2].day;
+    const m2 = MONTH_NAMES[cycleInfo.shifts[2].month];
+    const y2 = cycleInfo.shifts[2].year;
+    const rangeLabel = (m1 === m2)
+      ? `${d1}–${d2} ${m1} ${y2}`
+      : `${d1} ${m1} – ${d2} ${m2} ${y2}`;
+
+    const baseCycleInfo = getCycleInfo(today, 0);
+    const baseWorker = baseCycleInfo.scheduledWorker;
+
+    let statusBadgeHtml = "";
+    if (cycleInfo.activeTasks > 0) {
+      statusBadgeHtml = `<span class="cycle-status-badge active" title="${cycleInfo.activeTasks} активних завдань на ці 3 зміни">⚡ ${cycleInfo.activeTasks} ${getTaskWord(cycleInfo.activeTasks)} в роботі</span>`;
+    } else if (cycleInfo.totalTasks > 0) {
+      statusBadgeHtml = `<span class="cycle-status-badge done" title="Всі ${cycleInfo.totalTasks} справ виконано!">✅ Всі ${cycleInfo.totalTasks} ${getTaskWord(cycleInfo.totalTasks)} виконано</span>`;
+    } else {
+      statusBadgeHtml = `<span class="cycle-status-badge empty">✨ Завдань немає</span>`;
+    }
+
+    const workerClass = cycleInfo.scheduledWorker === "Артем" ? "artem" : "oleksandr";
+
+    let headerHtml = `
+      <div class="cycle-tasks-header">
+        <div class="cycle-header-left">
+          <div class="cycle-block-title">
+            <span>⚡ Завдання на 3 зміни</span>
+          </div>
+          <span class="cycle-worker-badge ${workerClass}">
+            <span>${cycleInfo.scheduledWorker === 'Артем' ? '🟣' : '🟢'} ${cycleInfo.scheduledWorker}</span>
+            ${cycleInfo.isCurrentCycle ? '<span style="font-size: 10px; opacity: 0.85;">(поточний цикл)</span>' : ''}
+          </span>
+          <span class="cycle-range-badge">📅 ${rangeLabel}</span>
+          ${statusBadgeHtml}
+        </div>
+
+        <div class="cycle-header-right">
+          <!-- Worker quick switcher -->
+          <div class="cycle-btn-group" title="Швидке перемикання між циклами працівників">
+            <button type="button" class="cycle-ctrl-btn ${cycleInfo.scheduledWorker === 'Артем' ? 'active' : ''}" id="btnCycleSelectArtem">
+              🟣 Артем
+            </button>
+            <button type="button" class="cycle-ctrl-btn ${cycleInfo.scheduledWorker === 'Олександр' ? 'active' : ''}" id="btnCycleSelectOleksandr">
+              🟢 Олександр
+            </button>
+          </div>
+
+          <!-- Navigation buttons -->
+          <div class="cycle-btn-group">
+            <button type="button" class="cycle-ctrl-btn" id="btnPrevCycle" title="Попередній 3-денний цикл">◀</button>
+            <button type="button" class="cycle-ctrl-btn ${cycleInfo.isCurrentCycle ? 'active' : ''}" id="btnCurrentCycle" title="Повернутися до поточного циклу">🎯 Поточний</button>
+            <button type="button" class="cycle-ctrl-btn" id="btnNextCycle" title="Наступний 3-денний цикл">▶</button>
+          </div>
+
+          <!-- Filter toggle -->
+          <button type="button" class="cycle-ctrl-btn ${cycleTasksOnlyActive ? 'active' : ''}" id="btnCycleFilterActive" style="border: 1px solid var(--border);" title="Фільтр: тільки активні завдання">
+            ${cycleTasksOnlyActive ? '⚡ Тільки активні' : '📋 Всі справи'}
+          </button>
+
+          <!-- Collapse / Expand -->
+          <button type="button" class="cycle-ctrl-btn" id="btnToggleCollapseCycleBlock" style="border: 1px solid var(--border);" title="${cycleTasksCollapsed ? 'Розгорнути блок завдань' : 'Згорнути блок завдань'}">
+            ${cycleTasksCollapsed ? '▼ Розгорнути' : '▲ Згорнути'}
+          </button>
+        </div>
+      </div>
+    `;
+
+    if (cycleTasksCollapsed) {
+      block.className = "cycle-tasks-card is-collapsed";
+      block.innerHTML = headerHtml;
+      attachCycleHeaderEvents(baseWorker, cycleInfo);
+      return;
+    }
+
+    block.className = "cycle-tasks-card";
+
+    let gridHtml = `<div class="cycle-shifts-grid">`;
+
+    cycleInfo.shifts.forEach((shift) => {
+      const shiftWorkerClass = shift.assignment.worker === "Артем" ? "artem" : "oleksandr";
+      const shiftTasks = cycleTasksOnlyActive ? shift.tasks.filter(t => !t.done) : shift.tasks;
+
+      let tasksListHtml = "";
+      if (shiftTasks.length === 0) {
+        tasksListHtml = `
+          <div class="cycle-shift-no-tasks">
+            ${shift.tasks.length === 0 ? '✨ На цю зміну завдань ще немає' : '🎉 Всі справи на цю зміну виконано!'}
+          </div>
+        `;
+      } else {
+        tasksListHtml = shiftTasks.map((t) => `
+          <div class="cycle-task-row ${t.done ? 'done' : ''}" data-date="${shift.dateKey}" data-task-id="${t.id}">
+            <div class="cycle-task-left">
+              <input type="checkbox" class="cycle-task-cb" ${t.done ? 'checked' : ''} data-date="${shift.dateKey}" data-task-id="${t.id}" title="${t.done ? 'Позначити як невиконане' : 'Позначити як виконане'}">
+              <span class="cycle-task-text" title="${escapeHtml(t.text)}">${escapeHtml(t.text)}</span>
+              ${t.author ? `<span class="cycle-task-author">(${escapeHtml(t.author)})</span>` : ''}
+            </div>
+            <button type="button" class="cycle-task-del-btn" data-date="${shift.dateKey}" data-task-id="${t.id}" title="Видалити завдання">✕</button>
+          </div>
+        `).join('');
+      }
+
+      const activeBadgeText = shift.activeTasksCount > 0 
+        ? `<span style="font-size: 11px; font-weight: 800; color: #fbbf24;">📝 ${shift.activeTasksCount} акт.</span>`
+        : (shift.tasks.length > 0 ? `<span style="font-size: 11px; font-weight: 800; color: #34d399;">✓ Виконано</span>` : '');
+
+      gridHtml += `
+        <div class="cycle-shift-col ${shift.isToday ? 'is-today' : ''}">
+          <div class="cycle-shift-header">
+            <div class="cycle-shift-top-row">
+              <span class="cycle-shift-num">ЗМІНА ${shift.shiftNum} З 3</span>
+              ${shift.isToday ? '<span class="cycle-today-tag">🎯 Сьогодні</span>' : ''}
+            </div>
+            <div class="cycle-shift-date-row">
+              <div class="cycle-shift-date">
+                ${shift.day} ${MONTH_NAMES[shift.month]} <span style="font-size: 12px; font-weight: 600; color: var(--text-muted);">(${shift.dayOfWeek})</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span class="cycle-shift-worker-pill ${shiftWorkerClass}" title="${shift.assignment.isEdited ? 'Підміна: ' + shift.assignment.worker : 'За графіком: ' + shift.assignment.worker}">
+                  ${shift.assignment.worker}${shift.assignment.isEdited ? ' ⇄' : ''}
+                </span>
+                ${activeBadgeText}
+              </div>
+            </div>
+          </div>
+
+          <div class="cycle-shift-tasks-list">
+            ${tasksListHtml}
+          </div>
+
+          <form class="cycle-shift-quick-add" data-date="${shift.dateKey}" data-year="${shift.year}" data-month="${shift.month}" data-day="${shift.day}">
+            <input type="text" class="cycle-quick-input" placeholder="+ Додати таск на зміну..." maxlength="70" required>
+            <button type="submit" class="cycle-quick-btn" title="Додати завдання">+</button>
+          </form>
+
+          <div class="cycle-shift-footer">
+            <button type="button" class="btn cycle-open-day-btn" data-year="${shift.year}" data-month="${shift.month}" data-day="${shift.day}">
+              📅 Відкрити деталі дня (${shift.day} ${MONTH_NAMES[shift.month]})
+            </button>
+          </div>
+        </div>
+      `;
+    });
+
+    gridHtml += `</div>`;
+
+    block.innerHTML = headerHtml + gridHtml;
+
+    attachCycleHeaderEvents(baseWorker, cycleInfo);
+    attachCycleTaskEvents();
+  }
+
+  function attachCycleHeaderEvents(baseWorker, cycleInfo) {
+    const btnArtem = document.getElementById("btnCycleSelectArtem");
+    if (btnArtem) {
+      btnArtem.onclick = () => {
+        if (cycleInfo.scheduledWorker === "Артем") return;
+        if (baseWorker === "Артем") {
+          currentViewingCycleOffset = 0;
+        } else {
+          currentViewingCycleOffset = (currentViewingCycleOffset <= 0) ? -1 : 1;
+        }
+        renderApp();
+      };
+    }
+
+    const btnOleksandr = document.getElementById("btnCycleSelectOleksandr");
+    if (btnOleksandr) {
+      btnOleksandr.onclick = () => {
+        if (cycleInfo.scheduledWorker === "Олександр") return;
+        if (baseWorker === "Олександр") {
+          currentViewingCycleOffset = 0;
+        } else {
+          currentViewingCycleOffset = (currentViewingCycleOffset >= 0) ? 1 : -1;
+        }
+        renderApp();
+      };
+    }
+
+    const btnPrev = document.getElementById("btnPrevCycle");
+    if (btnPrev) {
+      btnPrev.onclick = () => {
+        currentViewingCycleOffset--;
+        renderApp();
+      };
+    }
+
+    const btnCur = document.getElementById("btnCurrentCycle");
+    if (btnCur) {
+      btnCur.onclick = () => {
+        currentViewingCycleOffset = 0;
+        renderApp();
+      };
+    }
+
+    const btnNext = document.getElementById("btnNextCycle");
+    if (btnNext) {
+      btnNext.onclick = () => {
+        currentViewingCycleOffset++;
+        renderApp();
+      };
+    }
+
+    const btnFilter = document.getElementById("btnCycleFilterActive");
+    if (btnFilter) {
+      btnFilter.onclick = () => {
+        cycleTasksOnlyActive = !cycleTasksOnlyActive;
+        renderApp();
+      };
+    }
+
+    const btnCollapse = document.getElementById("btnToggleCollapseCycleBlock");
+    if (btnCollapse) {
+      btnCollapse.onclick = () => {
+        cycleTasksCollapsed = !cycleTasksCollapsed;
+        try {
+          localStorage.setItem("szvk_cycle_tasks_collapsed", cycleTasksCollapsed ? "true" : "false");
+        } catch (e) {}
+        renderApp();
+      };
+    }
+  }
+
+  function attachCycleTaskEvents() {
+    document.querySelectorAll(".cycle-task-cb").forEach((cb) => {
+      cb.onchange = () => {
+        const dateKey = cb.getAttribute("data-date");
+        const taskId = cb.getAttribute("data-task-id");
+        toggleTaskFromCycle(dateKey, taskId, cb.checked);
+      };
+    });
+
+    document.querySelectorAll(".cycle-task-del-btn").forEach((btn) => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        const dateKey = btn.getAttribute("data-date");
+        const taskId = btn.getAttribute("data-task-id");
+        deleteTaskFromCycle(dateKey, taskId);
+      };
+    });
+
+    document.querySelectorAll(".cycle-shift-quick-add").forEach((form) => {
+      form.onsubmit = (e) => {
+        e.preventDefault();
+        const input = form.querySelector(".cycle-quick-input");
+        if (!input) return;
+        const val = input.value.trim();
+        if (!val) return;
+        const dateKey = form.getAttribute("data-date");
+        const year = parseInt(form.getAttribute("data-year"), 10);
+        const month = parseInt(form.getAttribute("data-month"), 10);
+        const day = parseInt(form.getAttribute("data-day"), 10);
+        addTaskFromCycle(dateKey, val, year, month, day);
+      };
+    });
+
+    document.querySelectorAll(".cycle-open-day-btn").forEach((btn) => {
+      btn.onclick = () => {
+        const year = parseInt(btn.getAttribute("data-year"), 10);
+        const month = parseInt(btn.getAttribute("data-month"), 10);
+        const day = parseInt(btn.getAttribute("data-day"), 10);
+        openDayModal(year, month, day);
+      };
+    });
+  }
+
+  function toggleTaskFromCycle(dateKey, taskId, newDone) {
+    const tasks = getDayTasks(dateKey);
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+    const prevDone = task.done;
+    task.done = newDone;
+    window.dayNotes[dateKey] = tasks;
+    logAction('task_toggle', `${task.done ? 'Виконано' : 'Повернуто в роботу'} завдання на ${dateKey}`, `«${task.text}»`, {
+      dateKey, taskId: task.id, prevDone: prevDone
+    }, { editRef: { module: 'schedule', type: 'task', dateKey, taskId: task.id } });
+    saveLocalData();
+    renderApp();
+  }
+
+  function addTaskFromCycle(dateKey, text, year, month, day) {
+    const val = (text || "").trim();
+    if (!val) return;
+    const tasks = getDayTasks(dateKey);
+    const newTask = {
+      id: Date.now().toString(),
+      text: val.slice(0, 70),
+      done: false,
+      author: currentUser ? currentUser.name : "Користувач"
+    };
+    tasks.push(newTask);
+    window.dayNotes[dateKey] = tasks;
+    logAction('task_add', `Додано завдання на ${day} ${MONTH_NAMES[month]} ${year}`, `«${newTask.text}» (автор: ${newTask.author})`, {
+      dateKey, task: newTask
+    }, { editRef: { module: 'schedule', type: 'task', dateKey, taskId: newTask.id } });
+    saveLocalData();
+    renderApp();
+  }
+
+  function deleteTaskFromCycle(dateKey, taskId) {
+    const tasks = getDayTasks(dateKey);
+    const idx = tasks.findIndex(t => t.id === taskId);
+    if (idx === -1) return;
+    const deletedTask = tasks.splice(idx, 1)[0];
+    if (tasks.length === 0) delete window.dayNotes[dateKey];
+    else window.dayNotes[dateKey] = tasks;
+    logAction('task_delete', `Видалено завдання на ${dateKey}`, `«${deletedTask.text}» (автор: ${deletedTask.author || '—'})`, {
+      dateKey, task: deletedTask
+    });
+    saveLocalData();
+    renderApp();
+  }
+
   function renderApp() {
     const today = new Date();
     const todayKey = formatDateKey(today.getFullYear(), today.getMonth(), today.getDate());
@@ -4402,6 +5273,7 @@ document.addEventListener("DOMContentLoaded", function () {
       debtsTabBtn.classList.remove("active");
       if (historyTabBtn) historyTabBtn.classList.remove("active");
       renderCalendar(season, todayKey);
+      renderCycleTasksBlock(todayKey);
     }
   }
 
@@ -4843,6 +5715,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const diffMonths = currentTotalMonths - (2026 * 12 + 8);
     currentSeasonIndex = diffMonths >= 0 ? Math.floor(diffMonths / 3) : 0;
     selectedMonthRelative = diffMonths >= 0 ? diffMonths % 3 : 0;
+    currentViewingCycleOffset = 0;
     activeTab = "calendar";
     renderApp();
   };

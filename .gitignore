@@ -2,3 +2,7 @@ node_modules/
 .netlify/
 .DS_Store
 Thumbs.db
+tracker_data.json
+*.backup.json
+*.private.json
+*.ps1

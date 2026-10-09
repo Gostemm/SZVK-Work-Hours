@@ -3409,61 +3409,6 @@
   const datePickerRepair = new CalendarPicker('wrapRepairDate', 'inputRepairDate', 'btnCalRepairDate', 'btnTodayRepairDate', 'popoverRepairDate');
   const datePickerBulk = new CalendarPicker('wrapBulkDate', 'bulkInputDate', 'btnCalBulkDate', 'btnTodayBulkDate', 'popoverBulkDate');
 
-  // Initialize Data
-  function initData() {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (parsed.repairs && parsed.repairs.length > 0) {
-          // Clean out any ghost empty rows (from old templates)
-          appData.repairs = parsed.repairs.filter(r => (r.date && r.date.match(/\d/)) || (r.vehicle && r.vehicle.match(/\d/)));
-          appData.inventory = parsed.inventory || [];
-          appData.atCommands = parsed.atCommands || (window.TRACKER_INITIAL_DATA ? window.TRACKER_INITIAL_DATA.atCommandsRaw : []);
-        } else {
-          loadDefaults();
-        }
-      } catch (e) {
-        console.error('Failed to parse localStorage data', e);
-        loadDefaults();
-      }
-    } else {
-      loadDefaults();
-    }
-
-    populateCarriersDatalist();
-    populateCarriersFilter();
-    updateDashboardStats();
-    renderRepairs();
-    renderInventory();
-    renderAtCommands();
-
-    // Try cloud sync on boot
-    fetchCloudData();
-  }
-
-  function loadDefaults() {
-    if (window.TRACKER_INITIAL_DATA) {
-      const raw = window.TRACKER_INITIAL_DATA.repairs || [];
-      appData.repairs = JSON.parse(JSON.stringify(raw.filter(r => (r.date && r.date.match(/\d/)) || (r.vehicle && r.vehicle.match(/\d/)))));
-      appData.inventory = JSON.parse(JSON.stringify(window.TRACKER_INITIAL_DATA.inventory || []));
-      appData.atCommands = JSON.parse(JSON.stringify(window.TRACKER_INITIAL_DATA.atCommandsRaw || []));
-    } else {
-      appData.repairs = [];
-      appData.inventory = [];
-      appData.atCommands = [];
-    }
-    saveLocalData();
-  }
-
-  function saveLocalData(triggerCloud = true) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
-    updateDashboardStats();
-    if (triggerCloud) {
-      syncWithCloud();
-    }
-  }
-
   // Firebase Trackers Config
   const firebaseConfig = {
     apiKey: "AIzaSyD0HE2baTFHYCvm0d0cI_qNzLf6Ok7WMwA",
@@ -3505,93 +3450,170 @@
       DB_HISTORY_DOC = dbTrackers.collection('szvk_app').doc('history');
       DB_SCHEDULE_DOC = dbTrackers.collection('szvk_app').doc('schedule');
     }
-  } catch(e) {}
+  } catch(e) {
+    console.warn("Firebase initialization notice:", e);
+  }
 
-  // Cloud Sync Logic
-  async function fetchCloudData() {
-    try {
-      const token = localStorage.getItem('szvk_auth_token') || sessionStorage.getItem('szvk_auth_token');
-      if (!token && window.location.protocol.startsWith('http')) {
-        cloudSyncDot.className = 'status-dot';
-        cloudSyncText.textContent = 'Локально';
-        return;
-      }
-      cloudSyncDot.className = 'status-dot syncing';
-      cloudSyncText.textContent = 'З\'єднання...';
-
-      // Realtime listener for unified history
-      if (DB_HISTORY_DOC) {
-        DB_HISTORY_DOC.onSnapshot((hSnap) => {
-          if (hSnap.exists) {
-            const hData = hSnap.data();
-            if (hData && Array.isArray(hData.items)) {
-              window.actionHistory = hData.items;
-              try {
-                localStorage.setItem(UNIFIED_HISTORY_STORAGE_KEY, JSON.stringify(hData.items));
-              } catch(e) {}
-              updateHistoryCounter();
-              if (activeTab === 'history') renderHistory();
-            }
-          }
-        }, (err) => console.warn('Trackers history listener notice:', err));
-      }
-
-      if (DB_TRACKERS_DOC) {
-        const docSnap = await DB_TRACKERS_DOC.get();
-        if (docSnap.exists) {
-          const data = docSnap.data();
-          if (data && data.repairs && data.repairs.length > 0) {
-            appData.repairs = data.repairs.filter(r => (r.date && r.date.match(/\d/)) || (r.vehicle && r.vehicle.match(/\d/)));
-            if (data.inventory) appData.inventory = data.inventory;
-            if (data.atCommands) appData.atCommands = data.atCommands;
-            saveLocalData(false);
-            renderRepairs();
-            renderInventory();
-            updateDashboardStats();
-          }
-          cloudSyncDot.className = 'status-dot';
-          cloudSyncText.textContent = 'Хмара (Firebase)';
-          return;
+  // Initialize Data
+  function initData() {
+    // 1. Спочатку завантажуємо локальний кеш (для миттєвого відображення без затримок)
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.repairs && Array.isArray(parsed.repairs)) {
+          appData.repairs = parsed.repairs.filter(r => (r.date && r.date.match(/\d/)) || (r.vehicle && r.vehicle.match(/\d/)));
+          appData.inventory = parsed.inventory || [];
+          appData.atCommands = parsed.atCommands || [];
         }
+      } catch (e) {
+        console.warn('Failed to parse localStorage data', e);
       }
+    }
 
-      cloudSyncDot.className = 'status-dot';
-      cloudSyncText.textContent = 'Локально';
-    } catch (e) {
-      cloudSyncDot.className = 'status-dot';
-      cloudSyncText.textContent = 'Локально';
+    populateCarriersDatalist();
+    populateCarriersFilter();
+    updateDashboardStats();
+    renderRepairs();
+    renderInventory();
+    renderAtCommands();
+
+    // 2. Запуск повноцінної онлайнової синхронізації з Firestore (Real-time listener)
+    initRealtimeCloudSync();
+  }
+
+  function loadDefaults() {
+    if (window.TRACKER_INITIAL_DATA && Array.isArray(window.TRACKER_INITIAL_DATA.repairs) && window.TRACKER_INITIAL_DATA.repairs.length > 0) {
+      const raw = window.TRACKER_INITIAL_DATA.repairs || [];
+      appData.repairs = JSON.parse(JSON.stringify(raw.filter(r => (r.date && r.date.match(/\d/)) || (r.vehicle && r.vehicle.match(/\d/)))));
+      appData.inventory = JSON.parse(JSON.stringify(window.TRACKER_INITIAL_DATA.inventory || []));
+      appData.atCommands = JSON.parse(JSON.stringify(window.TRACKER_INITIAL_DATA.atCommandsRaw || []));
+    } else {
+      appData.repairs = [];
+      appData.inventory = [];
+      appData.atCommands = [];
+    }
+    // Записуємо ТІЛЬКИ в локальний кеш, щоб дефолти ніколи не перезатирали хмару
+    saveLocalData(false);
+  }
+
+  function saveLocalData(triggerCloud = true) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+    updateDashboardStats();
+    if (triggerCloud) {
+      syncWithCloud();
     }
   }
 
-  async function syncWithCloud() {
-    try {
-      const token = localStorage.getItem('szvk_auth_token') || sessionStorage.getItem('szvk_auth_token');
-      if (!token && window.location.protocol.startsWith('http')) {
+  let isFirestoreSyncActive = false;
+  let trackersListenerUnsub = null;
+
+  // Real-time Cloud Sync Logic (Завжди онлайн, без відкатів)
+  function initRealtimeCloudSync() {
+    if (!DB_TRACKERS_DOC) {
+      cloudSyncDot.className = 'status-dot';
+      cloudSyncText.textContent = 'Локально';
+      return;
+    }
+
+    cloudSyncDot.className = 'status-dot syncing';
+    cloudSyncText.textContent = 'З\'єднання...';
+
+    // 1. Слухач оновлень журналу дій
+    if (DB_HISTORY_DOC) {
+      DB_HISTORY_DOC.onSnapshot((hSnap) => {
+        if (hSnap.exists) {
+          const hData = hSnap.data();
+          if (hData && Array.isArray(hData.items)) {
+            window.actionHistory = hData.items;
+            try {
+              localStorage.setItem(UNIFIED_HISTORY_STORAGE_KEY, JSON.stringify(hData.items));
+            } catch(e) {}
+            updateHistoryCounter();
+            if (activeTab === 'history') renderHistory();
+          }
+        }
+      }, (err) => console.warn('Trackers history listener notice:', err));
+    }
+
+    // 2. Слухач реального часу для ремонту, складу та команд
+    if (trackersListenerUnsub) {
+      try { trackersListenerUnsub(); } catch(e) {}
+    }
+
+    trackersListenerUnsub = DB_TRACKERS_DOC.onSnapshot((docSnap) => {
+      if (docSnap.exists) {
+        const cloudData = docSnap.data();
+        if (cloudData) {
+          let updated = false;
+
+          // Ремонт трекерів
+          if (Array.isArray(cloudData.repairs)) {
+            appData.repairs = cloudData.repairs.filter(r => (r.date && r.date.match(/\d/)) || (r.vehicle && r.vehicle.match(/\d/)));
+            updated = true;
+          }
+
+          // Склад трекерів
+          if (Array.isArray(cloudData.inventory)) {
+            appData.inventory = cloudData.inventory;
+            updated = true;
+          }
+
+          // AT Команди
+          if (Array.isArray(cloudData.atCommands)) {
+            appData.atCommands = cloudData.atCommands;
+            updated = true;
+          }
+
+          if (updated) {
+            // Зберігаємо в кеш без зворотного циклу відправки в хмару
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+            populateCarriersDatalist();
+            populateCarriersFilter();
+            updateDashboardStats();
+            renderRepairs();
+            renderInventory();
+            renderAtCommands();
+          }
+        }
         cloudSyncDot.className = 'status-dot';
-        cloudSyncText.textContent = 'Локально';
-        return;
+        cloudSyncText.textContent = 'Хмара (Firebase) • Онлайн';
+        isFirestoreSyncActive = true;
+      } else {
+        cloudSyncDot.className = 'status-dot';
+        cloudSyncText.textContent = 'Хмара (Нова)';
+        isFirestoreSyncActive = true;
       }
+    }, (error) => {
+      console.warn('Trackers Firestore listener notice:', error);
+      cloudSyncDot.className = 'status-dot';
+      cloudSyncText.textContent = 'Локально (Офлайн)';
+    });
+  }
+
+  // Зворотна сумісність
+  const fetchCloudData = initRealtimeCloudSync;
+
+  async function syncWithCloud() {
+    if (!DB_TRACKERS_DOC) return;
+    try {
       cloudSyncDot.className = 'status-dot syncing';
       cloudSyncText.textContent = 'Синхронізація...';
 
-      if (DB_TRACKERS_DOC) {
-        const payload = {
-          repairs: appData.repairs,
-          inventory: appData.inventory,
-          atCommands: appData.atCommands,
-          updatedAt: Date.now()
-        };
-        await DB_TRACKERS_DOC.set(payload, { merge: true });
-        cloudSyncDot.className = 'status-dot';
-        cloudSyncText.textContent = 'Хмара (Firebase)';
-        return;
-      }
+      const payload = {
+        repairs: appData.repairs,
+        inventory: appData.inventory,
+        atCommands: appData.atCommands,
+        updatedAt: Date.now()
+      };
 
+      await DB_TRACKERS_DOC.set(payload, { merge: true });
       cloudSyncDot.className = 'status-dot';
-      cloudSyncText.textContent = 'Локально';
+      cloudSyncText.textContent = 'Хмара (Firebase) • Онлайн';
     } catch (e) {
+      console.error('Failed to sync trackers to cloud:', e);
       cloudSyncDot.className = 'status-dot';
-      cloudSyncText.textContent = 'Локально';
+      cloudSyncText.textContent = 'Збережено локально';
     }
   }
 
