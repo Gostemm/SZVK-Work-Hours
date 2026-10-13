@@ -5,102 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>⏱️ SZVK Work Hours</title>
 
-  <script>
-    // Init theme as early as possible to prevent flash
-    (function() {
-      try {
-        var urlParams = new URLSearchParams(window.location.search);
-        var urlTheme = urlParams.get('theme');
-        if (urlTheme) {
-          localStorage.setItem('szvk_ui_theme', urlTheme);
-        }
-        var saved = urlTheme || localStorage.getItem('szvk_ui_theme') || 'dark';
-        var effective = saved;
-        if (saved === 'system') {
-          effective = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-        }
-        document.documentElement.setAttribute('data-theme', effective);
-      } catch (e) {}
-    })();
-  </script>
+  <script src="shared.js"></script>
 
   <!-- Firebase App & Firestore SDKs (Compat) -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 
+  <link rel="stylesheet" href="shared.css">
+
   <style>
     :root {
-      --bg: #0f172a;
-      --card-bg: #1e293b;
-      --text: #f8fafc;
-      --text-muted: #94a3b8;
-      --artem: #8b5cf6;
-      --oleksandr: #10b981;
-      --today-border: #f59e0b;
-      --border: #334155;
       --note-badge: #38bdf8;
-      --accent: #3b82f6;
     }
 
     /* LIGHT THEME */
     [data-theme="light"] {
-      --bg: #f8fafc;
-      --card-bg: #ffffff;
-      --text: #0f172a;
-      --text-muted: #475569;
-      --artem: #7c3aed;
-      --oleksandr: #059669;
-      --today-border: #d97706;
-      --border: #cbd5e1;
       --note-badge: #0284c7;
-      --accent: #2563eb;
-    }
-
-    /* THEME SWITCHER WIDGET */
-    .theme-switch-group {
-      display: inline-flex;
-      align-items: center;
-      background: rgba(15, 23, 42, 0.7);
-      border: 1px solid var(--border);
-      border-radius: 9px;
-      padding: 2px;
-      gap: 2px;
-    }
-    .theme-btn {
-      background: transparent;
-      border: 1px solid transparent;
-      color: var(--text-muted);
-      border-radius: 7px;
-      padding: 5px 8px;
-      font-size: 13px;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.15s ease;
-      line-height: 1;
-      user-select: none;
-    }
-    .theme-btn:hover {
-      color: var(--text);
-      background: rgba(255, 255, 255, 0.08);
-    }
-    .theme-btn.active {
-      background: var(--accent);
-      color: #ffffff;
-      border-color: var(--accent);
-      box-shadow: 0 1px 6px rgba(0, 0, 0, 0.25);
-    }
-    [data-theme="light"] .theme-switch-group {
-      background: #f1f5f9;
-      border-color: #cbd5e1;
-    }
-    [data-theme="light"] .theme-btn:hover {
-      background: rgba(0, 0, 0, 0.06);
-    }
-    [data-theme="light"] .theme-btn.active {
-      background: var(--accent);
-      color: #ffffff;
     }
 
     /* Light Theme Overrides */
@@ -695,31 +615,6 @@
       color: #0f172a !important;
     }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    html, body {
-      overflow-x: hidden;
-      width: 100%;
-      max-width: 100vw;
-    }
-
-    body {
-      background-color: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 10px 14px;
-      box-sizing: border-box;
-    }
-
     .auth-gate-screen {
       width: 100%;
       max-width: 400px;
@@ -804,19 +699,6 @@
       .container {
         max-width: 1480px;
       }
-    }
-
-    .top-header-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: linear-gradient(135deg, #1e293b 0%, #172033 100%);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 10px 16px;
-      gap: 12px;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
-      flex-wrap: wrap;
     }
 
     .brand-title { font-size: 15px; font-weight: 800; display: flex; align-items: center; gap: 8px; }
@@ -1653,20 +1535,6 @@
       flex-shrink: 0;
     }
 
-    .modal-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.75);
-      backdrop-filter: blur(4px);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 16px;
-      z-index: 100;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.2s ease;
-    }
     .modal-overlay.active { opacity: 1; pointer-events: auto; }
 
     .modal-box {
@@ -1905,16 +1773,6 @@
     }
 
     /* HISTORY VIEW STYLES */
-    .history-controls-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 4px;
-      padding-bottom: 12px;
-      border-bottom: 1px solid var(--border);
-    }
     .history-filters {
       display: flex;
       gap: 6px;
@@ -1956,12 +1814,6 @@
       line-height: 1.4;
       margin-top: 6px;
     }
-    [data-theme="light"] .history-hint-banner {
-      background: #eff6ff;
-      border-color: #bfdbfe;
-      border-left: 3px solid #2563eb;
-      color: #1e40af;
-    }
     .history-list {
       display: flex;
       flex-direction: column;
@@ -1970,281 +1822,6 @@
       max-height: 560px;
       overflow-y: auto;
       padding-right: 4px;
-    }
-    .history-item-card {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 10px 14px;
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      transition: all 0.2s;
-    }
-    .history-item-card:hover {
-      background: rgba(255, 255, 255, 0.06);
-      border-color: rgba(139, 92, 246, 0.4);
-    }
-    [data-theme="light"] .history-item-card {
-      background: #f8fafc;
-      border-color: #cbd5e1;
-    }
-    [data-theme="light"] .history-item-card:hover {
-      background: #f1f5f9;
-      border-color: #8b5cf6;
-    }
-    .history-item-main {
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-      flex: 1;
-      min-width: 0;
-    }
-    .history-item-icon {
-      font-size: 18px;
-      line-height: 1;
-      padding: 6px;
-      border-radius: 8px;
-      background: rgba(255, 255, 255, 0.05);
-      flex-shrink: 0;
-    }
-    [data-theme="light"] .history-item-icon {
-      background: rgba(0, 0, 0, 0.05);
-    }
-    .history-item-content {
-      display: flex;
-      flex-direction: column;
-      gap: 3px;
-      flex: 1;
-      min-width: 0;
-    }
-    .history-item-title-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-    .history-item-desc {
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--text);
-      word-break: break-word;
-    }
-    .history-type-badge {
-      font-size: 10px;
-      font-weight: 800;
-      padding: 2px 6px;
-      border-radius: 4px;
-      text-transform: uppercase;
-      letter-spacing: 0.3px;
-    }
-    .history-item-details {
-      font-size: 12px;
-      color: var(--text-muted);
-      word-break: break-word;
-      line-height: 1.35;
-    }
-    .history-item-meta {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-top: 3px;
-      font-size: 11px;
-      color: var(--text-muted);
-      flex-wrap: wrap;
-    }
-    .history-item-user {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      font-weight: 700;
-      color: #38bdf8;
-    }
-    [data-theme="light"] .history-item-user {
-      color: #0284c7;
-    }
-    .history-item-time {
-      opacity: 0.85;
-    }
-    .history-restore-btn {
-      background: rgba(16, 185, 129, 0.15);
-      color: #34d399;
-      border: 1px solid rgba(16, 185, 129, 0.35);
-      padding: 6px 11px;
-      font-size: 11px;
-      font-weight: 700;
-      border-radius: 6px;
-      cursor: pointer;
-      white-space: nowrap;
-      transition: all 0.2s;
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      flex-shrink: 0;
-    }
-    .history-restore-btn:hover {
-      background: #10b981;
-      color: #ffffff;
-      border-color: #10b981;
-    }
-    [data-theme="light"] .history-restore-btn {
-      background: #d1fae5;
-      color: #065f46;
-      border-color: #6ee7b7;
-    }
-    [data-theme="light"] .history-restore-btn:hover {
-      background: #059669;
-      color: #ffffff;
-    }
-
-    .history-module-group {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      flex-wrap: wrap;
-    }
-    .history-module-btn {
-      background: rgba(255, 255, 255, 0.05);
-      color: var(--text-muted);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 5px 11px;
-      font-size: 11.5px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.15s ease;
-    }
-    .history-module-btn:hover {
-      background: rgba(255, 255, 255, 0.1);
-      color: var(--text);
-    }
-    .history-module-btn.active {
-      background: #3b82f6;
-      color: #ffffff;
-      border-color: #3b82f6;
-      box-shadow: 0 0 10px rgba(59, 130, 246, 0.35);
-    }
-    [data-theme="light"] .history-module-btn.active {
-      background: #2563eb;
-      color: #ffffff;
-      border-color: #2563eb;
-    }
-
-    .history-tab-pills {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      flex-wrap: wrap;
-      padding-top: 4px;
-    }
-    .history-tab-btn {
-      background: transparent;
-      color: var(--text-muted);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 4px 9px;
-      font-size: 11px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.15s ease;
-    }
-    .history-tab-btn:hover {
-      background: rgba(255, 255, 255, 0.05);
-      color: var(--text);
-    }
-    .history-tab-btn.active {
-      background: rgba(139, 92, 246, 0.22);
-      color: #c084fc;
-      border-color: #8b5cf6;
-      font-weight: 700;
-    }
-    [data-theme="light"] .history-tab-btn.active {
-      background: #ede9fe;
-      color: #6d28d9;
-      border-color: #8b5cf6;
-    }
-
-    .history-actions-group {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      flex-shrink: 0;
-    }
-    .history-edit-btn {
-      background: rgba(59, 130, 246, 0.15);
-      color: #60a5fa;
-      border: 1px solid rgba(59, 130, 246, 0.35);
-      padding: 6px 10px;
-      font-size: 11px;
-      font-weight: 700;
-      border-radius: 6px;
-      cursor: pointer;
-      white-space: nowrap;
-      transition: all 0.2s;
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      text-decoration: none;
-    }
-    .history-edit-btn:hover {
-      background: #3b82f6;
-      color: #ffffff;
-    }
-    [data-theme="light"] .history-edit-btn {
-      background: #dbeafe;
-      color: #1d4ed8;
-      border-color: #93c5fd;
-    }
-    [data-theme="light"] .history-edit-btn:hover {
-      background: #2563eb;
-      color: #ffffff;
-    }
-
-    .history-module-tag {
-      font-size: 10px;
-      font-weight: 800;
-      padding: 2px 7px;
-      border-radius: 4px;
-      background: rgba(59, 130, 246, 0.15);
-      color: #60a5fa;
-      border: 1px solid rgba(59, 130, 246, 0.3);
-      display: inline-flex;
-      align-items: center;
-      gap: 3px;
-    }
-    .history-module-tag.tracker {
-      background: rgba(16, 185, 129, 0.15);
-      color: #34d399;
-      border-color: rgba(16, 185, 129, 0.3);
-    }
-    [data-theme="light"] .history-module-tag {
-      background: #dbeafe;
-      color: #1e40af;
-      border-color: #93c5fd;
-    }
-    [data-theme="light"] .history-module-tag.tracker {
-      background: #d1fae5;
-      color: #065f46;
-      border-color: #6ee7b7;
-    }
-
-    .history-tab-tag {
-      font-size: 10px;
-      font-weight: 700;
-      padding: 2px 7px;
-      border-radius: 4px;
-      background: rgba(139, 92, 246, 0.15);
-      color: #c084fc;
-      border: 1px solid rgba(139, 92, 246, 0.3);
-      display: inline-flex;
-      align-items: center;
-      gap: 3px;
-    }
-    [data-theme="light"] .history-tab-tag {
-      background: #ede9fe;
-      color: #6d28d9;
-      border-color: #c4b5fd;
     }
 
     /* ==========================================================================
@@ -3012,14 +2589,7 @@
 <script>
 document.addEventListener("DOMContentLoaded", function () {
   // --- FIREBASE FIRESTORE CLOUD CONFIG ---
-  const firebaseConfig = {
-    apiKey: "AIzaSyD0HE2baTFHYCvm0d0cI_qNzLf6Ok7WMwA",
-    authDomain: "szvk-work-hours-af5ed.firebaseapp.com",
-    projectId: "szvk-work-hours-af5ed",
-    storageBucket: "szvk-work-hours-af5ed.firebasestorage.app",
-    messagingSenderId: "396427398813",
-    appId: "1:396427398813:web:ac80bcd0ac4240d0c74e74"
-  };
+  const firebaseConfig = window.SZVKShared.firebaseConfig;
 
   let db = null;
   let DB_SCHEDULE_DOC = null;
@@ -3140,15 +2710,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   } catch(e) {}
 
-  function escapeHtml(str) {
-    if (!str) return "";
-    return String(str)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
-  }
+  const escapeHtml = window.SZVKShared.escapeHtml;
 
   let saveDebounceTimer = null;
   let historyDebounceTimer = null;
@@ -3727,16 +3289,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
   window.actionHistory = loadLocalUnifiedHistory();
 
-  function formatHistoryTime(timestamp) {
-    if (!timestamp) return "";
-    const d = new Date(timestamp);
-    const day = String(d.getDate()).padStart(2, "0");
-    const month = String(d.getMonth() + 1).padStart(2, "0");
-    const year = d.getFullYear();
-    const hours = String(d.getHours()).padStart(2, "0");
-    const minutes = String(d.getMinutes()).padStart(2, "0");
-    return `${day}.${month}.${year} о ${hours}:${minutes}`;
-  }
+  const formatHistoryTime = window.SZVKShared.formatHistoryTime;
 
   function logAction(typeOrObj, description, details, restoreData, options = {}) {
     if (!Array.isArray(window.actionHistory)) {
@@ -4225,39 +3778,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const list = window.actionHistory || [];
     if (totalBadge) totalBadge.textContent = `${list.length} дій`;
 
-    const filtered = list.filter(item => {
-      // 1. Module filter
-      if (currentHistoryModule !== "all") {
-        const itemMod = item.module || (item.type && (item.type.startsWith("repair_") || item.type.startsWith("inv_") || item.type.startsWith("bulk_")) ? "tracker_hub" : "schedule");
-        if (itemMod !== currentHistoryModule) return false;
-      }
-
-      // 2. Tab filter
-      if (currentHistoryTab !== "all") {
-        let itemTab = item.tab;
-        if (!itemTab) {
-          if (item.type === "shift_swap") itemTab = "calendar";
-          else if (item.type && item.type.startsWith("task_")) itemTab = "day_tasks";
-          else if (item.type && item.type.startsWith("debt_")) itemTab = "notes";
-          else if (item.type === "focus_edit") itemTab = "focus";
-          else if (item.type && item.type.startsWith("repair_")) itemTab = "repairs";
-          else if (item.type && (item.type.startsWith("inv_") || item.type.startsWith("bulk_"))) itemTab = "inventory";
-          else itemTab = "admin";
-        }
-        if (itemTab !== currentHistoryTab) return false;
-      }
-
-      // 3. Search query
-      if (historySearchQuery) {
-        const q = historySearchQuery.toLowerCase();
-        const matchDesc = (item.description || "").toLowerCase().includes(q);
-        const matchDetails = (item.details || "").toLowerCase().includes(q);
-        const matchUser = (item.user || "").toLowerCase().includes(q);
-        const matchTime = formatHistoryTime(item.timestamp).toLowerCase().includes(q);
-        if (!matchDesc && !matchDetails && !matchUser && !matchTime) return false;
-      }
-      return true;
-    });
+    const filtered = window.SZVKShared.filterHistory(list, currentHistoryModule, currentHistoryTab, historySearchQuery);
 
     if (filtered.length === 0) {
       container.innerHTML = `
@@ -5747,44 +5268,7 @@ document.addEventListener("DOMContentLoaded", function () {
   applyAccessState();
   document.getElementById("btnGoToToday").click();
 
-  // Theme Switching Logic
-  const THEME_STORAGE_KEY = 'szvk_ui_theme';
-  const themeButtons = document.querySelectorAll('.theme-btn');
-  const mediaDark = window.matchMedia('(prefers-color-scheme: dark)');
-
-  function applyTheme(themeChoice) {
-    let effective = themeChoice;
-    if (themeChoice === 'system') {
-      effective = mediaDark.matches ? 'dark' : 'light';
-    }
-    document.documentElement.setAttribute('data-theme', effective);
-    themeButtons.forEach(btn => {
-      btn.classList.toggle('active', btn.getAttribute('data-theme-val') === themeChoice);
-    });
-  }
-
-  function setTheme(themeChoice) {
-    try {
-      localStorage.setItem(THEME_STORAGE_KEY, themeChoice);
-    } catch (e) {}
-    applyTheme(themeChoice);
-  }
-
-  themeButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
-      setTheme(btn.getAttribute('data-theme-val'));
-    });
-  });
-
-  try {
-    mediaDark.addEventListener('change', () => {
-      const current = localStorage.getItem(THEME_STORAGE_KEY) || 'dark';
-      if (current === 'system') applyTheme('system');
-    });
-  } catch (e) {}
-
-  const currentSavedTheme = localStorage.getItem(THEME_STORAGE_KEY) || 'dark';
-  applyTheme(currentSavedTheme);
+  window.SZVKShared.initThemeSwitcher();
 
   // Підтримка прямого переходу на вкладку нотаток або історії через URL (?tab=notes, ?tab=history або #notes, #history)
   try {
