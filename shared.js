@@ -32,6 +32,109 @@
     return `${day}.${month}.${year} о ${hours}:${minutes}`;
   }
 
+  function mountAccountMenu(options = {}) {
+    const mount = document.getElementById('accountMount');
+    if (!mount) return;
+    mount.innerHTML = `
+      <details class="account-menu" id="userProfileMenu">
+        <summary class="account-summary" aria-label="Меню акаунта">
+          <span class="account-avatar" id="headerAvatar">👤</span>
+          <span id="headerName">Мій акаунт</span>
+        </summary>
+        <div class="account-panel">
+          <div class="account-meta" id="accountUsername"></div>
+          <div class="account-meta" id="headerStatus"></div>
+          <div class="account-sync" role="status">
+            <span class="status-dot" id="cloudSyncDot"></span>
+            <span id="cloudSyncText">Дані збережено</span>
+          </div>
+          ${options.backup
+            ? '<button type="button" class="btn" id="btnOpenExportModal">💾 Бекап / Експорт</button>'
+            : '<a class="btn" href="trackers.html?backup=1">💾 Бекап трекерів</a>'}
+          ${options.admin ? '<button type="button" class="btn" id="btnOpenAdminPanel" style="display:none">Керування користувачами</button><button type="button" class="btn" id="btnOpenResetModal" style="display:none">Скинути підміни</button>' : ''}
+          <button type="button" class="btn account-logout" id="btnLogoutBtn">Вийти з акаунта</button>
+        </div>
+      </details>`;
+    initAccountMenu();
+  }
+
+  function logoutAccount() {
+    localStorage.removeItem('szvk_auth_token');
+    sessionStorage.removeItem('szvk_auth_token');
+    localStorage.removeItem('szvk_internal_session');
+    window.location.replace('index.html');
+  }
+
+  function updateAccount(user) {
+    const values = {
+      headerName: user ? (user.name || user.username || 'Користувач') : 'Мій акаунт',
+      headerAvatar: user ? (user.name || user.username || 'К')[0].toUpperCase() : '👤',
+      headerStatus: user && user.role === 'admin' ? 'Адміністратор' : 'Користувач',
+      accountUsername: user && user.username ? '@' + user.username : ''
+    };
+    Object.entries(values).forEach(([id, value]) => {
+      const element = document.getElementById(id);
+      if (element) element.textContent = value;
+    });
+  }
+
+  function initAccountMenu() {
+    const menu = document.getElementById('userProfileMenu');
+    if (!menu) return;
+    document.addEventListener('click', event => {
+      if (!menu.contains(event.target)) menu.open = false;
+    });
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape' && menu.open) {
+        menu.open = false;
+        menu.querySelector('summary').focus();
+      }
+    });
+    menu.querySelectorAll('button, a').forEach(element => {
+      element.addEventListener('click', () => { menu.open = false; });
+    });
+  }
+
+  function isValidDateKey(value) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+    const [year, month, day] = value.split('-').map(Number);
+    if (year < 1000 || year > 9999) return false;
+    const date = new Date(year, month - 1, day);
+    return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
+  }
+
+  // Change the day and/or text without changing identity, author, or completion.
+  function updateTask(dayNotes, sourceDateKey, taskId, text, targetDateKey) {
+    const cleanText = String(text || '').trim();
+    if (!cleanText || cleanText.length > 70) throw new Error('Введіть завдання до 70 символів.');
+    if (!isValidDateKey(targetDateKey)) throw new Error('Оберіть коректну дату.');
+    const source = dayNotes[sourceDateKey] || [];
+    const index = source.findIndex(task => String(task.id) === String(taskId));
+    if (index === -1) throw new Error('Це завдання вже перенесено або видалено. Оновіть список.');
+    const previous = { ...source[index] };
+    const moved = sourceDateKey !== targetDateKey;
+    if (moved && (dayNotes[targetDateKey] || []).some(task => String(task.id) === String(taskId))) {
+      throw new Error('Це завдання вже є на вибраний день.');
+    }
+    const task = { ...previous, text: cleanText };
+    if (moved) {
+      source.splice(index, 1);
+      if (!source.length) delete dayNotes[sourceDateKey];
+      if (!dayNotes[targetDateKey]) dayNotes[targetDateKey] = [];
+      dayNotes[targetDateKey].push(task);
+    } else {
+      source[index] = task;
+    }
+    return { task, previous, moved, changed: moved || previous.text !== cleanText };
+  }
+
+  function restoreTaskMove(dayNotes, restoreData) {
+    const { fromDateKey, toDateKey, taskId, previous } = restoreData;
+    const result = updateTask(dayNotes, toDateKey, taskId, previous.text, fromDateKey);
+    // Keep later completion changes while restoring the original text and day.
+    return result.task;
+  }
+
   function initTheme() {
     try {
       var urlParams = new URLSearchParams(window.location.search);
@@ -128,6 +231,13 @@
     firebaseConfig,
     escapeHtml,
     formatHistoryTime,
+    updateAccount,
+    mountAccountMenu,
+    logoutAccount,
+    initAccountMenu,
+    isValidDateKey,
+    updateTask,
+    restoreTaskMove,
     initThemeSwitcher,
     filterHistory
   });

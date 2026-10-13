@@ -168,18 +168,6 @@
     }
     .btn-sky:hover { background: rgba(56, 189, 248, 0.25); }
 
-    .cloud-status {
-      font-size: 11px;
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      padding: 5px 9px;
-      border-radius: 6px;
-      background: rgba(16, 185, 129, 0.12);
-      color: #34d399;
-      font-weight: 700;
-      border: 1px solid rgba(16, 185, 129, 0.25);
-    }
     .status-dot {
       display: inline-block;
       width: 7px;
@@ -200,44 +188,7 @@
     }
 
     /* Dashboard Stats */
-    .dashboard {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 12px 16px;
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      gap: 10px;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-    }
 
-    .stat-card {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-      padding: 6px 10px;
-      border-radius: 8px;
-      transition: all 0.15s ease;
-      cursor: pointer;
-    }
-    .stat-card:hover {
-      background: rgba(255, 255, 255, 0.04);
-      transform: translateY(-1px);
-    }
-    .stat-title {
-      font-size: 10px;
-      font-weight: 700;
-      text-transform: uppercase;
-      color: var(--text-muted);
-      letter-spacing: 0.3px;
-    }
-    .stat-value {
-      font-size: 18px;
-      font-weight: 800;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
     .badge-artem { color: var(--artem); }
     .badge-oleksandr { color: var(--oleksandr); }
     .badge-tracker { color: var(--sky); }
@@ -786,7 +737,6 @@
     }
 
     /* Light mode text & badge overrides for crisp readability */
-    [data-theme="light"] .dashboard { background: #ffffff; border: 1.5px solid #cbd5e1; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05); }
     [data-theme="light"] .stat-card { background: #f8fafc; border: 1px solid #e2e8f0; }
     [data-theme="light"] .stat-card:hover { background: #f1f5f9; border-color: #cbd5e1; }
     [data-theme="light"] .stat-title { color: #334155; font-weight: 800; }
@@ -797,14 +747,13 @@
     [data-theme="light"] .badge-pending { color: #b45309; font-weight: 900; }
     [data-theme="light"] .badge-office { color: #047857; font-weight: 900; }
     [data-theme="light"] .badge-bill { color: #b45309; font-weight: 900; }
-    [data-theme="light"] .cloud-status { background: #d1fae5; color: #065f46; border-color: #6ee7b7; font-weight: 800; }
 
     [data-theme="light"] .table-container { background: #ffffff; border: 1.5px solid #cbd5e1; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04); }
     [data-theme="light"] .repair-table { color: #0f172a; }
     [data-theme="light"] .repair-table thead { background: #e2e8f0; }
     [data-theme="light"] .repair-table th { background: #e2e8f0; color: #0f172a !important; font-weight: 900 !important; border-bottom: 2px solid #94a3b8; font-size: 12px; }
     [data-theme="light"] .repair-table td { color: #0f172a !important; font-size: 12.5px; border-bottom: 1px solid #cbd5e1; padding: 8px 10px; vertical-align: middle; }
-    
+
     /* Zebra striping for table readability */
     [data-theme="light"] .repair-table tbody tr:nth-child(even):not(.row-pending):not(.row-office-stock) { background-color: #f8fafc; }
     [data-theme="light"] .repair-table tbody tr:nth-child(odd):not(.row-pending):not(.row-office-stock) { background-color: #ffffff; }
@@ -867,7 +816,6 @@
     [data-theme="light"] .tab-counter { background: #e2e8f0; color: #0f172a; font-weight: 900; }
     [data-theme="light"] .main-tab-btn.active .tab-counter { background: rgba(255, 255, 255, 0.3); color: #ffffff; }
 
-    [data-theme="light"] .repair-card-item { background: #ffffff; border: 1.5px solid #cbd5e1; }
     [data-theme="light"] .card-vehicle-num { color: #0f172a; font-weight: 900; }
     [data-theme="light"] .card-date { color: #334155 !important; font-weight: 800; font-size: 12px; }
     [data-theme="light"] .card-issue { color: #0f172a; font-weight: 700; font-size: 13px; }
@@ -1000,50 +948,7 @@
     }
 
     /* Cards Grid View */
-    .cards-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 10px;
-    }
 
-    .repair-card-item {
-      background: #172236;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      transition: transform 0.15s, border-color 0.15s;
-      cursor: pointer;
-    }
-    .repair-card-item:hover {
-      transform: translateY(-2px);
-      border-color: #475569;
-      background: #1b2840;
-    }
-    .repair-card-item.card-pending {
-      border: 2px solid #f59e0b !important;
-      background: linear-gradient(135deg, #1e293b 0%, rgba(245, 158, 11, 0.14) 100%) !important;
-      box-shadow: 0 0 20px rgba(245, 158, 11, 0.25) !important;
-    }
-
-    .repair-card-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 8px;
-    }
-    .card-vehicle-wrap {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-    .card-vehicle-num {
-      font-size: 15px;
-      font-weight: 800;
-      color: #fff;
-    }
     .card-date {
       font-size: 12px;
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
@@ -1056,60 +961,6 @@
       flex-direction: column;
       gap: 6px;
       font-size: 12.5px;
-    }
-    .card-serial-row {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 12px;
-      color: var(--text-muted);
-      font-weight: 600;
-    }
-    .card-prop-label {
-      font-size: 11px;
-      color: var(--text-muted);
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.3px;
-    }
-    .card-issue {
-      color: #f8fafc;
-      font-weight: 600;
-      font-size: 13px;
-      line-height: 1.4;
-    }
-    .card-issue.issue-pending {
-      color: #fbbf24;
-      font-weight: 700;
-    }
-    .card-solution {
-      color: #e2e8f0;
-      background: rgba(15, 23, 42, 0.6);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 6px;
-      padding: 6px 10px;
-      font-size: 12.5px;
-      line-height: 1.4;
-    }
-    .card-notes {
-      font-size: 12px;
-      color: #cbd5e1;
-      line-height: 1.4;
-    }
-    .card-repair-date {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-      font-size: 12px;
-      font-weight: 700;
-      color: #cbd5e1;
-    }
-    .card-footer {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 6px;
-      padding-top: 6px;
-      border-top: 1px solid rgba(255, 255, 255, 0.05);
-      margin-top: auto;
     }
 
     /* Inventory View */
@@ -1780,9 +1631,7 @@
       .container {
         padding: 0 4px;
       }
-      .dashboard {
-        grid-template-columns: repeat(3, 1fr);
-      }
+
       #statCardAll {
         grid-column: span 3;
       }
@@ -1828,26 +1677,9 @@
       }
 
       /* 2. Dashboard KPIs */
-      .dashboard {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 6px;
-        padding: 8px 10px;
-      }
 
       #statCardAll {
         grid-column: span 2;
-      }
-
-      .stat-card {
-        padding: 4px 6px;
-      }
-
-      .stat-title {
-        font-size: 9.5px;
-      }
-
-      .stat-value {
-        font-size: 16px;
       }
 
       /* 3. Navigation Toolbar Mobile Stacking */
@@ -1921,10 +1753,6 @@
       }
 
       /* 5. Cards Grid */
-      .cards-grid {
-        grid-template-columns: 1fr !important;
-        gap: 8px;
-      }
 
       /* 6. Pagination Bar */
       .pagination-bar {
@@ -2052,10 +1880,6 @@
     </div>
 
     <div class="header-actions">
-      <div class="cloud-status" id="cloudSyncStatus" title="Статус синхронізації з хмарою">
-        <span class="status-dot" id="cloudSyncDot"></span>
-        <span id="cloudSyncText">Локально</span>
-      </div>
 
       <!-- Theme Switcher Segmented Control -->
       <div class="theme-switch-group" id="themeSwitchGroup" title="Тема оформлення: Темна / Світла / Системна">
@@ -2068,51 +1892,7 @@
         ⏱️ SZVK Work Hours
       </a>
 
-      <button class="btn btn-amber" id="btnOpenExportModal" title="Експорт / Резервна копія">
-        💾 Бекап / Експорт
-      </button>
-
-      <button class="btn btn-primary" id="btnOpenAddModal">
-        ➕ Новий запис ремонту
-      </button>
-    </div>
-  </div>
-
-  <!-- Dashboard KPIs -->
-  <div class="dashboard">
-    <div class="stat-card" id="statCardAll" title="Показати всі записи">
-      <span class="stat-title">Всього заявок</span>
-      <span class="stat-value" id="statCountTotal">0</span>
-    </div>
-
-    <div class="stat-card" id="statCardPending" title="Фільтр: заявки, які ще не відремонтовані (В роботі)">
-      <span class="stat-title">В роботі / Відкрито</span>
-      <span class="stat-value badge-pending" id="statCountPending">0</span>
-    </div>
-
-    <div class="stat-card" id="statCardArtem" title="Фільтр: ремонти Артема">
-      <span class="stat-title">Артем (Fix)</span>
-      <span class="stat-value badge-artem" id="statCountArtem">0</span>
-    </div>
-
-    <div class="stat-card" id="statCardOleksandr" title="Фільтр: ремонти Олександра (jun + old)">
-      <span class="stat-title">Саша (Fix)</span>
-      <span class="stat-value badge-oleksandr" id="statCountOleksandr">0</span>
-    </div>
-
-    <div class="stat-card" id="statCardSelfFixed" title="Фільтр: ожили самі">
-      <span class="stat-title">Ожив сам (трекер)</span>
-      <span class="stat-value badge-tracker" id="statCountTracker">0</span>
-    </div>
-
-    <div class="stat-card" id="statCardOffice" title="Відкрити склад: вільні трекери в офісі">
-      <span class="stat-title">Нові трекери (Офіс)</span>
-      <span class="stat-value badge-office" id="statCountOffice">0</span>
-    </div>
-
-    <div class="stat-card" id="statCardInvoice" title="Фільтр: де треба виставити рахунок">
-      <span class="stat-title">Рахунки (billing)</span>
-      <span class="stat-value badge-bill" id="statCountInvoice">0</span>
+      <div id="accountMount"></div>
     </div>
   </div>
 
@@ -2146,10 +1926,6 @@
         <button class="search-clear" id="searchClearBtn">✕</button>
       </div>
 
-      <button class="btn" id="btnToggleViewMode" title="Перемкнути Таблиця / Картки">
-        <span id="viewModeIcon">📑</span>
-        <span id="viewModeLabel">Таблиця</span>
-      </button>
     </div>
   </div>
 
@@ -2161,11 +1937,7 @@
         <span id="filteredCountBadge" style="font-size: 11px; color: var(--text-muted); font-weight: 700;">(показано: 0)</span>
       </div>
 
-      <div style="display: flex; align-items: center; gap: 8px;">
-        <select class="filter-select" id="filterCarrierSelect">
-          <option value="">🏢 Всі перевізники</option>
-        </select>
-      </div>
+      <button type="button" class="repair-create-btn" id="btnOpenAddModal">＋ Новий запис ремонту</button>
     </div>
 
     <!-- Quick filter chips -->
@@ -2198,11 +1970,6 @@
           <!-- Filled by JS -->
         </tbody>
       </table>
-    </div>
-
-    <!-- Cards Mode -->
-    <div class="cards-grid" id="cardsModeContainer" style="display: none;">
-      <!-- Filled by JS -->
     </div>
 
     <!-- Pagination -->
@@ -2395,44 +2162,17 @@
 
     <form id="repairForm">
       <input type="hidden" id="editRecordId">
-
+      <p class="repair-form-hint">Вкажіть авто, перевізника та проблему. Дату заявки заповнено автоматично.</p>
       <div class="form-grid">
-        <!-- Date with Interactive Calendar -->
         <div class="form-group">
-          <label class="form-label">Дата заявки</label>
-          <div class="datepicker-wrap" id="wrapDate">
-            <div class="date-input-group">
-              <input type="text" class="form-input" id="inputDate" placeholder="ДД.ММ.РРРР" required autocomplete="off">
-              <button type="button" class="date-btn-addon" id="btnCalDate" title="Відкрити календар">📅</button>
-              <button type="button" class="date-btn-addon date-btn-today" id="btnTodayDate" title="Встановити сьогодні">🎯 Сьогодні</button>
-            </div>
-            <div class="calendar-popover" id="popoverDate"></div>
-          </div>
+          <label class="form-label">Номер авто (т/з)</label>
+          <input type="text" class="form-input" id="inputVehicle" placeholder="8256, ВО 5406 НВ..." required>
         </div>
 
         <div class="form-group">
           <label class="form-label">Перевізник</label>
           <input type="text" class="form-input" id="inputCarrier" list="carrierDatalist" placeholder="ТЕТ, Водоканал, МАТ..." required>
           <datalist id="carrierDatalist"></datalist>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Хто звертався</label>
-          <input type="text" class="form-input" id="inputReportedBy" placeholder="Дисп, Водій, Власник...">
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Номер авто (т/з)</label>
-          <input type="text" class="form-input" id="inputVehicle" placeholder="8256, ВО 5406 НВ..." required>
-        </div>
-
-        <div class="form-group form-col-2">
-          <label class="form-label">S/N трекера</label>
-          <input type="text" class="form-input" id="inputSerial" placeholder="Наприклад: 009676 або 006163 ➜ 023048">
-          <div class="quick-templates-wrap" id="modalOfficeSnWrap" style="display: none;">
-            <span style="font-size: 10px; color: var(--text-muted);">Підставити новий з офісу:</span>
-            <!-- Chips inserted by JS -->
-          </div>
         </div>
 
         <div class="form-group form-col-2">
@@ -2448,6 +2188,54 @@
           </div>
         </div>
 
+
+      </div>
+      <details class="form-section" id="repairExtraDetails">
+        <summary>Додаткові дані: трекер, заявник, дата й нотатки</summary>
+        <div class="form-grid">
+        <div class="form-group form-col-2">
+          <label class="form-label">S/N трекера</label>
+          <input type="text" class="form-input" id="inputSerial" placeholder="Наприклад: 009676 або 006163 ➜ 023048">
+          <div class="quick-templates-wrap" id="modalOfficeSnWrap" style="display: none;">
+            <span style="font-size: 10px; color: var(--text-muted);">Підставити новий з офісу:</span>
+            <!-- Chips inserted by JS -->
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Хто звертався</label>
+          <input type="text" class="form-input" id="inputReportedBy" placeholder="Дисп, Водій, Власник...">
+        </div>
+
+        <!-- Date with Interactive Calendar -->
+        <div class="form-group">
+          <label class="form-label">Дата заявки</label>
+          <div class="datepicker-wrap" id="wrapDate">
+            <div class="date-input-group">
+              <input type="text" class="form-input" id="inputDate" placeholder="ДД.ММ.РРРР" required autocomplete="off">
+              <button type="button" class="date-btn-addon" id="btnCalDate" title="Відкрити календар">📅</button>
+              <button type="button" class="date-btn-addon date-btn-today" id="btnTodayDate" title="Встановити сьогодні">🎯 Сьогодні</button>
+            </div>
+            <div class="calendar-popover" id="popoverDate"></div>
+          </div>
+        </div>
+
+        <div class="form-group form-col-2">
+          <label class="form-label">Нотатки / Додатково</label>
+          <input type="text" class="form-input" id="inputNotes" placeholder="Номер телефону сімки, де встановлено, тощо">
+          <div style="display: flex; align-items: center; gap: 8px; margin-top: 6px;">
+            <label style="font-size: 12px; color: #fbbf24; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
+              <input type="checkbox" id="checkboxInvoice" style="accent-color: #f59e0b; width: 16px; height: 16px;">
+              Потрібно виставити рахунок перевізнику 💳
+            </label>
+          </div>
+        </div>
+
+        </div>
+      </details>
+      <details class="form-section" id="repairResultDetails">
+        <summary>Результат ремонту</summary>
+        <div class="form-grid">
         <!-- Repair Date with Interactive Calendar -->
         <div class="form-group">
           <label class="form-label">Дата ремонту (залишіть порожнім якщо в процесі)</label>
@@ -2488,18 +2276,9 @@
           </div>
         </div>
 
-        <div class="form-group form-col-2">
-          <label class="form-label">Нотатки / Додатково</label>
-          <input type="text" class="form-input" id="inputNotes" placeholder="Номер телефону сімки, де встановлено, тощо">
-          <div style="display: flex; align-items: center; gap: 8px; margin-top: 6px;">
-            <label style="font-size: 12px; color: #fbbf24; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
-              <input type="checkbox" id="checkboxInvoice" style="accent-color: #f59e0b; width: 16px; height: 16px;">
-              Потрібно виставити рахунок перевізнику 💳
-            </label>
-          </div>
-        </div>
-      </div>
 
+        </div>
+      </details>
       <div class="modal-footer">
         <button type="button" class="btn" id="btnCancelRepairModal">Скасувати</button>
         <button type="submit" class="btn btn-primary" id="btnSaveRepairModal">💾 Зберегти запис</button>
@@ -2705,6 +2484,7 @@
  */
 (function() {
   'use strict';
+  window.SZVKShared.mountAccountMenu({ backup: true });
 
   const STORAGE_KEY = 'szvk_trackers_data';
 
@@ -2716,10 +2496,8 @@
   };
 
   let activeTab = 'journal'; // 'journal' | 'inventory' | 'at'
-  let viewMode = 'table'; // 'table' | 'cards'
   let activeFilterChip = 'all';
   let searchQuery = '';
-  let carrierFilter = '';
   let specialistFilter = '';
   let monthFilter = '';
   let currentPage = 1;
@@ -2744,16 +2522,11 @@
   const tabCounterHistory = document.getElementById('tabCounterHistory');
 
   const tableModeContainer = document.getElementById('tableModeContainer');
-  const cardsModeContainer = document.getElementById('cardsModeContainer');
-  const btnToggleViewMode = document.getElementById('btnToggleViewMode');
-  const viewModeIcon = document.getElementById('viewModeIcon');
-  const viewModeLabel = document.getElementById('viewModeLabel');
 
   const repairTableBody = document.getElementById('repairTableBody');
   const globalSearchInput = document.getElementById('globalSearchInput');
   const searchClearBtn = document.getElementById('searchClearBtn');
 
-  const filterCarrierSelect = document.getElementById('filterCarrierSelect');
   const filterChipsContainer = document.getElementById('filterChipsContainer');
 
   const filteredCountBadge = document.getElementById('filteredCountBadge');
@@ -3108,6 +2881,9 @@
     if (sess) currentUser = JSON.parse(sess);
   } catch(e) {}
 
+  window.SZVKShared.updateAccount(currentUser);
+  document.getElementById('btnLogoutBtn').onclick = window.SZVKShared.logoutAccount;
+
   function loadLocalUnifiedHistory() {
     try {
       const data = localStorage.getItem(UNIFIED_HISTORY_STORAGE_KEY);
@@ -3149,7 +2925,6 @@
     }
 
     populateCarriersDatalist();
-    populateCarriersFilter();
     updateDashboardStats();
     renderRepairs();
     renderInventory();
@@ -3189,7 +2964,7 @@
   function initRealtimeCloudSync() {
     if (!DB_TRACKERS_DOC) {
       cloudSyncDot.className = 'status-dot';
-      cloudSyncText.textContent = 'Локально';
+      cloudSyncText.textContent = 'Дані збережено на пристрої';
       return;
     }
 
@@ -3246,25 +3021,24 @@
             // Зберігаємо в кеш без зворотного циклу відправки в хмару
             localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
             populateCarriersDatalist();
-            populateCarriersFilter();
-            updateDashboardStats();
+                    updateDashboardStats();
             renderRepairs();
             renderInventory();
             renderAtCommands();
           }
         }
         cloudSyncDot.className = 'status-dot';
-        cloudSyncText.textContent = 'Хмара (Firebase) • Онлайн';
+        cloudSyncText.textContent = 'Дані збережено';
         isFirestoreSyncActive = true;
       } else {
         cloudSyncDot.className = 'status-dot';
-        cloudSyncText.textContent = 'Хмара (Нова)';
+        cloudSyncText.textContent = 'Дані збережено';
         isFirestoreSyncActive = true;
       }
     }, (error) => {
       console.warn('Trackers Firestore listener notice:', error);
       cloudSyncDot.className = 'status-dot';
-      cloudSyncText.textContent = 'Локально (Офлайн)';
+      cloudSyncText.textContent = 'Немає з’єднання. Дані збережено на пристрої.';
     });
   }
 
@@ -3275,7 +3049,7 @@
     if (!DB_TRACKERS_DOC) return;
     try {
       cloudSyncDot.className = 'status-dot syncing';
-      cloudSyncText.textContent = 'Синхронізація...';
+      cloudSyncText.textContent = 'Збереження…';
 
       const payload = {
         repairs: appData.repairs,
@@ -3286,11 +3060,11 @@
 
       await DB_TRACKERS_DOC.set(payload, { merge: true });
       cloudSyncDot.className = 'status-dot';
-      cloudSyncText.textContent = 'Хмара (Firebase) • Онлайн';
+      cloudSyncText.textContent = 'Дані збережено';
     } catch (e) {
       console.error('Failed to sync trackers to cloud:', e);
       cloudSyncDot.className = 'status-dot';
-      cloudSyncText.textContent = 'Збережено локально';
+      cloudSyncText.textContent = 'Дані збережено на пристрої';
     }
   }
 
@@ -3309,72 +3083,15 @@
     });
   }
 
-  function populateCarriersFilter() {
-    const carriers = new Set();
-    appData.repairs.forEach(r => { if (r.carrier) carriers.add(r.carrier); });
-
-    filterCarrierSelect.innerHTML = '<option value="">🏢 Всі перевізники</option>';
-    Array.from(carriers).sort().forEach(c => {
-      const opt = document.createElement('option');
-      opt.value = c;
-      opt.textContent = c;
-      filterCarrierSelect.appendChild(opt);
-    });
-  }
-
   // Update Stats in Dashboard
   function updateDashboardStats() {
-    const total = appData.repairs.length;
-    let pending = 0;
-    let artem = 0;
-    let oleksandr = 0;
-    let tracker = 0;
-    let invoice = 0;
-
-    appData.repairs.forEach(r => {
-      const spec = (r.specialist || '').toLowerCase();
-      const sol = (r.solution || '').toLowerCase();
-      const notes = (r.notes || '').toLowerCase();
-
-      if (isRepairPending(r)) pending++;
-      if (spec.includes('артем')) artem++;
-      if (spec.includes('саша')) oleksandr++;
-      if (spec.includes('трекер')) tracker++;
-      if (notes.includes('рахунок') || sol.includes('рахунок')) invoice++;
-    });
-
-    const officeTrackers = appData.inventory.filter(i => (i.status || '').toLowerCase().includes('офіс')).length;
-
-    document.getElementById('statCountTotal').textContent = total;
-    document.getElementById('statCountPending').textContent = pending;
-    document.getElementById('statCountArtem').textContent = artem;
-    document.getElementById('statCountOleksandr').textContent = oleksandr;
-    document.getElementById('statCountTracker').textContent = tracker;
-    document.getElementById('statCountOffice').textContent = officeTrackers;
-    document.getElementById('statCountInvoice').textContent = invoice;
-
-    document.getElementById('tabCounterJournal').textContent = total;
-    document.getElementById('tabCounterInventory').textContent = `${officeTrackers} в оф.`;
-
-    // Highlight stat pending card if there are pending items
-    const statCardPending = document.getElementById('statCardPending');
-    if (pending > 0) {
-      statCardPending.style.border = '1px solid rgba(245, 158, 11, 0.4)';
-      statCardPending.style.background = 'rgba(245, 158, 11, 0.08)';
-    } else {
-      statCardPending.style.border = 'none';
-      statCardPending.style.background = 'none';
-    }
-
-    // Update filter chips for pending and invoice
-    const chipPending = document.querySelector('#filterChipsContainer [data-filter="pending"]');
-    if (chipPending) {
-      chipPending.textContent = `⏳ В роботі (${pending})`;
-    }
-    const chipInvoice = document.querySelector('#filterChipsContainer [data-filter="invoice"]');
-    if (chipInvoice) {
-      chipInvoice.textContent = `💳 Виставити рахунок (${invoice})`;
-    }
+    const pending = appData.repairs.filter(isRepairPending).length;
+    const invoice = appData.repairs.filter(item => ((item.notes || '') + ' ' + (item.solution || '')).toLowerCase().includes('рахунок')).length;
+    const officeTrackers = appData.inventory.filter(item => (item.status || '').toLowerCase().includes('офіс')).length;
+    document.getElementById('tabCounterJournal').textContent = appData.repairs.length;
+    document.getElementById('tabCounterInventory').textContent = officeTrackers;
+    document.querySelector('#filterChipsContainer [data-filter="pending"]').textContent = 'В роботі (' + pending + ')';
+    document.querySelector('#filterChipsContainer [data-filter="invoice"]').textContent = 'Виставити рахунок (' + invoice + ')';
   }
 
   // Format Carrier Badge Class
@@ -3449,9 +3166,6 @@
     }
 
     // Carrier Dropdown
-    if (carrierFilter) {
-      list = list.filter(r => r.carrier === carrierFilter);
-    }
 
     // Specialist Dropdown
     if (specialistFilter) {
@@ -3496,7 +3210,7 @@
     return list;
   }
 
-  // Render Repairs Table & Cards
+  // Render Repairs Table
   function renderRepairs() {
     const filtered = getFilteredRepairs();
     const totalCount = filtered.length;
@@ -3589,56 +3303,6 @@
       repairTableBody.innerHTML = rowsHtml;
     }
 
-    // Render Cards Mode
-    if (pageItems.length === 0) {
-      cardsModeContainer.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 30px; color: var(--text-muted);">Записів не знайдено</div>`;
-    } else {
-      let cardsHtml = '';
-      pageItems.forEach(item => {
-        const isPending = isRepairPending(item);
-        const carrierTagClass = getCarrierClass(item.carrier);
-
-        cardsHtml += `
-          <div class="repair-card-item ${isPending ? 'card-pending' : ''}" onclick="window.editRepair(${item.id})">
-            <div class="repair-card-top">
-              <div class="card-vehicle-wrap">
-                <span class="card-vehicle-num">🚌 ${escapeHtml(item.vehicle || 'Без номера')}</span>
-                <span class="card-date">📅 ${escapeHtml(item.date)}</span>
-              </div>
-              <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
-                <span class="carrier-tag ${carrierTagClass}">${escapeHtml(item.carrier || '—')}</span>
-                ${isPending ? `<span class="badge-pending-pulsing" style="font-size: 10px; padding: 2px 6px;"><span class="pulsing-amber-dot"></span> В РОБОТІ</span>` : ''}
-              </div>
-            </div>
-
-            <div class="card-body">
-              <div class="card-serial-row">
-                <span class="card-prop-label">S/N:</span> ${formatSerialHtml(item.serial)}
-              </div>
-              <div class="card-issue ${isPending ? 'issue-pending' : ''}">
-                ${isPending ? '⚠️ ' : '📌 '}${escapeHtml(item.issue || 'Не вказано')}
-              </div>
-              ${item.solution ? `<div class="card-solution">🔧 ${escapeHtml(item.solution)}</div>` : ''}
-              ${item.notes ? `<div class="card-notes">📝 ${formatNotesHtml(item.notes)}</div>` : ''}
-            </div>
-
-            <div class="card-footer">
-              <div>${getTechBadgeHtml(item.specialist)}</div>
-              <div>
-                ${isPending ? `
-                  <button class="btn-finish-repair" onclick="window.finishRepair(${item.id}); event.stopPropagation();">
-                    ⚡ Закрити ремонт
-                  </button>
-                ` : `
-                  <span class="card-repair-date">Fix: ${item.repairDate ? escapeHtml(item.repairDate) : '—'}</span>
-                `}
-              </div>
-            </div>
-          </div>
-        `;
-      });
-      cardsModeContainer.innerHTML = cardsHtml;
-    }
   }
 
   // Render Inventory (New Trackers)
@@ -4139,6 +3803,13 @@
             if (!sData.dayNotes[dateKey]) sData.dayNotes[dateKey] = [];
             sData.dayNotes[dateKey].push(task);
             changed = true;
+          } else if (entry.type === 'task_move') {
+            window.SZVKShared.restoreTaskMove(sData.dayNotes || (sData.dayNotes = {}), entry.restoreData);
+            changed = true;
+          } else if (entry.type === 'task_edit') {
+            const { dateKey, taskId, prevText } = entry.restoreData;
+            const task = (sData.dayNotes?.[dateKey] || []).find(item => String(item.id) === String(taskId));
+            if (task) { task.text = prevText; changed = true; }
           } else if (entry.type === 'debt_delete') {
             const { mKey, item } = entry.restoreData;
             if (!sData.monthlyDebts) sData.monthlyDebts = {};
@@ -4305,7 +3976,7 @@
 
       const canRevert = Boolean(item.restoreData && item.type !== 'restore');
       let canEdit = false;
-      if (item.type && (item.type.startsWith('repair_') || item.type.startsWith('task_') || item.type.startsWith('debt_') || item.type === 'focus_edit' || item.type.startsWith('inv_'))) {
+      if (item.type && (item.type.startsWith('repair_') || item.type.startsWith('task_') || item.type.startsWith('inv_'))) {
         canEdit = true;
       }
 
@@ -4429,6 +4100,8 @@
 
   // Global Actions for Window
   window.editRepair = function(id) {
+    document.getElementById('repairExtraDetails').open = true;
+    document.getElementById('repairResultDetails').open = true;
     const item = appData.repairs.find(r => r.id === id);
     if (!item) return;
 
@@ -4453,6 +4126,7 @@
 
   // Quick Finish in-progress repair
   window.finishRepair = function(id) {
+    document.getElementById('repairResultDetails').open = true;
     const item = appData.repairs.find(r => r.id === id);
     if (!item) return;
 
@@ -4481,6 +4155,8 @@
   };
 
   window.duplicateRepair = function(id) {
+    document.getElementById('repairExtraDetails').open = true;
+    document.getElementById('repairResultDetails').open = false;
     const item = appData.repairs.find(r => r.id === id);
     if (!item) return;
 
@@ -4562,6 +4238,8 @@
   };
 
   window.useTrackerForRepair = function(newSerial) {
+    document.getElementById('repairExtraDetails').open = true;
+    document.getElementById('repairResultDetails').open = true;
     document.getElementById('editRecordId').value = '';
     document.getElementById('inputDate').value = getTodayString();
     document.getElementById('inputCarrier').value = '';
@@ -4642,23 +4320,6 @@
     renderHistory();
   });
 
-  // Toggle Table / Cards View
-  btnToggleViewMode.addEventListener('click', () => {
-    if (viewMode === 'table') {
-      viewMode = 'cards';
-      tableModeContainer.style.display = 'none';
-      cardsModeContainer.style.display = 'grid';
-      viewModeIcon.textContent = '🗂️';
-      viewModeLabel.textContent = 'Картки';
-    } else {
-      viewMode = 'table';
-      tableModeContainer.style.display = 'block';
-      cardsModeContainer.style.display = 'none';
-      viewModeIcon.textContent = '📑';
-      viewModeLabel.textContent = 'Таблиця';
-    }
-  });
-
   // SORT BY DATE CLICK
   thSortDate.addEventListener('click', () => {
     if (sortField === 'date') {
@@ -4688,15 +4349,6 @@
     renderRepairs();
   });
 
-  // Filter by carrier dropdown
-  if (filterCarrierSelect) {
-    filterCarrierSelect.addEventListener('change', (e) => {
-      carrierFilter = e.target.value;
-      currentPage = 1;
-      renderRepairs();
-    });
-  }
-
   // Filter chips clicks
   filterChipsContainer.addEventListener('click', (e) => {
     const chip = e.target.closest('.filter-chip');
@@ -4706,56 +4358,6 @@
     activeFilterChip = chip.dataset.filter || 'all';
     currentPage = 1;
     renderRepairs();
-  });
-
-  // Stat card click to filter
-  document.getElementById('statCardAll')?.addEventListener('click', () => {
-    activeFilterChip = 'all';
-    document.querySelectorAll('#filterChipsContainer .filter-chip').forEach(c => c.classList.remove('active'));
-    document.querySelector('#filterChipsContainer [data-filter="all"]')?.classList.add('active');
-    tabBtnJournal.click();
-    renderRepairs();
-  });
-
-  document.getElementById('statCardPending')?.addEventListener('click', () => {
-    activeFilterChip = 'pending';
-    document.querySelectorAll('#filterChipsContainer .filter-chip').forEach(c => c.classList.remove('active'));
-    document.querySelector('#filterChipsContainer [data-filter="pending"]')?.classList.add('active');
-    tabBtnJournal.click();
-    renderRepairs();
-  });
-
-  document.getElementById('statCardInvoice')?.addEventListener('click', () => {
-    activeFilterChip = 'invoice';
-    document.querySelectorAll('#filterChipsContainer .filter-chip').forEach(c => c.classList.remove('active'));
-    document.querySelector('#filterChipsContainer [data-filter="invoice"]')?.classList.add('active');
-    tabBtnJournal.click();
-    renderRepairs();
-  });
-
-  document.getElementById('statCardArtem')?.addEventListener('click', () => {
-    activeFilterChip = 'artem';
-    document.querySelectorAll('#filterChipsContainer .filter-chip').forEach(c => c.classList.remove('active'));
-    tabBtnJournal.click();
-    renderRepairs();
-  });
-
-  document.getElementById('statCardOleksandr')?.addEventListener('click', () => {
-    activeFilterChip = 'oleksandr';
-    document.querySelectorAll('#filterChipsContainer .filter-chip').forEach(c => c.classList.remove('active'));
-    tabBtnJournal.click();
-    renderRepairs();
-  });
-
-  document.getElementById('statCardSelfFixed')?.addEventListener('click', () => {
-    activeFilterChip = 'tracker';
-    document.querySelectorAll('#filterChipsContainer .filter-chip').forEach(c => c.classList.remove('active'));
-    tabBtnJournal.click();
-    renderRepairs();
-  });
-
-  document.getElementById('statCardOffice')?.addEventListener('click', () => {
-    tabBtnInventory.click();
   });
 
   // Pagination events
@@ -4805,6 +4407,8 @@
 
   // Modal Open / Close
   btnOpenAddModal.addEventListener('click', () => {
+    document.getElementById('repairExtraDetails').open = false;
+    document.getElementById('repairResultDetails').open = false;
     document.getElementById('editRecordId').value = '';
     repairForm.reset();
     document.getElementById('inputDate').value = getTodayString();
@@ -4812,6 +4416,11 @@
     repairModalTitle.innerHTML = '<span>➕ Новий запис ремонту трекера</span>';
     repairModalOverlay.classList.add('active');
   });
+
+  repairForm.addEventListener('invalid', event => {
+    const section = event.target.closest('details');
+    if (section) section.open = true;
+  }, true);
 
   function closeRepairModal() {
     repairModalOverlay.classList.remove('active');
@@ -4911,7 +4520,6 @@
 
     saveLocalData();
     populateCarriersDatalist();
-    populateCarriersFilter();
     renderRepairs();
     renderInventory();
     closeRepairModal();
@@ -5110,7 +4718,7 @@
       const assignedTo = document.getElementById('bulkInputAssigned').value.trim();
 
       const rawTokens = bulkInputSerials.value.split(/[\r\n,;\t\s]+/).map(t => t.trim()).filter(Boolean);
-      
+
       const uniqueSerials = [];
       const seen = new Set();
       rawTokens.forEach(s => {
@@ -5153,8 +4761,7 @@
 
       saveLocalData();
       populateCarriersDatalist();
-      populateCarriersFilter();
-      renderInventory();
+        renderInventory();
       closeBulkInvModal();
       showToast(`Успішно додано ${uniqueSerials.length} трекерів на склад! 🎉`);
     });
@@ -5224,8 +4831,7 @@
           appData = imported;
           saveLocalData();
           populateCarriersDatalist();
-          populateCarriersFilter();
-          renderRepairs();
+                renderRepairs();
           renderInventory();
           renderAtCommands();
           closeExportModal();
@@ -5245,7 +4851,6 @@
     if (!confirm('Ви впевнені, що хочете скинути дані до початкових? Усі внесені зміни буде скасовано.')) return;
     loadDefaults();
     populateCarriersDatalist();
-    populateCarriersFilter();
     renderRepairs();
     renderInventory();
     renderAtCommands();
@@ -5255,6 +4860,8 @@
 
   const urlParams = new URLSearchParams(window.location.search);
   window.SZVKShared.initThemeSwitcher(urlParams.get('theme'));
+
+  if (urlParams.get('backup') === '1') btnOpenExportModal.click();
 
   // Initial Run
   initData();
