@@ -608,7 +608,7 @@
     }
 
     .repair-table th {
-      padding: 8px 9px;
+      padding: 9px 10px;
       font-size: 11px;
       font-weight: 800;
       text-transform: uppercase;
@@ -636,7 +636,7 @@
     }
 
     .repair-table td {
-      padding: 7px 9px;
+      padding: 8px 10px;
       border-bottom: 1px solid var(--border);
       vertical-align: middle;
       font-weight: 500;
@@ -717,16 +717,23 @@
       transform: translateY(-1px);
     }
 
-    .vehicle-pill {
+    .vehicle-pill,
+    .serial-box {
       font-weight: 800;
-      font-family: ui-monospace, monospace;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      padding: 2px 7px;
-      border-radius: 5px;
-      color: #fff;
-      display: inline-block;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      padding: 3px 8px;
+      border-radius: 6px;
+      color: #f8fafc;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
       white-space: nowrap;
+      font-size: 12px;
+      letter-spacing: 0.2px;
+      line-height: 1.25;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
     }
 
     .carrier-tag {
@@ -796,43 +803,98 @@
     .status-replace { background: rgba(168, 85, 247, 0.18); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3); }
     .status-invoice { background: rgba(234, 179, 8, 0.2); color: #fde047; border: 1px solid rgba(234, 179, 8, 0.3); }
 
-    .serial-box {
-      font-family: ui-monospace, monospace;
-      font-size: 11px;
-      color: #cbd5e1;
+    .cell-date {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #f1f5f9;
+      white-space: nowrap;
+      letter-spacing: -0.2px;
+    }
+
+    .repair-date-label {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #f1f5f9;
+      white-space: nowrap;
+      letter-spacing: -0.2px;
+      margin-bottom: 2px;
+    }
+
+    .status-done-label {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #34d399;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
       white-space: nowrap;
     }
+
+    .reported-by-sub {
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 11px;
+      margin-top: 3px;
+      white-space: nowrap;
+    }
+
     .serial-replace-arrow {
       color: #c084fc;
       font-weight: 800;
-      margin: 0 3px;
+      margin: 0 2px;
+    }
+    .serial-new-highlight {
+      color: #60a5fa;
+      font-weight: 800;
+    }
+    .serial-old {
+      color: #cbd5e1;
     }
 
     .issue-text {
-      color: #fca5a5;
+      color: #f8fafc;
       font-weight: 600;
       white-space: normal;
       word-break: break-word;
       overflow-wrap: anywhere;
-      line-height: 1.35;
-      font-size: 12px;
+      line-height: 1.45;
+      font-size: 13px;
     }
+    .issue-text.issue-pending {
+      color: #fbbf24;
+      font-weight: 700;
+    }
+
     .solution-text {
-      color: #f1f5f9;
+      color: #e2e8f0;
       white-space: normal;
       word-break: break-word;
       overflow-wrap: anywhere;
-      line-height: 1.35;
-      font-size: 12px;
+      line-height: 1.45;
+      font-size: 13px;
       font-weight: 500;
     }
+    .solution-pending-label {
+      color: #fbbf24;
+      font-weight: 600;
+      font-style: italic;
+      font-size: 12px;
+    }
+
     .notes-text {
       color: #cbd5e1;
       white-space: normal;
       word-break: break-word;
       overflow-wrap: anywhere;
-      line-height: 1.35;
-      font-size: 11.5px;
+      line-height: 1.45;
+      font-size: 12.5px;
+      font-weight: 500;
+    }
+    .notes-empty-dash {
+      color: #64748b;
+      font-weight: 600;
     }
 
     /* Light mode text & badge overrides for crisp readability */
@@ -868,26 +930,27 @@
     [data-theme="light"] .btn-finish-repair { background: #fef3c7; color: #92400e; border: 1.5px solid #d97706; font-weight: 900; }
     [data-theme="light"] .btn-finish-repair:hover { background: #d97706; color: #ffffff; }
 
-    [data-theme="light"] .cell-date { font-weight: 800; color: #0f172a !important; font-family: ui-monospace, monospace; font-size: 13px; white-space: nowrap; }
-    [data-theme="light"] .repair-date-label { color: #0f172a !important; font-weight: 800; font-family: ui-monospace, monospace; font-size: 12.5px; }
-    [data-theme="light"] .reported-by-sub { color: #475569 !important; font-weight: 700; font-size: 10.5px; margin-top: 2px; }
+    [data-theme="light"] .cell-date { font-weight: 800; color: #0f172a !important; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 13px; white-space: nowrap; }
+    [data-theme="light"] .repair-date-label { color: #0f172a !important; font-weight: 800; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 13px; }
+    [data-theme="light"] .reported-by-sub { color: #475569 !important; font-weight: 700; font-size: 11px; margin-top: 2px; }
 
-    [data-theme="light"] .issue-text { color: #0f172a; font-weight: 600; font-size: 12.5px; line-height: 1.4; }
+    [data-theme="light"] .issue-text { color: #0f172a !important; font-weight: 600; font-size: 13px; line-height: 1.45; }
     [data-theme="light"] .issue-pending,
-    [data-theme="light"] .issue-text.issue-pending { color: #b91c1c !important; font-weight: 800; }
-    [data-theme="light"] .solution-text { color: #0f172a !important; font-weight: 600; font-size: 12.5px; line-height: 1.4; }
-    [data-theme="light"] .solution-pending-label { color: #92400e !important; font-weight: 800; font-style: italic; }
-    [data-theme="light"] .notes-text { color: #1e293b !important; font-weight: 600; font-size: 12px; line-height: 1.4; }
+    [data-theme="light"] .issue-text.issue-pending { color: #b45309 !important; font-weight: 800; }
+    [data-theme="light"] .solution-text { color: #0f172a !important; font-weight: 600; font-size: 13px; line-height: 1.45; }
+    [data-theme="light"] .solution-pending-label { color: #92400e !important; font-weight: 800; font-style: italic; font-size: 12px; }
+    [data-theme="light"] .notes-text { color: #1e293b !important; font-weight: 600; font-size: 12.5px; line-height: 1.45; }
     [data-theme="light"] .notes-empty-dash { color: #94a3b8 !important; font-weight: 600; }
-    [data-theme="light"] .phone-copy { color: #1d4ed8 !important; font-weight: 800; text-decoration: underline; }
-    [data-theme="light"] .phone-copy:hover { color: #1e40af !important; background: #dbeafe; }
-    [data-theme="light"] .status-done-label { color: #047857 !important; font-weight: 900; font-size: 11.5px; }
+    [data-theme="light"] .phone-copy { color: #1d4ed8 !important; font-weight: 800; text-decoration: underline; background: #e0e7ff; }
+    [data-theme="light"] .phone-copy:hover { color: #1e40af !important; background: #c7d2fe; }
+    [data-theme="light"] .status-done-label { color: #047857 !important; font-weight: 800; font-size: 11.5px; }
 
-    [data-theme="light"] .serial-box { color: #0f172a !important; font-weight: 800; font-size: 12px; }
+    [data-theme="light"] .vehicle-pill,
+    [data-theme="light"] .serial-box { background: #f1f5f9; border: 1.5px solid #94a3b8; color: #0f172a !important; font-weight: 900; font-size: 12.5px; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05); }
     [data-theme="light"] .serial-replace-arrow { color: #7c3aed !important; font-weight: 900; font-size: 13px; }
     [data-theme="light"] .serial-new-highlight { color: #1d4ed8 !important; font-weight: 900; }
-    [data-theme="light"] .vehicle-serial-pill { color: #1d4ed8; font-weight: 900; }
-    [data-theme="light"] .vehicle-pill { background: #f1f5f9; border: 1.5px solid #94a3b8; color: #0f172a !important; font-weight: 900; font-size: 12.5px; }
+    [data-theme="light"] .serial-old { color: #334155; }
+    [data-theme="light"] .vehicle-serial-pill { color: #1d4ed8 !important; font-weight: 900; }
 
     [data-theme="light"] .carrier-tag { font-weight: 800; border: 1px solid #cbd5e1; }
     [data-theme="light"] .carrier-tet { background: #dbeafe !important; color: #1e40af !important; border-color: #93c5fd !important; }
@@ -918,8 +981,12 @@
 
     [data-theme="light"] .repair-card-item { background: #ffffff; border: 1.5px solid #cbd5e1; }
     [data-theme="light"] .card-vehicle-num { color: #0f172a; font-weight: 900; }
-    [data-theme="light"] .card-date { color: #475569; font-weight: 700; }
-    [data-theme="light"] .card-solution { background: #f1f5f9; color: #0f172a; border: 1px solid #cbd5e1; font-weight: 600; }
+    [data-theme="light"] .card-date { color: #334155 !important; font-weight: 800; font-size: 12px; }
+    [data-theme="light"] .card-issue { color: #0f172a; font-weight: 700; font-size: 13px; }
+    [data-theme="light"] .card-issue.issue-pending { color: #b45309 !important; font-weight: 800; }
+    [data-theme="light"] .card-solution { background: #f1f5f9; color: #0f172a; border: 1px solid #cbd5e1; font-weight: 600; font-size: 12.5px; }
+    [data-theme="light"] .card-notes { color: #1e293b; font-weight: 600; font-size: 12px; }
+    [data-theme="light"] .card-repair-date { color: #334155; font-weight: 800; font-size: 12px; }
     [data-theme="light"] .modal-box { background: #ffffff; border: 1.5px solid #cbd5e1; color: #0f172a; box-shadow: 0 20px 45px rgba(0, 0, 0, 0.15); }
     [data-theme="light"] .modal-title { color: #0f172a; font-weight: 900; }
     [data-theme="light"] .calendar-popover { background: #ffffff; border: 1.5px solid #cbd5e1; color: #0f172a; }
@@ -1090,26 +1157,62 @@
       color: #fff;
     }
     .card-date {
-      font-size: 11px;
-      color: var(--text-muted);
+      font-size: 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-weight: 700;
+      color: #cbd5e1;
     }
 
     .card-body {
       display: flex;
       flex-direction: column;
-      gap: 5px;
-      font-size: 12px;
+      gap: 6px;
+      font-size: 12.5px;
     }
-    .card-issue {
-      color: #f87171;
+    .card-serial-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--text-muted);
       font-weight: 600;
     }
+    .card-prop-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .card-issue {
+      color: #f8fafc;
+      font-weight: 600;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+    .card-issue.issue-pending {
+      color: #fbbf24;
+      font-weight: 700;
+    }
     .card-solution {
-      color: #cbd5e1;
-      background: rgba(0, 0, 0, 0.25);
+      color: #e2e8f0;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.08);
       border-radius: 6px;
-      padding: 5px 8px;
-      font-size: 11.5px;
+      padding: 6px 10px;
+      font-size: 12.5px;
+      line-height: 1.4;
+    }
+    .card-notes {
+      font-size: 12px;
+      color: #cbd5e1;
+      line-height: 1.4;
+    }
+    .card-repair-date {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 12px;
+      font-weight: 700;
+      color: #cbd5e1;
     }
     .card-footer {
       display: flex;
@@ -2496,18 +2599,18 @@
       <table class="repair-table">
         <thead>
           <tr>
-            <th style="width: 82px;" class="sortable-th" id="thSortDate" title="Сортування по даті (клікніть щоб змінити)">
+            <th style="width: 88px;" class="sortable-th" id="thSortDate" title="Сортування по даті (клікніть щоб змінити)">
               📅 Дата <span class="sort-indicator" id="sortDateIcon">▼</span>
             </th>
             <th style="width: 100px;">Перевізник</th>
             <th style="width: 85px;">Номер т/з</th>
-            <th style="width: 100px;">S/N трекера</th>
-            <th style="min-width: 140px;">Проблема / Опис</th>
-            <th style="width: 110px;">Дата рем. / Статус</th>
-            <th style="width: 100px;">Fix</th>
-            <th style="min-width: 140px;">Рішення спеціаліста</th>
-            <th style="min-width: 125px;">Нотатки</th>
-            <th style="width: 65px; text-align: center;">Дії</th>
+            <th style="width: 110px;">S/N трекера</th>
+            <th style="min-width: 150px;">Проблема / Опис</th>
+            <th style="width: 115px;">Дата рем. / Статус</th>
+            <th style="width: 95px;">Fix</th>
+            <th style="min-width: 150px;">Рішення спеціаліста</th>
+            <th style="min-width: 135px;">Нотатки</th>
+            <th style="width: 70px; text-align: center;">Дії</th>
           </tr>
         </thead>
         <tbody id="repairTableBody">
@@ -3748,13 +3851,15 @@
 
   // Format Serial Number (Highlight replace arrow ➜)
   function formatSerialHtml(serial) {
-    if (!serial) return '<span style="color: var(--text-muted);">—</span>';
+    if (!serial) return '<span class="notes-empty-dash">—</span>';
     const clean = escapeHtml(serial);
     if (clean.includes('➜') || clean.includes('to') || clean.includes('->')) {
       const parts = clean.replace(/to|->/g, '➜').split('➜');
-      return `<span class="serial-box">${parts[0].trim()} <span class="serial-replace-arrow">➜</span> <strong class="serial-new-highlight">${parts[1] ? parts[1].trim() : ''}</strong></span>`;
+      const oldS = parts[0].trim();
+      const newS = parts[1] ? parts[1].trim() : '';
+      return `<span class="vehicle-pill serial-box"><span class="serial-old">${oldS}</span> <span class="serial-replace-arrow">➜</span> <strong class="serial-new-highlight">${newS}</strong></span>`;
     }
-    return `<span class="serial-box">${clean}</span>`;
+    return `<span class="vehicle-pill serial-box">${clean}</span>`;
   }
 
   // Filtering & Sorting Logic
@@ -3889,7 +3994,7 @@
                 </div>
               ` : `
                 <div class="repair-date-label">
-                  ${escapeHtml(item.repairDate || '—')}
+                  ${item.repairDate ? escapeHtml(item.repairDate) : '<span class="notes-empty-dash">—</span>'}
                 </div>
                 <div class="status-done-label">
                   ✅ Виконано
@@ -3899,7 +4004,7 @@
             <td>${getTechBadgeHtml(item.specialist)}</td>
             <td>
               <div class="solution-text" title="${escapeHtml(item.solution)}">
-                ${item.solution ? escapeHtml(item.solution) : (isPending ? '<span class="solution-pending-label">Очікує виконання...</span>' : '—')}
+                ${item.solution ? escapeHtml(item.solution) : (isPending ? '<span class="solution-pending-label">Очікує виконання...</span>' : '<span class="notes-empty-dash">—</span>')}
               </div>
             </td>
             <td>
@@ -3941,14 +4046,14 @@
             </div>
 
             <div class="card-body">
-              <div style="font-size: 11px; color: var(--text-muted);">
-                S/N: ${formatSerialHtml(item.serial)}
+              <div class="card-serial-row">
+                <span class="card-prop-label">S/N:</span> ${formatSerialHtml(item.serial)}
               </div>
-              <div class="card-issue" style="${isPending ? 'color: #fbbf24; font-weight: 700;' : ''}">
-                ⚠️ ${escapeHtml(item.issue || 'Не вказано')}
+              <div class="card-issue ${isPending ? 'issue-pending' : ''}">
+                ${isPending ? '⚠️ ' : '📌 '}${escapeHtml(item.issue || 'Не вказано')}
               </div>
               ${item.solution ? `<div class="card-solution">🔧 ${escapeHtml(item.solution)}</div>` : ''}
-              ${item.notes ? `<div style="font-size: 11px; color: #94a3b8;">📝 ${formatNotesHtml(item.notes)}</div>` : ''}
+              ${item.notes ? `<div class="card-notes">📝 ${formatNotesHtml(item.notes)}</div>` : ''}
             </div>
 
             <div class="card-footer">
@@ -3959,7 +4064,7 @@
                     ⚡ Закрити ремонт
                   </button>
                 ` : `
-                  <span style="font-size: 11px; color: #cbd5e1;">Fix: ${escapeHtml(item.repairDate || '—')}</span>
+                  <span class="card-repair-date">Fix: ${item.repairDate ? escapeHtml(item.repairDate) : '—'}</span>
                 `}
               </div>
             </div>
