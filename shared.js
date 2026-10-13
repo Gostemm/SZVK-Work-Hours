@@ -32,6 +32,54 @@
     return `${day}.${month}.${year} о ${hours}:${minutes}`;
   }
 
+  function debounce(callback, delay = 150) {
+    let timer = null;
+    function schedule(...args) {
+      clearTimeout(timer);
+      timer = setTimeout(() => { timer = null; callback.apply(this, args); }, delay);
+    }
+    schedule.cancel = () => { clearTimeout(timer); timer = null; };
+    return schedule;
+  }
+
+  const htmlCache = new WeakMap();
+  function setHtmlIfChanged(element, html) {
+    if (htmlCache.get(element) === html) return false;
+    element.innerHTML = html;
+    htmlCache.set(element, html);
+    return true;
+  }
+
+  const rowCache = new WeakMap();
+  // Reuse unchanged rows and their controls; parse only new or changed records.
+  function reconcileRows(container, items, buildHtml) {
+    htmlCache.delete(container);
+    let entries = rowCache.get(container);
+    if (!entries) { entries = new Map(); rowCache.set(container, entries); }
+    const keys = new Set();
+    const elements = [];
+    items.forEach((item, index) => {
+      const key = String(item.id == null ? index : item.id);
+      const signature = JSON.stringify(item);
+      let entry = entries.get(key);
+      if (!entry || entry.signature !== signature) {
+        const parser = document.createElement('tbody');
+        parser.innerHTML = buildHtml(item);
+        entry = { signature, element: parser.firstElementChild };
+        entries.set(key, entry);
+      }
+      keys.add(key);
+      elements.push(entry.element);
+    });
+    const keep = new Set(elements);
+    [...container.children].forEach(element => { if (!keep.has(element)) element.remove(); });
+    elements.forEach((element, index) => {
+      const current = container.children[index];
+      if (current !== element) container.insertBefore(element, current || null);
+    });
+    for (const key of entries.keys()) if (!keys.has(key)) entries.delete(key);
+  }
+
   function mountAccountMenu(options = {}) {
     const mount = document.getElementById('accountMount');
     if (!mount) return;
@@ -231,6 +279,9 @@
     firebaseConfig,
     escapeHtml,
     formatHistoryTime,
+    debounce,
+    setHtmlIfChanged,
+    reconcileRows,
     updateAccount,
     mountAccountMenu,
     logoutAccount,

@@ -17,13 +17,13 @@
       }
     })();
   </script>
-  <script src="shared.js?v=0e89c1b28c9f"></script>
+  <script src="shared.js?v=3b3ee44c2fae"></script>
 
   <!-- Firebase App & Firestore SDKs (Compat) -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 
-  <link rel="stylesheet" href="shared.css?v=60d0ffd0fb55">
+  <link rel="stylesheet" href="shared.css?v=46569fbcdecc">
 
   <style>
     :root {
@@ -125,7 +125,7 @@
       font-size: 12px;
       font-weight: 700;
       cursor: pointer;
-      transition: all 0.15s ease;
+
       display: inline-flex;
       align-items: center;
       gap: 6px;
@@ -140,11 +140,9 @@
       background: linear-gradient(135deg, #2563eb, #1d4ed8);
       color: #fff;
       border: 1px solid #3b82f6;
-      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
     }
     .btn-primary:hover {
       background: linear-gradient(135deg, #3b82f6, #2563eb);
-      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.5);
     }
 
     .btn-secondary {
@@ -174,17 +172,9 @@
       height: 7px;
       border-radius: 50%;
       background: #10b981;
-      box-shadow: 0 0 6px #10b981;
     }
     .status-dot.syncing {
       background: #f59e0b;
-      box-shadow: 0 0 6px #f59e0b;
-      animation: pulse 1s infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.5; transform: scale(1.3); }
     }
 
     /* Dashboard Stats */
@@ -228,7 +218,6 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      transition: all 0.15s;
     }
     .main-tab-btn:hover {
       color: var(--text);
@@ -238,24 +227,20 @@
       background: var(--accent);
       color: #fff;
       border-color: var(--accent);
-      box-shadow: 0 2px 10px rgba(59, 130, 246, 0.4);
     }
     .main-tab-btn.inventory-tab.active {
       background: #10b981;
       border-color: #10b981;
-      box-shadow: 0 2px 10px rgba(16, 185, 129, 0.4);
     }
     .main-tab-btn.at-tab.active {
       background: #f59e0b;
       border-color: #f59e0b;
       color: #000;
-      box-shadow: 0 2px 10px rgba(245, 158, 11, 0.4);
     }
     .main-tab-btn.history-tab.active {
       background: #8b5cf6;
       border-color: #8b5cf6;
       color: #fff;
-      box-shadow: 0 2px 10px rgba(139, 92, 246, 0.4);
     }
 
     .tab-counter {
@@ -291,12 +276,10 @@
       padding: 7px 28px 7px 30px;
       font-size: 12px;
       font-weight: 500;
-      transition: border-color 0.15s;
     }
     .search-input:focus {
       outline: none;
       border-color: var(--accent);
-      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
     }
     .search-icon {
       position: absolute;
@@ -341,7 +324,7 @@
       border: 1px solid var(--border);
       color: var(--text-muted);
       cursor: pointer;
-      transition: all 0.15s;
+
       user-select: none;
     }
     .filter-chip:hover {
@@ -361,7 +344,6 @@
       background: #f59e0b;
       border-color: #f59e0b;
       color: #000;
-      box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
     }
     .filter-chip.chip-artem.active {
       background: #8b5cf6;
@@ -397,7 +379,7 @@
       border: 1px solid var(--border);
       border-radius: 14px;
       padding: 14px;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+
       display: flex;
       flex-direction: column;
       gap: 12px;
@@ -460,7 +442,6 @@
 
     .sortable-th {
       cursor: pointer;
-      transition: color 0.15s;
     }
     .sortable-th:hover {
       color: var(--text);
@@ -488,7 +469,6 @@
     /* VISUAL HIGHLIGHT FOR "В РОБОТІ" (IN-PROGRESS REPAIRS) */
     .repair-table tr.row-pending {
       background: var(--row-pending-bg) !important;
-      box-shadow: inset 0 0 16px rgba(245, 158, 11, 0.14);
     }
     .repair-table tr.row-pending td:first-child {
       border-left: 5px solid #f59e0b !important;
@@ -514,7 +494,7 @@
       padding: 2px 6px;
       border-radius: 5px;
       letter-spacing: 0.2px;
-      box-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
+
       white-space: nowrap;
     }
 
@@ -524,13 +504,6 @@
       height: 7px;
       border-radius: 50%;
       background: #f59e0b;
-      box-shadow: 0 0 6px #f59e0b;
-      animation: pulse-dot 1.2s infinite ease-in-out;
-    }
-
-    @keyframes pulse-dot {
-      0%, 100% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(1.5); opacity: 0.4; }
     }
 
     .btn-finish-repair {
@@ -546,13 +519,13 @@
       align-items: center;
       gap: 4px;
       margin-top: 4px;
-      transition: all 0.15s;
+
       white-space: nowrap;
     }
     .btn-finish-repair:hover {
       background: #f59e0b;
       color: #000;
-      box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+
       transform: translateY(-1px);
     }
 
@@ -572,7 +545,6 @@
       font-size: 12px;
       letter-spacing: 0.2px;
       line-height: 1.25;
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
     }
 
     .carrier-tag {
@@ -748,7 +720,7 @@
     [data-theme="light"] .badge-office { color: #047857; font-weight: 900; }
     [data-theme="light"] .badge-bill { color: #b45309; font-weight: 900; }
 
-    [data-theme="light"] .table-container { background: #ffffff; border: 1.5px solid #cbd5e1; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04); }
+    [data-theme="light"] .table-container { background: #ffffff; border: 1.5px solid #cbd5e1;  }
     [data-theme="light"] .repair-table { color: #0f172a; }
     [data-theme="light"] .repair-table thead { background: #e2e8f0; }
     [data-theme="light"] .repair-table th { background: #e2e8f0; color: #0f172a !important; font-weight: 900 !important; border-bottom: 2px solid #94a3b8; font-size: 12px; }
@@ -759,11 +731,11 @@
     [data-theme="light"] .repair-table tbody tr:nth-child(odd):not(.row-pending):not(.row-office-stock) { background-color: #ffffff; }
     [data-theme="light"] .repair-table tbody tr:hover:not(.row-pending):not(.row-office-stock) { background-color: #eff6ff !important; }
 
-    [data-theme="light"] .repair-table tr.row-pending { background: #fef3c7 !important; box-shadow: inset 0 0 14px rgba(245, 158, 11, 0.2) !important; }
+    [data-theme="light"] .repair-table tr.row-pending { background: #fef3c7 !important;  }
     [data-theme="light"] .repair-table tr.row-pending td:first-child { border-left: 5px solid #d97706 !important; }
     [data-theme="light"] .repair-table tr.row-pending:hover { background: #fde68a !important; }
     [data-theme="light"] .badge-pending-pulsing { background: #fef3c7; color: #92400e !important; border: 1.5px solid #f59e0b; font-weight: 900; }
-    [data-theme="light"] .pulsing-amber-dot { background: #d97706; box-shadow: 0 0 6px #d97706; }
+    [data-theme="light"] .pulsing-amber-dot { background: #d97706;  }
     [data-theme="light"] .btn-finish-repair { background: #fef3c7; color: #92400e; border: 1.5px solid #d97706; font-weight: 900; }
     [data-theme="light"] .btn-finish-repair:hover { background: #d97706; color: #ffffff; }
 
@@ -783,7 +755,7 @@
     [data-theme="light"] .status-done-label { color: #047857 !important; font-weight: 800; font-size: 11.5px; }
 
     [data-theme="light"] .vehicle-pill,
-    [data-theme="light"] .serial-box { background: #f1f5f9; border: 1.5px solid #94a3b8; color: #0f172a !important; font-weight: 900; font-size: 12.5px; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05); }
+    [data-theme="light"] .serial-box { background: #f1f5f9; border: 1.5px solid #94a3b8; color: #0f172a !important; font-weight: 900; font-size: 12.5px;  }
     [data-theme="light"] .serial-replace-arrow { color: #7c3aed !important; font-weight: 900; font-size: 13px; }
     [data-theme="light"] .serial-new-highlight { color: #1d4ed8 !important; font-weight: 900; }
     [data-theme="light"] .serial-old { color: #334155; }
@@ -823,7 +795,7 @@
     [data-theme="light"] .card-solution { background: #f1f5f9; color: #0f172a; border: 1px solid #cbd5e1; font-weight: 600; font-size: 12.5px; }
     [data-theme="light"] .card-notes { color: #1e293b; font-weight: 600; font-size: 12px; }
     [data-theme="light"] .card-repair-date { color: #334155; font-weight: 800; font-size: 12px; }
-    [data-theme="light"] .modal-box { background: #ffffff; border: 1.5px solid #cbd5e1; color: #0f172a; box-shadow: 0 20px 45px rgba(0, 0, 0, 0.15); }
+    [data-theme="light"] .modal-box { background: #ffffff; border: 1.5px solid #cbd5e1; color: #0f172a;  }
     [data-theme="light"] .modal-title { color: #0f172a; font-weight: 900; }
     [data-theme="light"] .calendar-popover { background: #ffffff; border: 1.5px solid #cbd5e1; color: #0f172a; }
     [data-theme="light"] .cal-title { color: #0f172a; font-weight: 900; }
@@ -868,11 +840,11 @@
     [data-theme="light"] .sn-chip-badge:hover { background: #a7f3d0; }
 
     /* Light mode AT commands typography & cards */
-    [data-theme="light"] .at-intro-card { background: #fef3c7; border: 1.5px solid #fcd34d; border-left: 5px solid #d97706; box-shadow: 0 2px 8px rgba(245, 158, 11, 0.08); }
+    [data-theme="light"] .at-intro-card { background: #fef3c7; border: 1.5px solid #fcd34d; border-left: 5px solid #d97706;  }
     [data-theme="light"] .at-intro-title { color: #92400e !important; font-weight: 900; }
     [data-theme="light"] .at-intro-desc { color: #1e293b !important; font-weight: 600; }
 
-    [data-theme="light"] .firmware-summary-box { background: #ffffff; border: 1.5px solid #cbd5e1; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); }
+    [data-theme="light"] .firmware-summary-box { background: #ffffff; border: 1.5px solid #cbd5e1;  }
     [data-theme="light"] .fw-item { background: #f8fafc; border: 1.5px solid #cbd5e1; }
     [data-theme="light"] .fw-item-black { background: #f8fafc; border-color: #94a3b8; }
     [data-theme="light"] .fw-black { color: #0f172a !important; font-weight: 900; }
@@ -883,9 +855,9 @@
     [data-theme="light"] .fw-version-grey { color: #1e293b !important; font-weight: 900; }
     [data-theme="light"] .fw-subtitle { color: #475569 !important; font-weight: 700; }
 
-    [data-theme="light"] .at-card { background: #ffffff; border: 1.5px solid #cbd5e1; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03); }
+    [data-theme="light"] .at-card { background: #ffffff; border: 1.5px solid #cbd5e1;  }
     [data-theme="light"] .at-card:hover { border-color: #94a3b8; }
-    [data-theme="light"] .at-card.is-primary { background: linear-gradient(135deg, #ffffff 0%, #fffbeb 100%) !important; border: 2px solid #f59e0b !important; box-shadow: 0 4px 14px rgba(245, 158, 11, 0.12) !important; }
+    [data-theme="light"] .at-card.is-primary { background: linear-gradient(135deg, #ffffff 0%, #fffbeb 100%) !important; border: 2px solid #f59e0b !important;  }
     [data-theme="light"] .at-card.is-primary:hover { border-color: #d97706 !important; }
     [data-theme="light"] .badge-primary-star { background: #fef3c7; color: #92400e !important; border-color: #f59e0b; font-weight: 900; }
     [data-theme="light"] .at-dual-badge { font-size: 10px; color: #92400e !important; font-weight: 900; background: #fef3c7; padding: 2px 6px; border-radius: 4px; border: 1px solid #fcd34d; }
@@ -934,7 +906,6 @@
       justify-content: center;
       cursor: pointer;
       font-size: 13px;
-      transition: all 0.15s;
     }
     .action-icon-btn:hover {
       background: rgba(255, 255, 255, 0.08);
@@ -1016,7 +987,6 @@
       padding: 2px 7px;
       border-radius: 5px;
       cursor: pointer;
-      transition: all 0.15s;
     }
     .sn-chip-badge:hover {
       background: rgba(16, 185, 129, 0.35);
@@ -1062,7 +1032,6 @@
       display: flex;
       flex-direction: column;
       gap: 8px;
-      transition: transform 0.15s, border-color 0.15s;
     }
     .at-card:hover {
       border-color: #475569;
@@ -1071,11 +1040,10 @@
     .at-card.is-primary {
       border: 2px solid #f59e0b !important;
       background: linear-gradient(135deg, #1b263b 0%, rgba(245, 158, 11, 0.12) 100%) !important;
-      box-shadow: 0 4px 18px rgba(245, 158, 11, 0.22) !important;
     }
     .at-card.is-primary:hover {
       border-color: #fbbf24 !important;
-      box-shadow: 0 6px 24px rgba(245, 158, 11, 0.35) !important;
+
       transform: translateY(-2px);
     }
     .badge-primary-star {
@@ -1139,7 +1107,7 @@
       flex-direction: column;
       gap: 5px;
       margin-top: 5px;
-      transition: all 0.15s;
+
       cursor: pointer;
     }
     .at-dual-subcard:hover {
@@ -1263,7 +1231,7 @@
       max-width: 590px;
       max-height: 90vh;
       overflow-y: auto;
-      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.6);
+
       display: flex;
       flex-direction: column;
       gap: 14px;
@@ -1317,12 +1285,10 @@
       font-size: 13px;
       font-weight: 500;
       width: 100%;
-      transition: border-color 0.15s;
     }
     .form-input:focus, .form-select:focus, .form-textarea:focus {
       outline: none;
       border-color: var(--accent);
-      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
     }
     .form-textarea {
       min-height: 70px;
@@ -1356,7 +1322,6 @@
       align-items: center;
       gap: 4px;
       white-space: nowrap;
-      transition: all 0.15s;
     }
     .date-btn-addon:hover {
       background: #475569;
@@ -1383,20 +1348,14 @@
       border-radius: 14px;
       padding: 12px;
       width: 295px;
-      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.85);
+
       display: none;
       flex-direction: column;
       gap: 10px;
       user-select: none;
-      animation: fadeInDown 0.15s ease-out;
     }
     .calendar-popover.active {
       display: flex;
-    }
-
-    @keyframes fadeInDown {
-      from { opacity: 0; transform: translateY(-6px); }
-      to { opacity: 1; transform: translateY(0); }
     }
 
     .cal-header {
@@ -1458,7 +1417,7 @@
       color: #cbd5e1;
       cursor: pointer;
       position: relative;
-      transition: all 0.12s;
+
       background: rgba(255, 255, 255, 0.03);
     }
     .cal-day-cell:hover {
@@ -1470,7 +1429,7 @@
     }
     .cal-day-cell.is-today {
       border: 2px solid #f59e0b !important;
-      box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+
       color: #fbbf24 !important;
       font-weight: 900;
       background: rgba(245, 158, 11, 0.18);
@@ -1488,7 +1447,6 @@
       background: #3b82f6 !important;
       color: #fff !important;
       font-weight: 800;
-      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
     }
 
     .cal-footer {
@@ -1570,13 +1528,12 @@
       padding: 10px 16px;
       font-size: 12.5px;
       font-weight: 700;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+
       display: flex;
       align-items: center;
       gap: 8px;
       opacity: 0;
       transform: translateY(10px);
-      transition: all 0.25s ease;
     }
     .toast.show {
       opacity: 1;
@@ -1866,7 +1823,7 @@
         padding: 6px 4px;
       }
     }
-  </style>
+</style>
 </head>
 <body>
 
@@ -2054,6 +2011,14 @@
           <!-- Filled by JS -->
         </tbody>
       </table>
+    </div>
+    <div class="pagination-bar">
+      <span id="inventoryPaginationInfo"></span>
+      <div class="pagination-controls">
+        <button type="button" class="btn" id="btnInventoryPrev" aria-label="Попередня сторінка складу">◀</button>
+        <span id="inventoryPageCurrent"></span>
+        <button type="button" class="btn" id="btnInventoryNext" aria-label="Наступна сторінка складу">▶</button>
+      </div>
     </div>
   </div>
 
@@ -2507,7 +2472,63 @@
   let sortField = 'date';
   let sortDirection = 'desc';
 
-  let inventoryFilter = 'all'; // 'all' | 'office' | 'installed'
+  let inventoryFilter = 'all';
+  let inventoryPage = 1;
+  const inventoryPageSize = 50;
+  const dataVersions = { repairs: 0, inventory: 0, atCommands: 0, history: 0 };
+  const dataSignatures = {};
+  const renderedViews = {};
+  let sortedRepairsKey = '';
+  let sortedRepairs = [];
+  let sortedInventoryKey = '';
+  let sortedOffice = [];
+  let sortedInstalled = [];
+  const dateTimestamps = new Map();
+  let carriersVersion = '';
+
+  function dateTimestamp(value) {
+    if (!dateTimestamps.has(value)) dateTimestamps.set(value, parseDateToTimestamp(value));
+    return dateTimestamps.get(value);
+  }
+
+  function refreshDataVersions() {
+    let changed = false;
+    for (const name of ['repairs', 'inventory', 'atCommands']) {
+      const signature = JSON.stringify(appData[name]);
+      if (signature !== dataSignatures[name]) {
+        dataSignatures[name] = signature;
+        dataVersions[name]++;
+        changed = true;
+      }
+    }
+    if (changed) updateDashboardStats();
+    return changed;
+  }
+
+  function renderActiveView() {
+    if (activeTab === 'journal') renderRepairs();
+    else if (activeTab === 'inventory') renderInventory();
+    else if (activeTab === 'at') renderAtCommands();
+    else if (activeTab === 'history') renderHistory();
+  }
+
+  const scheduleActiveView = window.SZVKShared.debounce(renderActiveView);
+  const scheduleAtSearch = window.SZVKShared.debounce(renderAtCommands);
+  const scheduleHistorySearch = window.SZVKShared.debounce(renderHistory);
+
+  function renderOfficeChoices() {
+    const signature = 'choices:' + dataVersions.inventory;
+    if (renderedViews.choices === signature) return;
+    renderedViews.choices = signature;
+    const office = appData.inventory.filter(item => (item.status || '').toLowerCase().includes('офіс'));
+    const visible = office.slice(0, inventoryPageSize);
+    const chips = visible.map(item => '<button type="button" class="sn-chip-badge" data-serial="' + window.SZVKShared.escapeHtml(item.serial) + '">' + window.SZVKShared.escapeHtml(item.serial) + ' ➜</button>').join('');
+    const more = office.length > visible.length ? '<button type="button" class="btn" id="btnMoreOfficeTrackers">Усі ' + office.length + ' трекерів на складі</button>' : '';
+    const wrap = document.getElementById('officeSnChipsContainer');
+    wrap.innerHTML = chips + more || '<span style="color:var(--text-muted);font-size:12px">Немає вільних трекерів на складі</span>';
+    wrap.querySelectorAll('[data-serial]').forEach(button => { button.onclick = () => window.useTrackerForRepair(button.dataset.serial); });
+    document.getElementById('btnMoreOfficeTrackers')?.addEventListener('click', () => document.getElementById('invFilterOffice').click());
+  }
 
   // Elements
   const viewJournal = document.getElementById('viewJournal');
@@ -2924,11 +2945,8 @@
       }
     }
 
-    populateCarriersDatalist();
-    updateDashboardStats();
-    renderRepairs();
-    renderInventory();
-    renderAtCommands();
+    refreshDataVersions();
+    renderActiveView();
 
     // 2. Запуск повноцінної онлайнової синхронізації з Firestore (Real-time listener)
     initRealtimeCloudSync();
@@ -2951,7 +2969,7 @@
 
   function saveLocalData(triggerCloud = true) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
-    updateDashboardStats();
+    refreshDataVersions();
     if (triggerCloud) {
       syncWithCloud();
     }
@@ -2959,6 +2977,7 @@
 
   let isFirestoreSyncActive = false;
   let trackersListenerUnsub = null;
+  let historyListenerUnsub = null;
 
   // Real-time Cloud Sync Logic (Завжди онлайн, без відкатів)
   function initRealtimeCloudSync() {
@@ -2973,11 +2992,14 @@
 
     // 1. Слухач оновлень журналу дій
     if (DB_HISTORY_DOC) {
-      DB_HISTORY_DOC.onSnapshot((hSnap) => {
+      if (historyListenerUnsub) historyListenerUnsub();
+      historyListenerUnsub = DB_HISTORY_DOC.onSnapshot((hSnap) => {
         if (hSnap.exists) {
           const hData = hSnap.data();
           if (hData && Array.isArray(hData.items)) {
+            if (JSON.stringify(window.actionHistory) === JSON.stringify(hData.items)) return;
             window.actionHistory = hData.items;
+            dataVersions.history++;
             try {
               localStorage.setItem(UNIFIED_HISTORY_STORAGE_KEY, JSON.stringify(hData.items));
             } catch(e) {}
@@ -3017,14 +3039,9 @@
             updated = true;
           }
 
-          if (updated) {
-            // Зберігаємо в кеш без зворотного циклу відправки в хмару
+          if (updated && refreshDataVersions()) {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
-            populateCarriersDatalist();
-                    updateDashboardStats();
-            renderRepairs();
-            renderInventory();
-            renderAtCommands();
+            renderActiveView();
           }
         }
         cloudSyncDot.className = 'status-dot';
@@ -3070,6 +3087,9 @@
 
   // Populate Carriers Select & Datalist
   function populateCarriersDatalist() {
+    const version = dataVersions.repairs + ':' + dataVersions.inventory;
+    if (carriersVersion === version) return;
+    carriersVersion = version;
     const datalist = document.getElementById('carrierDatalist');
     const carriers = new Set();
     appData.repairs.forEach(r => { if (r.carrier) carriers.add(r.carrier); });
@@ -3147,7 +3167,15 @@
 
   // Filtering & Sorting Logic
   function getFilteredRepairs() {
-    let list = appData.repairs.slice();
+    const sortKey = dataVersions.repairs + ':' + sortField + ':' + sortDirection;
+    if (sortedRepairsKey !== sortKey) {
+      sortedRepairsKey = sortKey;
+      sortedRepairs = appData.repairs.slice().sort((a, b) => {
+        const delta = dateTimestamp(a.date) - dateTimestamp(b.date) || (a.id - b.id);
+        return sortDirection === 'desc' ? -delta : delta;
+      });
+    }
+    let list = sortedRepairs;
 
     // Global Search
     if (searchQuery) {
@@ -3194,24 +3222,15 @@
       list = list.filter(r => (r.specialist || '').toLowerCase().includes('трекер'));
     }
 
-    // SORT BY DATE (Default: newest first!)
-    list.sort((a, b) => {
-      if (sortField === 'date') {
-        const tA = parseDateToTimestamp(a.date);
-        const tB = parseDateToTimestamp(b.date);
-        if (tA !== tB) {
-          return sortDirection === 'desc' ? tB - tA : tA - tB;
-        }
-        return sortDirection === 'desc' ? (b.id - a.id) : (a.id - b.id);
-      }
-      return (b.id - a.id);
-    });
-
     return list;
   }
 
   // Render Repairs Table
   function renderRepairs() {
+    if (activeTab !== 'journal') return;
+    const key = [dataVersions.repairs, searchQuery, activeFilterChip, specialistFilter, monthFilter, sortField, sortDirection, currentPage, pageSize].join('|');
+    if (renderedViews.journal === key) return;
+    renderedViews.journal = key;
     const filtered = getFilteredRepairs();
     const totalCount = filtered.length;
     filteredCountBadge.textContent = `(показано: ${totalCount})`;
@@ -3236,13 +3255,12 @@
     if (pageItems.length === 0) {
       repairTableBody.innerHTML = `<tr><td colspan="10" style="text-align: center; padding: 35px; color: var(--text-muted);">Записів за вашим запитом не знайдено</td></tr>`;
     } else {
-      let rowsHtml = '';
-      pageItems.forEach(item => {
+      window.SZVKShared.reconcileRows(repairTableBody, pageItems, item => {
         const isPending = isRepairPending(item);
         const rowClass = isPending ? 'row-pending' : '';
         const carrierTagClass = getCarrierClass(item.carrier);
 
-        rowsHtml += `
+        return `
           <tr class="${rowClass}">
             <td class="cell-date">
               ${escapeHtml(item.date)}
@@ -3300,56 +3318,30 @@
           </tr>
         `;
       });
-      repairTableBody.innerHTML = rowsHtml;
+
     }
 
   }
 
   // Render Inventory (New Trackers)
   function renderInventory() {
+    if (activeTab !== 'inventory') return;
+    const key = [dataVersions.inventory, inventoryFilter, inventoryPage, searchQuery].join('|');
+    if (renderedViews.inventory === key) return;
+    renderedViews.inventory = key;
     const tbody = document.getElementById('inventoryTableBody');
-    const chipsWrap = document.getElementById('officeSnChipsContainer');
-    const modalOfficeChipsWrap = document.getElementById('modalOfficeSnWrap');
-
-    let officeList = [];
-    let installedList = [];
-
-    appData.inventory.forEach(item => {
-      const isOffice = (item.status || '').toLowerCase().includes('офіс');
-      if (isOffice) officeList.push(item);
-      else installedList.push(item);
-    });
-
-    document.getElementById('invCountOffice').textContent = `${officeList.length} шт`;
-    document.getElementById('invCountInstalled').textContent = `${installedList.length} шт`;
-    document.getElementById('invCountTotal').textContent = `${appData.inventory.length} шт`;
-
-    // Render Office SN Chips
-    chipsWrap.innerHTML = officeList.map(item => `
-      <span class="sn-chip-badge" onclick="window.useTrackerForRepair('${escapeHtml(item.serial)}')" title="Натисніть щоб створити заявку на заміну цим трекером">
-        ${escapeHtml(item.serial)} ➜
-      </span>
-    `).join('') || '<span style="color: var(--text-muted); font-size: 12px;">Немає вільних трекерів на складі</span>';
-
-    // Render chips for modal
-    modalOfficeChipsWrap.innerHTML = `<span style="font-size: 10px; color: var(--text-muted);">Вільні на складі:</span> ` +
-      officeList.map(item => `
-        <span class="quick-tmpl-btn" onclick="window.selectTrackerInModal('${escapeHtml(item.serial)}')">
-          ${escapeHtml(item.serial)}
-        </span>
-      `).join('');
-    modalOfficeChipsWrap.style.display = officeList.length > 0 ? 'flex' : 'none';
-
-    // Sort groups so newest received date is at the top
-    const sortByDateDesc = (a, b) => {
-      const timeA = parseDateToTimestamp(a.receivedDate);
-      const timeB = parseDateToTimestamp(b.receivedDate);
-      if (timeA !== timeB) return timeB - timeA;
-      return (b.id || 0) - (a.id || 0);
-    };
-
-    officeList.sort(sortByDateDesc);
-    installedList.sort(sortByDateDesc);
+    if (sortedInventoryKey !== String(dataVersions.inventory)) {
+      sortedInventoryKey = String(dataVersions.inventory);
+      const sorted = appData.inventory.slice().sort((a, b) => dateTimestamp(b.receivedDate) - dateTimestamp(a.receivedDate) || ((b.id || 0) - (a.id || 0)));
+      sortedOffice = sorted.filter(item => (item.status || '').toLowerCase().includes('офіс'));
+      sortedInstalled = sorted.filter(item => !(item.status || '').toLowerCase().includes('офіс'));
+    }
+    const officeList = sortedOffice;
+    const installedList = sortedInstalled;
+    document.getElementById('invCountOffice').textContent = officeList.length + ' шт';
+    document.getElementById('invCountInstalled').textContent = installedList.length + ' шт';
+    document.getElementById('invCountTotal').textContent = appData.inventory.length + ' шт';
+    renderOfficeChoices();
 
     let list = [];
     if (inventoryFilter === 'office') {
@@ -3361,15 +3353,25 @@
       list = [...officeList, ...installedList];
     }
 
+    const query = searchQuery.toLowerCase().trim();
+    if (query) list = list.filter(item => [item.serial, item.assignedTo, item.status, item.receivedDate].some(value => String(value || '').toLowerCase().includes(query)));
+    const total = list.length;
+    const totalPages = Math.max(1, Math.ceil(total / inventoryPageSize));
+    inventoryPage = Math.min(inventoryPage, totalPages);
+    const start = (inventoryPage - 1) * inventoryPageSize;
+    list = list.slice(start, start + inventoryPageSize);
+    document.getElementById('inventoryPaginationInfo').textContent = total ? 'Показано ' + (start + 1) + '–' + (start + list.length) + ' із ' + total : 'Записів не знайдено';
+    document.getElementById('inventoryPageCurrent').textContent = inventoryPage + ' / ' + totalPages;
+    document.getElementById('btnInventoryPrev').disabled = inventoryPage === 1;
+    document.getElementById('btnInventoryNext').disabled = inventoryPage === totalPages;
     if (list.length === 0) {
       tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 25px; color: var(--text-muted);">Немає трекерів за цим фільтром</td></tr>`;
       return;
     }
 
-    let html = '';
-    list.forEach(item => {
+    window.SZVKShared.reconcileRows(tbody, list, item => {
       const isOffice = (item.status || '').toLowerCase().includes('офіс');
-      html += `
+      return `
         <tr class="${isOffice ? 'row-office-stock' : ''}">
           <td style="font-weight: 800; color: var(--text);">${escapeHtml(item.receivedDate)}</td>
           <td><span class="vehicle-pill vehicle-serial-pill">${escapeHtml(item.serial)}</span></td>
@@ -3398,13 +3400,17 @@
         </tr>
       `;
     });
-    tbody.innerHTML = html;
+
   }
 
   // Render AT Commands
   function renderAtCommands() {
+    if (activeTab !== 'at') return;
     const grid = document.getElementById('atCommandsGrid');
     const q = (document.getElementById('atSearchInput').value || '').toLowerCase().trim();
+    const key = dataVersions.atCommands + ':' + q;
+    if (renderedViews.at === key) return;
+    renderedViews.at = key;
 
     // 4 Primary Configuration Commands
     const PRIMARY_CONFIG = [
@@ -3664,6 +3670,7 @@
       editRef: data.editRef || null
     };
     window.actionHistory.unshift(entry);
+    dataVersions.history++;
     if (window.actionHistory.length > 300) window.actionHistory.length = 300;
     updateHistoryCounter();
     pushHistoryToFirestore();
@@ -3871,6 +3878,10 @@
   }
 
   function renderHistory() {
+    if (activeTab !== 'history') return;
+    const key = [dataVersions.history, currentHistoryModule, currentHistoryTab, historySearchQuery].join('|');
+    if (renderedViews.history === key) return;
+    renderedViews.history = key;
     const container = document.getElementById('historyListContainerTrackers');
     if (!container) return;
 
@@ -4075,7 +4086,7 @@
     if (searchInp) {
       searchInp.oninput = (e) => {
         historySearchQuery = e.target.value.trim();
-        renderHistory();
+        scheduleHistorySearch();
       };
     }
 
@@ -4279,6 +4290,7 @@
     viewInventory.style.display = 'none';
     viewAtCommands.style.display = 'none';
     viewHistory.style.display = 'none';
+    renderRepairs();
   });
 
   tabBtnInventory.addEventListener('click', () => {
@@ -4338,7 +4350,8 @@
     searchQuery = e.target.value;
     searchClearBtn.style.display = searchQuery ? 'block' : 'none';
     currentPage = 1;
-    renderRepairs();
+    inventoryPage = 1;
+    scheduleActiveView();
   });
 
   searchClearBtn.addEventListener('click', () => {
@@ -4346,7 +4359,9 @@
     searchQuery = '';
     searchClearBtn.style.display = 'none';
     currentPage = 1;
-    renderRepairs();
+    inventoryPage = 1;
+    scheduleActiveView.cancel();
+    renderActiveView();
   });
 
   // Filter chips clicks
@@ -4379,21 +4394,27 @@
     renderRepairs();
   });
 
+  document.getElementById('btnInventoryPrev').onclick = () => { if (inventoryPage > 1) { inventoryPage--; renderInventory(); } };
+  document.getElementById('btnInventoryNext').onclick = () => { inventoryPage++; renderInventory(); };
+
   // Inventory Filter Buttons
   document.getElementById('invFilterAll').addEventListener('click', (e) => {
     inventoryFilter = 'all';
+    inventoryPage = 1;
     document.querySelectorAll('#viewInventory .filter-chip').forEach(c => c.classList.remove('active'));
     e.target.classList.add('active');
     renderInventory();
   });
   document.getElementById('invFilterOffice').addEventListener('click', (e) => {
     inventoryFilter = 'office';
+    inventoryPage = 1;
     document.querySelectorAll('#viewInventory .filter-chip').forEach(c => c.classList.remove('active'));
     e.target.classList.add('active');
     renderInventory();
   });
   document.getElementById('invFilterInstalled').addEventListener('click', (e) => {
     inventoryFilter = 'installed';
+    inventoryPage = 1;
     document.querySelectorAll('#viewInventory .filter-chip').forEach(c => c.classList.remove('active'));
     e.target.classList.add('active');
     renderInventory();
@@ -4401,12 +4422,11 @@
 
 
 
-  document.getElementById('atSearchInput').addEventListener('input', () => {
-    renderAtCommands();
-  });
+  document.getElementById('atSearchInput').addEventListener('input', scheduleAtSearch);
 
   // Modal Open / Close
   btnOpenAddModal.addEventListener('click', () => {
+    populateCarriersDatalist();
     document.getElementById('repairExtraDetails').open = false;
     document.getElementById('repairResultDetails').open = false;
     document.getElementById('editRecordId').value = '';
@@ -4519,7 +4539,6 @@
     }
 
     saveLocalData();
-    populateCarriersDatalist();
     renderRepairs();
     renderInventory();
     closeRepairModal();
@@ -4850,7 +4869,6 @@
   btnResetToDefaults.addEventListener('click', () => {
     if (!confirm('Ви впевнені, що хочете скинути дані до початкових? Усі внесені зміни буде скасовано.')) return;
     loadDefaults();
-    populateCarriersDatalist();
     renderRepairs();
     renderInventory();
     renderAtCommands();

@@ -5,7 +5,8 @@ const crypto = require('node:crypto');
 const root = path.resolve(__dirname, '..');
 const assets = ['shared.js', 'shared.css'].map(name => ({
   name,
-  version: crypto.createHash('sha256').update(fs.readFileSync(path.join(root, name))).digest('hex').slice(0, 12)
+  // Git may change line endings on checkout; keep cache versions identical on Windows and Linux.
+  version: crypto.createHash('sha256').update(fs.readFileSync(path.join(root, name), 'utf8').replace(/\r\n/g, '\n')).digest('hex').slice(0, 12)
 }));
 
 for (const name of ['index.html', 'trackers.html']) {

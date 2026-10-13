@@ -15,6 +15,60 @@ vm.runInContext(fs.readFileSync(path.join(root, 'shared.js'), 'utf8'), context);
 const shared = context.window.SZVKShared;
 const copy = value => JSON.parse(JSON.stringify(value));
 
+test('search debounce runs only the latest query and can cancel pending work', () => {
+  const pending = new Map();
+  let id = 0;
+  context.setTimeout = (callback, delay) => { pending.set(++id, { callback, delay }); return id; };
+  context.clearTimeout = timer => pending.delete(timer);
+  const calls = [];
+  const search = shared.debounce(function (query) { calls.push([this.name, query]); });
+  const receiver = { name: 'journal', search };
+  receiver.search('a');
+  receiver.search('ab');
+  receiver.search('abc');
+  assert.equal(calls.length, 0, 'input handlers must return before rendering');
+  assert.equal(pending.size, 1);
+  const latest = [...pending.values()][0];
+  assert.equal(latest.delay, 150);
+  pending.clear();
+  latest.callback();
+  assert.deepEqual(calls, [['journal', 'abc']]);
+  receiver.search('old query');
+  search.cancel();
+  assert.equal(pending.size, 0, 'clearing search must cancel stale rendering');
+  receiver.search('new query');
+  const next = [...pending.values()][0];
+  pending.clear();
+  next.callback();
+  assert.deepEqual(calls, [['journal', 'abc'], ['journal', 'new query']]);
+});
+
+test('separate search controls debounce independently', () => {
+  const pending = new Map();
+  let id = 0;
+  context.setTimeout = callback => { pending.set(++id, callback); return id; };
+  context.clearTimeout = timer => pending.delete(timer);
+  const calls = [];
+  const journal = shared.debounce(value => calls.push(value));
+  const history = shared.debounce(value => calls.push(value));
+  journal('first');
+  history('history');
+  journal('latest');
+  for (const callback of pending.values()) callback();
+  assert.deepEqual(calls, ['history', 'latest']);
+});
+
+test('unchanged HTML preserves controls while changed content still updates', () => {
+  let writes = 0;
+  const element = { set innerHTML(value) { this.html = value; writes++; } };
+  assert.equal(shared.setHtmlIfChanged(element, '<button>1</button>'), true);
+  assert.equal(shared.setHtmlIfChanged(element, '<button>1</button>'), false);
+  assert.equal(writes, 1);
+  assert.equal(shared.setHtmlIfChanged(element, '<button>2</button>'), true);
+  assert.equal(element.html, '<button>2</button>');
+  assert.equal(writes, 2);
+});
+
 test('all inline scripts and shared.js have valid syntax', () => {
   for (const name of ['index.html', 'trackers.html', 'tracking Trackers/index.html']) {
     const html = fs.readFileSync(path.join(root, name), 'utf8');
@@ -31,7 +85,7 @@ test('both pages request the current shared assets, bypassing old browser cache'
   for (const name of ['index.html', 'trackers.html']) {
     const html = fs.readFileSync(path.join(root, name), 'utf8');
     for (const asset of ['shared.js', 'shared.css']) {
-      const version = crypto.createHash('sha256').update(fs.readFileSync(path.join(root, asset))).digest('hex').slice(0, 12);
+      const version = crypto.createHash('sha256').update(fs.readFileSync(path.join(root, asset), 'utf8').replace(/\r\n/g, '\n')).digest('hex').slice(0, 12);
       assert.ok(html.includes(`${asset}?v=${version}`), `${name} must reference the current ${asset}; run npm run version-assets`);
     }
   }
