@@ -5,6 +5,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test tests/service.test.cjs"
+    "test": "node --test tests/service.test.cjs",
+    "version-assets": "node scripts/version-assets.cjs"
   }
 }

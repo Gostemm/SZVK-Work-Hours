@@ -5,13 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>⏱️ SZVK Work Hours</title>
 
-  <script src="shared.js"></script>
+  <script src="shared.js?v=0e89c1b28c9f"></script>
 
   <!-- Firebase App & Firestore SDKs (Compat) -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 
-  <link rel="stylesheet" href="shared.css">
+  <link rel="stylesheet" href="shared.css?v=60d0ffd0fb55">
 
   <style>
     :root {
@@ -2062,7 +2062,7 @@
       <span>Запам'ятати мене на цьому пристрої</span>
     </label>
 
-    <div class="auth-error" id="loginErrorMessage">Невірний логін або пароль</div>
+    <div class="auth-error" id="loginErrorMessage" role="alert">Невірний логін або пароль</div>
     <button type="submit" class="auth-btn">Увійти в систему</button>
   </form>
 </div>
@@ -2323,6 +2323,20 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
+  const requiredSharedMethods = ['mountAccountMenu', 'updateAccount', 'escapeHtml', 'formatHistoryTime', 'initThemeSwitcher', 'updateTask', 'restoreTaskMove'];
+  if (!window.SZVKShared || requiredSharedMethods.some(name => typeof window.SZVKShared[name] !== 'function')) {
+    const message = document.getElementById('loginErrorMessage');
+    message.textContent = 'Не вдалося завантажити оновлення сервісу. Оновіть сторінку.';
+    message.style.display = 'block';
+    document.querySelector('#loginForm button[type="submit"]').disabled = true;
+    const retry = document.createElement('button');
+    retry.type = 'button';
+    retry.className = 'auth-btn';
+    retry.textContent = 'Оновити сторінку';
+    retry.onclick = () => window.location.reload();
+    document.getElementById('loginForm').appendChild(retry);
+    return;
+  }
   window.SZVKShared.mountAccountMenu({ admin: true });
   // --- FIREBASE FIRESTORE CLOUD CONFIG ---
   const firebaseConfig = window.SZVKShared.firebaseConfig;

@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
+const crypto = require('node:crypto');
 const root = path.resolve(__dirname, '..');
 const context = vm.createContext({
   window: { location: { search: '' }, matchMedia: () => ({ matches: false }) },
@@ -23,6 +24,44 @@ test('all inline scripts and shared.js have valid syntax', () => {
     for (const [, file] of html.matchAll(/(?:src|href)="([^"?#]+)(?:[^"\s]*)"/g)) {
       if (!/^https?:/.test(file)) assert.ok(fs.existsSync(path.resolve(root, path.dirname(name), file)), `${name}: missing ${file}`);
     }
+  }
+});
+
+test('both pages request the current shared assets, bypassing old browser cache', () => {
+  for (const name of ['index.html', 'trackers.html']) {
+    const html = fs.readFileSync(path.join(root, name), 'utf8');
+    for (const asset of ['shared.js', 'shared.css']) {
+      const version = crypto.createHash('sha256').update(fs.readFileSync(path.join(root, asset))).digest('hex').slice(0, 12);
+      assert.ok(html.includes(`${asset}?v=${version}`), `${name} must reference the current ${asset}; run npm run version-assets`);
+    }
+  }
+});
+
+test('missing or outdated shared script shows a recovery action instead of silently breaking login', () => {
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  const script = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)].filter(match => !match[1].includes('src=')).at(-1)[2];
+  for (const api of [undefined, { escapeHtml: () => '' }]) {
+    let onReady;
+    let reloads = 0;
+    const message = { style: {} };
+    const submit = { disabled: false };
+    const added = [];
+    const loginForm = { appendChild: element => added.push(element) };
+    const document = {
+      addEventListener: (name, callback) => { if (name === 'DOMContentLoaded') onReady = callback; },
+      getElementById: id => id === 'loginErrorMessage' ? message : loginForm,
+      querySelector: () => submit,
+      createElement: () => ({})
+    };
+    vm.runInNewContext(script, { document, window: { SZVKShared: api, location: { reload: () => reloads++ } } });
+    assert.doesNotThrow(() => onReady());
+    assert.equal(message.style.display, 'block');
+    assert.ok(message.textContent.includes('Оновіть сторінку'));
+    assert.equal(submit.disabled, true);
+    assert.equal(added[0].type, 'button');
+    assert.equal(added[0].textContent, 'Оновити сторінку');
+    added[0].onclick();
+    assert.equal(reloads, 1);
   }
 });
 
