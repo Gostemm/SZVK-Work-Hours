@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>⏱️ SZVK Work Hours</title>
 
-  <script src="shared.js?v=ad9808574db7"></script>
+  <script src="shared.js?v=8d1463cb948b"></script>
 
   <!-- Firebase App & Firestore SDKs (Compat) -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
@@ -2281,7 +2281,7 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-  const requiredSharedMethods = ['mountAccountMenu', 'updateAccount', 'escapeHtml', 'formatHistoryTime', 'initThemeSwitcher', 'updateTask', 'restoreTaskMove', 'debounce', 'setHtmlIfChanged', 'shiftInfo', 'calendarMonthDays', 'taskTimePickerHtml', 'initTaskTimePickers', 'reconcileRepairTasks'];
+  const requiredSharedMethods = ['mountAccountMenu', 'updateAccount', 'escapeHtml', 'formatHistoryTime', 'initThemeSwitcher', 'updateTask', 'restoreTaskMove', 'debounce', 'setHtmlIfChanged', 'shiftInfo', 'calendarMonthDays', 'taskTimePickerHtml', 'initTaskTimePickers', 'reconcileRepairTasks', 'setRepairCompletion', 'flushRepairCompletions', 'syncRepairTasksToCloud'];
   if (!window.SZVKShared || requiredSharedMethods.some(name => typeof window.SZVKShared[name] !== 'function')) {
     const message = document.getElementById('loginErrorMessage');
     message.textContent = 'Не вдалося завантажити оновлення сервісу. Оновіть сторінку.';
@@ -2446,15 +2446,18 @@ document.addEventListener("DOMContentLoaded", function () {
   let unsubscribeRepairs = null;
   let linkedRepairs = readLocalRepairs();
   let hasRemoteRepairs = false;
+  let repairCloudSync = null;
 
   function readLocalRepairs() {
     try {
       const data = JSON.parse(localStorage.getItem('szvk_trackers_data') || 'null');
+      if (data) window.SZVKShared.applyPendingRepairCompletions(data.repairs);
       return data && Array.isArray(data.repairs) ? data.repairs : null;
     } catch (error) { return null; }
   }
 
   function refreshRepairNotes(repairs, removeMissing = true) {
+    window.SZVKShared.applyPendingRepairCompletions(repairs);
     linkedRepairs = repairs;
     if (!window.SZVKShared.reconcileRepairTasks(window.dayNotes, linkedRepairs, removeMissing)) return;
     monthlyCountCache.clear();
@@ -2474,8 +2477,68 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   window.addEventListener('storage', event => {
-    if (event.key === 'szvk_trackers_data') refreshRepairNotes(readLocalRepairs(), hasRemoteRepairs || !isFirebaseReady);
+    if (['szvk_trackers_data', 'szvk_pending_repair_completions'].includes(event.key)) refreshRepairNotes(readLocalRepairs(), hasRemoteRepairs || !isFirebaseReady);
   });
+
+  function cacheLocalRepairs(repairs) {
+    const data = JSON.parse(localStorage.getItem('szvk_trackers_data') || '{}');
+    localStorage.setItem('szvk_trackers_data', JSON.stringify({ ...data, repairs }));
+  }
+
+  function syncRepairCloudState() {
+    if (!isFirebaseReady || !currentUser) return Promise.resolve();
+    if (repairCloudSync) return repairCloudSync;
+    repairCloudSync = (async () => {
+      try {
+        const results = await window.SZVKShared.flushRepairCompletions(db, DB_TRACKERS_DOC, DB_SCHEDULE_DOC);
+        for (const result of results) {
+          const index = (linkedRepairs || []).findIndex(repair => String(repair.id) === String(result.repair.id));
+          if (index !== -1) linkedRepairs[index] = result.repair;
+        }
+        if (results.length && linkedRepairs) {
+          cacheLocalRepairs(linkedRepairs);
+          refreshRepairNotes(linkedRepairs, false);
+        }
+        await window.SZVKShared.syncRepairTasksToCloud(db, DB_TRACKERS_DOC, DB_SCHEDULE_DOC);
+        if (!Object.keys(window.SZVKShared.pendingRepairCompletions()).length) updateSyncIndicator('synced');
+      } catch (error) {
+        console.warn('Repair completion cloud sync notice:', error);
+        updateSyncIndicator('error');
+      }
+    })().finally(() => { repairCloudSync = null; });
+    return repairCloudSync;
+  }
+
+  window.addEventListener('online', syncRepairCloudState);
+
+  async function toggleRepairTask(dateKey, taskId, done) {
+    const task = getDayTasks(dateKey).find(item => String(item.id) === String(taskId));
+    if (!task || task.repairId == null) return;
+    try {
+      const user = { username: currentUser && currentUser.username || '', name: currentUser && currentUser.name || '' };
+      const result = window.SZVKShared.setRepairCompletion(linkedRepairs || [], task.repairId, done, dateKey, user);
+      if (!result.changed) return;
+      window.SZVKShared.queueRepairCompletion({ repairId: task.repairId, done, dateKey, user });
+      cacheLocalRepairs(linkedRepairs);
+      refreshRepairNotes(linkedRepairs, false);
+      logAction({
+        module: 'tracker_hub', tab: 'repairs', type: 'repair_edit',
+        description: (done ? 'Завершено ремонт із нотатки: ' : 'Повернуто ремонт у роботу: ') + result.repair.vehicle,
+        details: result.repair.carrier + (done ? ' · ' + result.repair.repairDate + ' · ' + result.repair.specialist : ''),
+        restoreData: { prevRepair: result.previous },
+        editRef: { module: 'tracker_hub', type: 'repair', id: result.repair.id }
+      });
+      if (isFirebaseReady) {
+        updateSyncIndicator('syncing');
+        await syncRepairCloudState();
+      } else updateSyncIndicator('local');
+    } catch (error) {
+      refreshOpenDayTasks();
+      renderApp();
+      updateSyncIndicator('error');
+      document.getElementById('cloudSyncText').textContent = error.message;
+    }
+  }
 
   function updateSyncIndicator(state) {
     const dot = document.getElementById('cloudSyncDot');
@@ -2938,6 +3001,7 @@ document.addEventListener("DOMContentLoaded", function () {
           if (!fromCache) hasRemoteRepairs = true;
           try { localStorage.setItem('szvk_trackers_data', JSON.stringify(data)); } catch (error) {}
           refreshRepairNotes(data.repairs, !fromCache);
+          if (!fromCache) syncRepairCloudState();
         }
       }, error => console.warn('Repair notes sync notice:', error));
     }
@@ -4000,7 +4064,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       item.innerHTML = `
         <div class="task-modal-content">
-          <input type="checkbox" class="task-modal-checkbox" ${task.done ? 'checked' : ''} ${task.repairId != null ? 'disabled title="Статус оновлюється в журналі ремонтів"' : 'aria-label="Позначити завдання виконаним"'}>
+          <input type="checkbox" class="task-modal-checkbox" ${task.done ? 'checked' : ''} aria-label="${task.repairId != null ? 'Позначити ремонт виконаним' : 'Позначити завдання виконаним'}">
           <span class="task-modal-text">${task.time ? `<span class="task-time-badge">${escapeHtml(task.time)}</span> ` : ''}${escapeHtml(task.text)}</span>
           ${authorText}
         </div>
@@ -4013,7 +4077,7 @@ document.addEventListener("DOMContentLoaded", function () {
       `;
 
       item.querySelector(".task-modal-checkbox").onchange = (e) => {
-        if (task.repairId != null) return;
+        if (task.repairId != null) { toggleRepairTask(dateKey, task.id, e.target.checked); return; }
         task.done = e.target.checked;
         window.dayNotes[dateKey] = tasks;
         logAction('task_toggle', `${task.done ? 'Виконано' : 'Повернуто в роботу'} завдання на ${dateKey}`, `«${task.text}»`, {
@@ -4375,7 +4439,7 @@ document.addEventListener("DOMContentLoaded", function () {
         tasksListHtml = shiftTasks.map((t) => `
           <div class="cycle-task-row ${t.done ? 'done' : ''}" data-date="${shift.dateKey}" data-task-id="${escapeHtml(t.id)}">
             <div class="cycle-task-left">
-              <input type="checkbox" class="cycle-task-cb" ${t.done ? 'checked' : ''} ${t.repairId != null ? 'disabled' : ''} data-date="${shift.dateKey}" data-task-id="${escapeHtml(t.id)}" title="${t.repairId != null ? 'Статус оновлюється в журналі ремонтів' : t.done ? 'Позначити як невиконане' : 'Позначити як виконане'}">
+              <input type="checkbox" class="cycle-task-cb" ${t.done ? 'checked' : ''} data-date="${shift.dateKey}" data-task-id="${escapeHtml(t.id)}" title="${t.done ? 'Позначити як невиконане' : 'Позначити як виконане'}">
               <span class="cycle-task-text" title="${escapeHtml(t.text)}">${t.time ? `<span class="task-time-badge">${escapeHtml(t.time)}</span> ` : ''}${escapeHtml(t.text)}</span>
               ${t.author && t.repairId == null ? `<span class="cycle-task-author">(${escapeHtml(t.author)})</span>` : ''}
             </div>
@@ -4563,7 +4627,8 @@ document.addEventListener("DOMContentLoaded", function () {
   function toggleTaskFromCycle(dateKey, taskId, newDone) {
     const tasks = getDayTasks(dateKey);
     const task = tasks.find(t => t.id === taskId);
-    if (!task || task.repairId != null) return;
+    if (!task) return;
+    if (task.repairId != null) { toggleRepairTask(dateKey, task.id, newDone); return; }
     const prevDone = task.done;
     task.done = newDone;
     window.dayNotes[dateKey] = tasks;

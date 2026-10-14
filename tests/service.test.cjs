@@ -226,6 +226,113 @@ test('repair notes use the same pending criteria as the repair journal', () => {
   assert.equal(shared.repairTaskDateKey({date:'14.10.2026'}), '2026-10-14');
 });
 
+function fixtureCloud(seed) {
+  const data = copy(seed);
+  const writes = [];
+  const db = {
+    async runTransaction(callback) {
+      const staged = [];
+      const result = await callback({
+        async get(name) { return { exists: Object.hasOwn(data, name), data: () => copy(data[name]) }; },
+        set(name, update, options) { staged.push({ name, update: copy(update), options: copy(options || {}) }); }
+      });
+      for (const write of staged) {
+        writes.push(write);
+        data[write.name] = write.options.merge || write.options.mergeFields ? { ...data[write.name], ...write.update } : write.update;
+      }
+      return result;
+    }
+  };
+  return { db, data, writes };
+}
+
+test('a tracker save atomically creates the cloud note while preserving schedule fields', async () => {
+  const repair = { id: 1, date: '01.09.2026', carrier: 'Перевізник', vehicle: '123', workHoursTask: { dateKey: '2026-10-14', author: 'Автор' } };
+  const cloud = fixtureCloud({ trackers: { repairs: [], inventory: [{ id: 'remote' }] }, schedule: { dayNotes: { '2026-10-15': [{ id: 'manual', text: 'Інша справа' }] }, overrides: { '2026-10-14': 'Олександр' }, monthlyDebts: { '2026-10': ['Збережено'] } } });
+  await shared.saveTrackerDataAndNotes(cloud.db, 'trackers', 'schedule', { repairs: [repair], inventory: [], atCommands: [], primaryCommands: {}, firmwareVersions: {}, updatedAt: 123 }, { repairs: [], inventory: [], atCommands: [], primaryCommands: {}, firmwareVersions: {} });
+  assert.equal(cloud.data.schedule.dayNotes['2026-10-14'][0].repairId, 1);
+  assert.equal(cloud.data.schedule.dayNotes['2026-10-14'][0].text, 'Перевізник · 123');
+  assert.equal(cloud.data.schedule.dayNotes['2026-10-15'][0].id, 'manual');
+  assert.equal(cloud.data.schedule.overrides['2026-10-14'], 'Олександр');
+  assert.deepEqual(cloud.data.schedule.monthlyDebts, { '2026-10': ['Збережено'] });
+  assert.deepEqual(cloud.data.trackers.inventory, [{ id: 'remote' }]);
+  assert.deepEqual(cloud.writes.map(write => write.name), ['trackers', 'schedule']);
+});
+
+test('completion from a moved note uses its day and the clicking account in both cloud documents', async () => {
+  const repair = { id: 1, carrier: 'Перевізник', vehicle: '123', issue: 'GPS', solution: 'Деталі', workHoursTask: { dateKey: '2026-10-14' } };
+  const cloud = fixtureCloud({ trackers: { repairs: [repair, { id: 2, vehicle: 'Інше' }], inventory: [{ id: 5 }] }, schedule: { dayNotes: { '2027-01-02': [{ id: 'repair-1', repairId: 1, text: 'Перевізник · 123', time: '16:25', done: false }] }, monthFocusNotes: { '2027-01': 'Фокус' } } });
+  const request = { repairId: 1, done: true, dateKey: '2027-01-02', user: { username: 'kostas', name: 'Костянтин' } };
+  await shared.completeRepairTaskInCloud(cloud.db, 'trackers', 'schedule', request);
+  assert.equal(cloud.data.trackers.repairs[0].repairDate, '02.01.2027');
+  assert.equal(cloud.data.trackers.repairs[0].specialist, 'Костянтин');
+  assert.equal(cloud.data.trackers.repairs[0].workHoursTask.completedBy, 'kostas');
+  assert.equal(cloud.data.trackers.repairs[0].solution, 'Деталі');
+  assert.equal(cloud.data.schedule.dayNotes['2027-01-02'][0].done, true);
+  assert.equal(cloud.data.schedule.dayNotes['2027-01-02'][0].time, '16:25');
+  assert.equal(cloud.data.schedule.dayNotes['2026-10-14'], undefined);
+  assert.equal(cloud.data.trackers.repairs[1].vehicle, 'Інше');
+  assert.equal(cloud.data.trackers.inventory[0].id, 5);
+  await shared.completeRepairTaskInCloud(cloud.db, 'trackers', 'schedule', { ...request, done: false });
+  assert.equal(shared.isRepairPending(cloud.data.trackers.repairs[0]), true);
+  assert.equal(cloud.data.trackers.repairs[0].repairDate, '');
+  assert.equal(cloud.data.trackers.repairs[0].specialist, '');
+  assert.equal(cloud.data.schedule.dayNotes['2027-01-02'][0].done, false);
+});
+
+test('concurrent journal saves retain another account completion and unrelated new repairs', async () => {
+  const previous = [{ id: 1, vehicle: '123', issue: 'GPS', repairDate: '', specialist: '' }];
+  const remote = [{ ...previous[0], repairDate: '15.10.2026', specialist: 'Костянтин' }, { id: 3, vehicle: 'REMOTE' }];
+  const merged = shared.mergeRepairChanges(previous, [{ ...previous[0], issue: 'GPRS' }, { id: 2, vehicle: 'NEW' }], remote);
+  assert.equal(merged.find(repair => repair.id === 1).specialist, 'Костянтин');
+  assert.equal(merged.find(repair => repair.id === 1).repairDate, '15.10.2026');
+  assert.equal(merged.find(repair => repair.id === 1).issue, 'GPRS');
+  assert.deepEqual(copy(merged.map(repair => repair.id)), [1, 2, 3]);
+});
+
+test('cloud reconciliation heals missing notes, removes deleted links and preserves transfer time', async () => {
+  const repair = { id: 1, carrier: 'Перевізник', vehicle: '123', repairDate: '15.10.2026', specialist: 'Артем', workHoursTask: { dateKey: '2026-10-14' } };
+  const cloud = fixtureCloud({ trackers: { repairs: [repair] }, schedule: { dayNotes: { '2026-10-15': [{ id: 'repair-1', repairId: 1, time: '10:30', done: false }], '2026-10-16': [{ id: 'repair-2', repairId: 2 }] }, overrides: { '2026-10-16': 'Артем' } } });
+  await shared.syncRepairTasksToCloud(cloud.db, 'trackers', 'schedule');
+  assert.equal(cloud.data.schedule.dayNotes['2026-10-15'][0].done, true);
+  assert.equal(cloud.data.schedule.dayNotes['2026-10-15'][0].time, '10:30');
+  assert.equal(cloud.data.schedule.dayNotes['2026-10-16'], undefined);
+  assert.deepEqual(cloud.writes[0].options.mergeFields, ['dayNotes', 'updatedAt']);
+  assert.equal(cloud.data.schedule.overrides['2026-10-16'], 'Артем');
+  cloud.data.trackers.repairs.push({ ...repair, id: 3, workHoursTask: { dateKey: '2026-10-14' } });
+  await shared.syncRepairTasksToCloud(cloud.db, 'trackers', 'schedule');
+  assert.equal(cloud.data.schedule.dayNotes['2026-10-14'][0].repairId, 3);
+});
+
+test('completion validation leaves journal and notes intact on missing repair, invalid date or account', async () => {
+  const cloud = fixtureCloud({ trackers: { repairs: [{ id: 1, vehicle: '123' }] }, schedule: { dayNotes: {} } });
+  const before = JSON.stringify(cloud.data);
+  for (const request of [ {repairId:2,done:true,dateKey:'2026-10-14',user:{name:'Артем'}}, {repairId:1,done:true,dateKey:'2026-02-31',user:{name:'Артем'}}, {repairId:1,done:true,dateKey:'2026-10-14',user:{}} ]) await assert.rejects(shared.completeRepairTaskInCloud(cloud.db, 'trackers', 'schedule', request));
+  assert.equal(JSON.stringify(cloud.data), before);
+  assert.equal(cloud.writes.length, 0);
+});
+
+test('offline completion survives stale snapshots and retries without losing its original account', async () => {
+  const memory = new Map();
+  context.localStorage = { getItem: key => memory.get(key) || null, setItem: (key, value) => memory.set(key, value) };
+  const request = { repairId: 1, done: true, dateKey: '2026-10-15', user: { username: 'kostas', name: 'Костянтин' } };
+  shared.queueRepairCompletion(request);
+  const cached = [{ id: 1, vehicle: '123' }];
+  shared.applyPendingRepairCompletions(cached);
+  assert.equal(cached[0].specialist, 'Костянтин');
+  assert.equal(cached[0].repairDate, '15.10.2026');
+  const offline = { runTransaction: async () => { throw new Error('offline'); } };
+  await assert.rejects(shared.flushRepairCompletions(offline, 'trackers', 'schedule'));
+  assert.equal(Object.keys(shared.pendingRepairCompletions()).length, 1);
+  const cloud = fixtureCloud({ trackers: { repairs: [{ id: 1, vehicle: '123' }] }, schedule: { dayNotes: {} } });
+  await shared.flushRepairCompletions(cloud.db, 'trackers', 'schedule');
+  assert.equal(cloud.data.trackers.repairs[0].specialist, 'Костянтин');
+  assert.equal(Object.keys(shared.pendingRepairCompletions()).length, 0);
+  shared.queueRepairCompletion({ ...request, repairId: 2 });
+  await shared.flushRepairCompletions(cloud.db, 'trackers', 'schedule');
+  assert.equal(Object.keys(shared.pendingRepairCompletions()).length, 0, 'deleted repairs must not block the queue');
+});
+
 test('invalid dates, empty text, missing tasks and collisions do not lose data', () => {
   for (const [id,text,date] of [['a','Текст','2026-02-31'],['a','Текст','not-a-date'],['a',' ','2026-10-14'],['missing','Текст','2026-10-14'],['a','Текст','2026-10-15']]) {
     const data = {'2026-10-13':[{id:'a',text:'Оригінал'}],'2026-10-15':[{id:'a',text:'Інше'}]};

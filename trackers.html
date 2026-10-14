@@ -17,7 +17,7 @@
       }
     })();
   </script>
-  <script src="shared.js?v=ad9808574db7"></script>
+  <script src="shared.js?v=8d1463cb948b"></script>
 
   <!-- Firebase App & Firestore SDKs (Compat) -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
@@ -2529,6 +2529,8 @@
     primaryCommands: {},
     firmwareVersions: {}
   };
+  let lastSavedData = JSON.parse(JSON.stringify(appData));
+  let trackerSaveChain = Promise.resolve();
 
   let activeTab = 'journal'; // 'journal' | 'inventory' | 'at'
   let activeFilterChip = 'all';
@@ -3015,6 +3017,8 @@
       }
     }
 
+    window.SZVKShared.applyPendingRepairCompletions(appData.repairs);
+    lastSavedData = JSON.parse(JSON.stringify(appData));
     if (hasLocalRepairs) window.SZVKShared.syncLocalRepairTasks(appData.repairs, false);
     refreshDataVersions();
     renderActiveView();
@@ -3041,11 +3045,15 @@
   }
 
   function saveLocalData(triggerCloud = true) {
+    const previous = lastSavedData;
+    window.SZVKShared.applyPendingRepairCompletions(appData.repairs);
+    lastSavedData = JSON.parse(JSON.stringify(appData));
     localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
     window.SZVKShared.syncLocalRepairTasks(appData.repairs);
     refreshDataVersions();
     if (triggerCloud) {
-      syncWithCloud();
+      const payload = { ...JSON.parse(JSON.stringify(appData)), updatedAt: Date.now() };
+      trackerSaveChain = trackerSaveChain.then(() => syncWithCloud(payload, previous));
     }
   }
 
@@ -3098,6 +3106,7 @@
           // Ремонт трекерів
           if (Array.isArray(cloudData.repairs)) {
             appData.repairs = cloudData.repairs.filter(r => (r.date && r.date.match(/\d/)) || (r.vehicle && r.vehicle.match(/\d/)));
+            window.SZVKShared.applyPendingRepairCompletions(appData.repairs);
             updated = true;
           }
 
@@ -3119,12 +3128,14 @@
             }
           }
 
+          if (updated) lastSavedData = JSON.parse(JSON.stringify(appData));
           if (updated && refreshDataVersions()) {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
             window.SZVKShared.syncLocalRepairTasks(appData.repairs, !(docSnap.metadata && docSnap.metadata.fromCache));
             renderActiveView();
             openLinkedRepair();
           }
+          if (!(docSnap.metadata && docSnap.metadata.fromCache)) syncRepairNotesFromJournal();
         }
         cloudSyncDot.className = 'status-dot';
         cloudSyncText.textContent = 'Дані збережено';
@@ -3144,22 +3155,13 @@
   // Зворотна сумісність
   const fetchCloudData = initRealtimeCloudSync;
 
-  async function syncWithCloud() {
+  async function syncWithCloud(payload, previous) {
     if (!DB_TRACKERS_DOC) return;
     try {
       cloudSyncDot.className = 'status-dot syncing';
       cloudSyncText.textContent = 'Збереження…';
 
-      const payload = {
-        repairs: appData.repairs,
-        inventory: appData.inventory,
-        atCommands: appData.atCommands,
-        primaryCommands: appData.primaryCommands,
-        firmwareVersions: appData.firmwareVersions,
-        updatedAt: Date.now()
-      };
-
-      await DB_TRACKERS_DOC.set(payload, { merge: true });
+      await window.SZVKShared.saveTrackerDataAndNotes(dbTrackers, DB_TRACKERS_DOC, DB_SCHEDULE_DOC, payload, previous);
       cloudSyncDot.className = 'status-dot';
       cloudSyncText.textContent = 'Дані збережено';
     } catch (e) {
@@ -3168,6 +3170,30 @@
       cloudSyncText.textContent = 'Дані збережено на пристрої';
     }
   }
+
+  async function syncRepairNotesFromJournal() {
+    if (!dbTrackers || !currentUser) return;
+    try {
+      await window.SZVKShared.flushRepairCompletions(dbTrackers, DB_TRACKERS_DOC, DB_SCHEDULE_DOC);
+      await window.SZVKShared.syncRepairTasksToCloud(dbTrackers, DB_TRACKERS_DOC, DB_SCHEDULE_DOC);
+    } catch (error) {
+      console.warn('Repair notes cloud sync notice:', error);
+      cloudSyncText.textContent = 'Немає з’єднання. Зміни збережено на пристрої.';
+    }
+  }
+
+  window.addEventListener('online', syncRepairNotesFromJournal);
+  window.addEventListener('storage', event => {
+    if (!['szvk_trackers_data', 'szvk_pending_repair_completions'].includes(event.key)) return;
+    try {
+      const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+      if (Array.isArray(data.repairs)) appData.repairs = data.repairs;
+      window.SZVKShared.applyPendingRepairCompletions(appData.repairs);
+      lastSavedData.repairs = JSON.parse(JSON.stringify(appData.repairs));
+      refreshDataVersions();
+      renderActiveView();
+    } catch (error) { console.warn('Repair journal cache notice:', error); }
+  });
 
   // Populate Carriers Select & Datalist
   function populateCarriersDatalist() {
@@ -4798,7 +4824,7 @@
         solution,
         notes,
         needInvoice,
-        workHoursTask: { dateKey: window.SZVKShared.repairTaskDateKey({ date }), author: currentUser ? currentUser.name : 'Користувач' }
+        workHoursTask: { dateKey: window.SZVKShared.kyivDateKey(), author: currentUser ? currentUser.name : 'Користувач' }
       };
       appData.repairs.unshift(newRec);
 

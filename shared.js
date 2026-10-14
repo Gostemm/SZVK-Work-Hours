@@ -313,6 +313,144 @@
     }
   }
 
+  function setRepairCompletion(repairs, repairId, done, dateKey, user) {
+    const repair = repairs.find(item => String(item.id) === String(repairId));
+    if (!repair) {
+      const error = new Error('Запис ремонту вже видалено. Оновіть список.');
+      error.code = 'repair_missing';
+      throw error;
+    }
+    if (!isValidDateKey(dateKey)) throw new Error('Оберіть коректний день виконання.');
+    const specialist = String(user && (user.name || user.username) || '').trim();
+    if (done && !specialist) throw new Error('Увійдіть в акаунт, щоб завершити ремонт.');
+    const previous = JSON.parse(JSON.stringify(repair));
+    if (done === !isRepairPending(repair)) return { repair, previous, changed: false };
+    const [year, month, day] = dateKey.split('-');
+    repair.repairDate = done ? `${day}.${month}.${year}` : '';
+    repair.specialist = done ? specialist : '';
+    if (!repair.workHoursTask) repair.workHoursTask = { dateKey };
+    if (done) repair.workHoursTask.completedBy = user.username || specialist;
+    else delete repair.workHoursTask.completedBy;
+    return { repair, previous, changed: true };
+  }
+
+  // Apply only the locally edited repair fields to the latest journal.
+  // A new request or inventory save must not undo another user's completion.
+  function mergeRepairChanges(previous, next, current) {
+    const previousById = new Map(previous.map(item => [String(item.id), item]));
+    const nextById = new Map(next.map(item => [String(item.id), item]));
+    const currentById = new Map(current.map(item => [String(item.id), item]));
+    const result = [];
+    for (const item of next) {
+      const key = String(item.id);
+      const before = previousById.get(key);
+      const remote = currentById.get(key);
+      if (!before) { result.push({ ...item }); continue; }
+      if (!remote) continue;
+      const merged = { ...remote };
+      for (const field of new Set([...Object.keys(before), ...Object.keys(item)])) {
+        if (JSON.stringify(before[field]) === JSON.stringify(item[field])) continue;
+        if (Object.prototype.hasOwnProperty.call(item, field)) merged[field] = item[field];
+        else delete merged[field];
+      }
+      result.push(merged);
+    }
+    for (const item of current) {
+      const key = String(item.id);
+      if (!nextById.has(key) && !previousById.has(key)) result.push({ ...item });
+    }
+    return result;
+  }
+
+  async function saveTrackerDataAndNotes(db, trackerDoc, scheduleDoc, payload, previous) {
+    return db.runTransaction(async transaction => {
+      const trackerSnapshot = await transaction.get(trackerDoc);
+      const scheduleSnapshot = await transaction.get(scheduleDoc);
+      const remote = trackerSnapshot.exists ? trackerSnapshot.data() : {};
+      const repairs = trackerSnapshot.exists
+        ? mergeRepairChanges(previous.repairs || [], payload.repairs, remote.repairs || [])
+        : payload.repairs;
+      const update = { repairs, updatedAt: payload.updatedAt };
+      for (const field of ['inventory', 'atCommands', 'primaryCommands', 'firmwareVersions']) {
+        if (!trackerSnapshot.exists || JSON.stringify(previous[field]) !== JSON.stringify(payload[field])) update[field] = payload[field];
+      }
+      const schedule = scheduleSnapshot.exists ? scheduleSnapshot.data() : {};
+      const dayNotes = schedule.dayNotes || {};
+      const changed = reconcileRepairTasks(dayNotes, repairs);
+      transaction.set(trackerDoc, update, { merge: true });
+      if (changed) transaction.set(scheduleDoc, { dayNotes, updatedAt: payload.updatedAt }, { mergeFields: ['dayNotes', 'updatedAt'] });
+      return { repairs, dayNotes };
+    });
+  }
+
+  async function syncRepairTasksToCloud(db, trackerDoc, scheduleDoc) {
+    return db.runTransaction(async transaction => {
+      const trackerSnapshot = await transaction.get(trackerDoc);
+      const scheduleSnapshot = await transaction.get(scheduleDoc);
+      if (!trackerSnapshot.exists) return;
+      const repairs = trackerSnapshot.data().repairs || [];
+      const dayNotes = scheduleSnapshot.exists ? scheduleSnapshot.data().dayNotes || {} : {};
+      if (reconcileRepairTasks(dayNotes, repairs)) transaction.set(scheduleDoc, { dayNotes, updatedAt: Date.now() }, { mergeFields: ['dayNotes', 'updatedAt'] });
+    });
+  }
+
+  async function completeRepairTaskInCloud(db, trackerDoc, scheduleDoc, request) {
+    return db.runTransaction(async transaction => {
+      const trackerSnapshot = await transaction.get(trackerDoc);
+      const scheduleSnapshot = await transaction.get(scheduleDoc);
+      const repairs = trackerSnapshot.exists ? trackerSnapshot.data().repairs || [] : [];
+      const result = setRepairCompletion(repairs, request.repairId, request.done, request.dateKey, request.user);
+      const dayNotes = scheduleSnapshot.exists ? scheduleSnapshot.data().dayNotes || {} : {};
+      const notesChanged = reconcileRepairTasks(dayNotes, repairs);
+      if (result.changed) transaction.set(trackerDoc, { repairs, updatedAt: Date.now() }, { merge: true });
+      if (notesChanged) transaction.set(scheduleDoc, { dayNotes, updatedAt: Date.now() }, { mergeFields: ['dayNotes', 'updatedAt'] });
+      return result;
+    });
+  }
+
+  const pendingRepairKey = 'szvk_pending_repair_completions';
+  function pendingRepairCompletions() {
+    try { return JSON.parse(localStorage.getItem(pendingRepairKey) || '{}'); }
+    catch (error) { return {}; }
+  }
+
+  function queueRepairCompletion(request) {
+    const pending = pendingRepairCompletions();
+    pending[String(request.repairId)] = { ...request, requestId: Date.now() + '-' + Math.random().toString(36).slice(2) };
+    localStorage.setItem(pendingRepairKey, JSON.stringify(pending));
+  }
+
+  function applyPendingRepairCompletions(repairs) {
+    if (!Array.isArray(repairs)) return;
+    for (const request of Object.values(pendingRepairCompletions())) {
+      if (repairs.some(repair => String(repair.id) === String(request.repairId))) setRepairCompletion(repairs, request.repairId, request.done, request.dateKey, request.user);
+    }
+  }
+
+  let repairFlush = null;
+  function flushRepairCompletions(db, trackerDoc, scheduleDoc) {
+    if (repairFlush) return repairFlush;
+    repairFlush = (async () => {
+      const results = [];
+      while (true) {
+        const requests = Object.values(pendingRepairCompletions());
+        if (!requests.length) return results;
+        for (const request of requests) {
+          let result;
+          try { result = await completeRepairTaskInCloud(db, trackerDoc, scheduleDoc, request); }
+          catch (error) { if (error.code !== 'repair_missing') throw error; }
+          const pending = pendingRepairCompletions();
+          if (pending[String(request.repairId)]?.requestId === request.requestId) {
+            delete pending[String(request.repairId)];
+            localStorage.setItem(pendingRepairKey, JSON.stringify(pending));
+          }
+          if (result) results.push(result);
+        }
+      }
+    })().finally(() => { repairFlush = null; });
+    return repairFlush;
+  }
+
   // Change the day, text and optional time without changing identity or completion.
   function updateTask(dayNotes, sourceDateKey, taskId, text, targetDateKey, time) {
     const cleanText = String(text || '').trim();
@@ -467,6 +605,15 @@
     repairTaskDateKey,
     reconcileRepairTasks,
     syncLocalRepairTasks,
+    setRepairCompletion,
+    mergeRepairChanges,
+    saveTrackerDataAndNotes,
+    syncRepairTasksToCloud,
+    completeRepairTaskInCloud,
+    pendingRepairCompletions,
+    queueRepairCompletion,
+    applyPendingRepairCompletions,
+    flushRepairCompletions,
     updateTask,
     restoreTaskMove,
     initThemeSwitcher,

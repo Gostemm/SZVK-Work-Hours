@@ -256,7 +256,7 @@ async function main() {
 
     const repairLink = await evaluate("document.querySelector('.task-repair-link').getAttribute('href')");
     assert.equal(repairLink, 'trackers.html?editRepair=' + linkedRepairId);
-    assert.equal(await evaluate("document.querySelector('.task-repair-link').closest('.task-modal-item').querySelector('.task-modal-checkbox').disabled"), true);
+    assert.equal(await evaluate("document.querySelector('.task-repair-link').closest('.task-modal-item').querySelector('.task-modal-checkbox').disabled"), false);
     assert.equal(await evaluate("document.querySelector('.task-repair-link').closest('.task-modal-item').querySelector('.delete-task')"), null);
     assert.equal(await evaluate("document.querySelector('#modalDayTasksList').scrollWidth<=document.querySelector('#modalDayTasksList').clientWidth"), true, 'repair actions must fit on mobile');
     await evaluate("document.querySelector('.task-repair-link').closest('.task-modal-item').querySelector('.move-task').click();document.querySelector('#taskCalendarDays [data-date=\"2026-10-15\"]').click();document.querySelector('#taskEditorTimeMount .task-time-input').value='14:30';document.querySelector('#taskEditorSave').click()");
@@ -292,24 +292,65 @@ async function main() {
     await call('Page.addScriptToEvaluateOnNewDocument', { source: `
       window.__cloudListeners = {};
       window.__cloudWrites = [];
-      window.__cloudData = {
+      window.__cloudData = JSON.parse(localStorage.getItem('szvk_mock_firestore') || 'null') || {
         schedule: JSON.parse(localStorage.getItem('szvk_schedule_local_data')),
         trackers: JSON.parse(localStorage.getItem('szvk_trackers_data') || localStorage.getItem('szvk_mock_cloud_trackers')),
         history: { items: [] }, users: { usersList: {} }
       };
       const cloudOnlyRepair = JSON.parse(localStorage.getItem('szvk_mock_cloud_only_repair') || 'null');
-      if (cloudOnlyRepair) window.__cloudData.trackers.repairs.push(cloudOnlyRepair);
+      if (cloudOnlyRepair && !window.__cloudData.trackers.repairs.some(repair => repair.id === cloudOnlyRepair.id)) window.__cloudData.trackers.repairs.push(cloudOnlyRepair);
+      const readServer = () => JSON.parse(localStorage.getItem('szvk_mock_firestore') || 'null') || window.__cloudData;
+      const persistCloud = () => localStorage.setItem('szvk_mock_firestore', JSON.stringify(window.__cloudData));
       window.__emitCloud = (name, data, fromCache = false, exists = true) => {
+        if (exists && !fromCache) { window.__cloudData = readServer(); window.__cloudData[name] = structuredClone(data); persistCloud(); }
         window.__cloudListeners[name]?.({ exists, metadata: { fromCache }, data: () => structuredClone(data) });
       };
-      window.firebase = { apps: [{}], firestore: () => ({ collection: () => ({ doc: name => ({
+      window.addEventListener('storage', event => {
+        if (event.key !== 'szvk_mock_firestore' || !event.newValue) return;
+        const next = JSON.parse(event.newValue);
+        const changed = Object.keys(next).filter(name => JSON.stringify(next[name]) !== JSON.stringify(window.__cloudData[name]));
+        window.__cloudData = next;
+        for (const name of changed) window.__cloudListeners[name]?.({ exists: true, metadata: { fromCache: false }, data: () => structuredClone(next[name]) });
+      });
+      const commitCloud = writes => {
+        window.__cloudData = readServer();
+        for (const { name, data, options } of writes) {
+          window.__cloudWrites.push({ name, data: structuredClone(data), options });
+          window.__cloudData[name] = options?.merge || options?.mergeFields ? { ...window.__cloudData[name], ...structuredClone(data) } : structuredClone(data);
+        }
+        persistCloud();
+        for (const { name } of writes) setTimeout(() => window.__emitCloud(name, readServer()[name]), 0);
+      };
+      window.firebase = { apps: [{}], firestore: () => ({
+        runTransaction: async callback => {
+          if (window.__cloudOffline) throw new Error('Mock cloud offline');
+          for (let attempt = 0; attempt < 20; attempt++) {
+            const reads = new Map();
+            const writes = [];
+            const result = await callback({
+              get: async doc => {
+                const data = structuredClone(readServer()[doc.__name]);
+                reads.set(doc.__name, JSON.stringify(data));
+                return { exists: data != null, data: () => structuredClone(data) };
+              },
+              set: (doc, data, options) => writes.push({ name: doc.__name, data, options })
+            });
+            const latest = readServer();
+            if ([...reads].some(([name, signature]) => signature !== JSON.stringify(latest[name]))) continue;
+            if (writes.length) commitCloud(writes);
+            return result;
+          }
+          throw new Error('Mock transaction conflicted');
+        },
+        collection: () => ({ doc: name => ({
+        __name: name,
         onSnapshot: callback => {
           window.__cloudListeners[name] = callback;
-          setTimeout(() => window.__emitCloud(name, window.__cloudData[name]), name === 'trackers' ? 40 : 0);
+          setTimeout(() => window.__emitCloud(name, readServer()[name]), name === 'trackers' ? 40 : 0);
           return () => { delete window.__cloudListeners[name]; };
         },
-        get: async () => ({ exists: true, data: () => structuredClone(window.__cloudData[name]) }),
-        set: async data => { window.__cloudWrites.push({ name, data: structuredClone(data) }); }
+        get: async () => ({ exists: true, data: () => structuredClone(readServer()[name]) }),
+        set: async (data, options) => commitCloud([{ name, data, options }])
       }) }) }) };
     ` });
     await evaluate("{const data=JSON.parse(localStorage.getItem('szvk_schedule_local_data'));data.dayNotes['2026-10-16']=[{id:'repair-555',repairId:555,text:'Перевізник · CLOUD-555',time:'11:45',done:false}];localStorage.setItem('szvk_schedule_local_data',JSON.stringify(data));localStorage.setItem('szvk_mock_cloud_only_repair',JSON.stringify({id:555,date:'14.10.2026',carrier:'Перевізник',vehicle:'CLOUD-555',workHoursTask:{dateKey:'2026-10-14'}}));}");
@@ -338,11 +379,48 @@ async function main() {
     await waitFor("!!window.__cloudListeners.trackers");
     await evaluate("{const data=structuredClone(window.__cloudData.trackers);data.repairs.push({id:987654,date:'14.10.2026',carrier:'Хмарний перевізник',vehicle:'CLOUD-001',workHoursTask:{dateKey:'2026-10-14',author:'Артем'}});window.__emitCloud('trackers',data);}");
     assert.equal(await evaluate("window.dayNotes['2026-10-14'].find(task=>task.repairId===987654).text"), 'Хмарний перевізник · CLOUD-001');
-    await evaluate("window.__emitCloud('trackers',window.__cloudData.trackers)");
+    await evaluate("{const data=structuredClone(window.__cloudData.trackers);data.repairs=data.repairs.filter(repair=>repair.id!==987654);window.__emitCloud('trackers',data);}");
     assert.equal(await evaluate("Object.values(window.dayNotes).flat().some(task=>task.repairId===987654)"), false);
     assert.equal(await evaluate("Object.values(window.dayNotes).flat().some(task=>task.text==='Завдання без часу')"), true, 'remote repair deletion preserves manual notes');
+
+    await navigate('trackers.html');
+    await waitFor("!!window.__cloudListeners.trackers && !!document.querySelector('#recentRepairTableBody [data-repair-id]')");
+    await evaluate("localStorage.setItem('szvk_internal_session',JSON.stringify({username:'kostas',name:'Костянтин',role:'user'}));const frame=document.createElement('iframe');frame.id='workHoursPeer';frame.src='index.html';frame.hidden=true;document.body.appendChild(frame)");
+    await waitFor("document.querySelector('#workHoursPeer').contentWindow.__cloudListeners?.trackers && document.querySelector('#workHoursPeer').contentDocument.querySelector('#mainAppContainer')?.style.display==='flex'");
+    const peer = expression => evaluate("(()=>{const w=document.querySelector('#workHoursPeer').contentWindow;const d=w.document;return (" + expression + ");})()");
+    await evaluate("document.querySelector('#btnOpenAddModal').click();document.querySelector('#inputDate').value='01.09.2026';document.querySelector('#inputVehicle').value='CLOUD-TWO-WAY';document.querySelector('#inputCarrierSelect').value='Тестовий перевізник';document.querySelector('#inputCarrierSelect').dispatchEvent(new Event('change'));document.querySelector('[data-issue]').click();document.querySelector('#btnSaveRepairModal').click()");
+    await waitFor("window.__cloudData.trackers.repairs.some(repair=>repair.vehicle==='CLOUD-TWO-WAY')");
+    const twoWayId = await evaluate("window.__cloudData.trackers.repairs.find(repair=>repair.vehicle==='CLOUD-TWO-WAY').id");
+    await waitFor("document.querySelector('#workHoursPeer').contentWindow.dayNotes['2026-10-14']?.some(task=>task.repairId===" + twoWayId + ")");
+    assert.equal(await evaluate("window.__cloudData.schedule.dayNotes['2026-10-14']?.find(task=>task.repairId===" + twoWayId + ")?.done"), false, 'new repair writes a real cloud note while Work Hours is already open');
+    assert.equal(await peer("w.dayNotes['2026-10-14'].find(task=>task.repairId===" + twoWayId + ").author"), 'Артем');
+    await peer("([...d.querySelectorAll('.day-card')].find(card=>card.querySelector('.day-num')?.textContent==='14').click(),d.querySelector('a[href=\"trackers.html?editRepair=" + twoWayId + "\"]').closest('.task-modal-item').querySelector('.move-task').click(),d.querySelector('#taskCalendarDays [data-date=\"2026-10-15\"]').click(),d.querySelector('#taskEditorTimeMount .task-time-input').value='17:10',d.querySelector('#taskEditorSave').click())");
+    await waitFor("window.__cloudData.schedule.dayNotes['2026-10-15']?.some(task=>task.repairId===" + twoWayId + ")");
+    await peer("(d.querySelector('#modalDayCloseX').click(),[...d.querySelectorAll('.day-card')].find(card=>card.querySelector('.day-num')?.textContent==='15').click(),d.querySelector('a[href=\"trackers.html?editRepair=" + twoWayId + "\"]').closest('.task-modal-item').querySelector('.task-modal-checkbox').click())");
+    await waitFor("window.__cloudData.trackers.repairs.find(repair=>repair.id===" + twoWayId + ").specialist==='Костянтин'");
+    assert.equal(await evaluate("window.__cloudData.trackers.repairs.find(repair=>repair.id===" + twoWayId + ").repairDate"), '15.10.2026', 'completion uses the transferred note day, not the current day');
+    assert.equal(await evaluate("window.__cloudData.schedule.dayNotes['2026-10-15'].find(task=>task.repairId===" + twoWayId + ").done"), true);
+    await evaluate("document.querySelector('#globalSearchInput').value='CLOUD-TWO-WAY';document.querySelector('#globalSearchInput').dispatchEvent(new Event('input'))");
+    await waitFor("document.querySelector('#recentRepairTableBody [data-repair-id=\"" + twoWayId + "\"]') && !document.querySelector('#recentRepairTableBody [data-repair-id=\"" + twoWayId + "\"]').classList.contains('row-pending')");
+    await peer("d.querySelector('a[href=\"trackers.html?editRepair=" + twoWayId + "\"]').closest('.task-modal-item').querySelector('.task-modal-checkbox').click()");
+    await waitFor("window.__cloudData.trackers.repairs.find(repair=>repair.id===" + twoWayId + ").repairDate===''");
+    assert.equal(await evaluate("window.__cloudData.schedule.dayNotes['2026-10-15'].find(task=>task.repairId===" + twoWayId + ").time"), '17:10');
+    await evaluate("window.finishRepair(" + twoWayId + ");document.querySelector('#inputRepairDate').value='16.10.2026';document.querySelector('#inputSolution').value='Відновлено GSM';document.querySelector('#btnSaveRepairModal').click()");
+    await waitFor("document.querySelector('#workHoursPeer').contentWindow.dayNotes['2026-10-15']?.find(task=>task.repairId===" + twoWayId + ")?.done===true");
+    assert.equal(await evaluate("window.__cloudData.trackers.repairs.find(repair=>repair.id===" + twoWayId + ").repairDate"), '16.10.2026');
+    await peer("(d.querySelector('#modalDayCloseX').click(),d.querySelector('#btnToggleCycleTasks').click(),d.querySelector('.cycle-task-cb[data-task-id=\"repair-" + twoWayId + "\"]').click())");
+    await waitFor("window.__cloudData.trackers.repairs.find(repair=>repair.id===" + twoWayId + ").repairDate===''");
+    await evaluate("window.__cloudOffline=true;document.querySelector('#workHoursPeer').contentWindow.__cloudOffline=true");
+    await peer("d.querySelector('.cycle-task-cb[data-task-id=\"repair-" + twoWayId + "\"]').click()");
+    assert.equal(await peer("w.dayNotes['2026-10-15'].find(task=>task.repairId===" + twoWayId + ").done"), true);
+    assert.equal(await evaluate("Object.keys(JSON.parse(localStorage.getItem('szvk_pending_repair_completions'))).length"), 1);
+    await peer("w.__emitCloud('trackers',w.__cloudData.trackers,true)");
+    assert.equal(await peer("w.dayNotes['2026-10-15'].find(task=>task.repairId===" + twoWayId + ").done"), true, 'offline completion survives a stale cached journal snapshot');
+    await evaluate("window.__cloudOffline=false;const w=document.querySelector('#workHoursPeer').contentWindow;w.__cloudOffline=false;w.dispatchEvent(new w.Event('online'))");
+    await waitFor("window.__cloudData.trackers.repairs.find(repair=>repair.id===" + twoWayId + ").specialist==='Костянтин' && Object.keys(JSON.parse(localStorage.getItem('szvk_pending_repair_completions'))).length===0");
+    assert.equal(await evaluate("window.__cloudData.trackers.repairs.find(repair=>repair.id===" + twoWayId + ").repairDate"), '15.10.2026');
     assert.equal(errors.length,0,JSON.stringify(errors));
-    console.log('Browser checks passed: repair tables/search, calendars, warehouse/references, optional time create/edit/clear, timed cycle tasks, linked repair creation/transfer/completion/reopening, direct repair link, responsive notes, mocked cloud updates/arrival order/deletion/fresh-device links, history.');
+    console.log('Browser checks passed: repair tables/search, calendars, warehouse/references, optional time, cloud note creation, simultaneous Tracker Hub and Work Hours, bidirectional completion/reopening, transferred-day and clicking-account attribution, cycle checkbox, offline retry, responsive notes, history.');
     console.log('Screenshots: ' + artifacts);
   } finally {
     if (socket) socket.close();
