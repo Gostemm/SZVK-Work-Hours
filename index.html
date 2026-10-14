@@ -5,13 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>⏱️ SZVK Work Hours</title>
 
-  <script src="shared.js?v=3b3ee44c2fae"></script>
+  <script src="shared.js?v=a4dfbfb08ddb"></script>
 
   <!-- Firebase App & Firestore SDKs (Compat) -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 
-  <link rel="stylesheet" href="shared.css?v=46569fbcdecc">
+  <link rel="stylesheet" href="shared.css?v=28ca058e1ca1">
 
   <style>
     :root {
@@ -2022,6 +2022,10 @@
     <div class="brand-title">
       <span>⏱️ SZVK Work Hours</span>
     </div>
+    <nav class="module-switch" aria-label="Перемикання розділів">
+      <a href="index.html" aria-current="page">⏱️ Work Hours</a>
+      <a href="trackers.html" title="Перейти до Tracker Hub">🛰️ Tracker Hub <span aria-hidden="true">↗</span></a>
+    </nav>
 
     <div class="user-profile-widget">
 
@@ -2031,10 +2035,6 @@
         <button type="button" class="theme-btn" data-theme-val="light" title="Світла тема" aria-label="Світла тема">☀️</button>
         <button type="button" class="theme-btn" data-theme-val="system" title="Системна тема" aria-label="Системна тема">💻</button>
       </div>
-
-      <a href="trackers.html" class="btn" style="background: rgba(139, 92, 246, 0.2); color: #c084fc; font-size: 11px; padding: 5px 9px; border: 1px solid rgba(139, 92, 246, 0.4); text-decoration: none;" title="Відкрити SZVK Tracker Hub">
-        🛰️ SZVK Tracker Hub
-      </a>
 
       <div id="accountMount"></div>
     </div>
@@ -2057,10 +2057,6 @@
 
     <div class="nav-right">
       <button type="button" class="tab-btn" id="btnToggleCycleTasks" aria-expanded="false" aria-controls="cycleTasksBlock">Завдання на 3 зміни</button>
-
-      <button class="tab-btn history-tab" id="btnTabHistory">
-        <span>📜 Історія дій</span>
-      </button>
 
     </div>
   </div>
@@ -2228,10 +2224,12 @@
       <label>День виконання
         <input type="date" id="taskEditorDate" required min="1000-01-01" max="9999-12-31">
       </label>
+      <div class="task-shift-preview" id="taskEditorShift" role="status" aria-live="polite"></div>
+      <div class="task-shift-choices" id="taskEditorShiftChoices" aria-label="Найближчі зміни"></div>
       <p class="task-editor-error" id="taskEditorError" role="alert" hidden></p>
       <div class="modal-footer">
         <button type="button" class="btn" id="taskEditorCancel">Скасувати</button>
-        <button type="submit" class="btn" style="background:var(--accent);color:#fff">Зберегти</button>
+        <button type="submit" class="btn" id="taskEditorSave" style="background:var(--accent);color:#fff">Зберегти</button>
       </div>
     </form>
   </div>
@@ -3559,6 +3557,12 @@ document.addEventListener("DOMContentLoaded", function () {
         tabName = "Адмін";
         badgeBg = "rgba(59, 130, 246, 0.2)";
         badgeColor = "#60a5fa";
+      } else if (item.type === "reference_edit") {
+        icon = "✎";
+        badgeLabel = "Оновлено довідник";
+        tabName = "Команди / Прошивки";
+        badgeBg = "rgba(56, 189, 248, 0.2)";
+        badgeColor = "#38bdf8";
       } else if (item.type === "restore") {
         icon = "↩️";
         badgeLabel = "Відновлено";
@@ -3756,11 +3760,14 @@ document.addEventListener("DOMContentLoaded", function () {
   function openTaskEditor(dateKey, taskId, mode = 'edit') {
     const task = getDayTasks(dateKey).find(item => String(item.id) === String(taskId));
     if (!task) return;
-    activeTaskEdit = { dateKey, taskId: task.id };
+    activeTaskEdit = { dateKey, taskId: task.id, mode };
     taskEditorReturnFocus = document.activeElement;
     document.getElementById('taskEditorTitle').textContent = mode === 'move' ? 'Перенести завдання' : 'Редагувати завдання';
     document.getElementById('taskEditorText').value = task.text;
     document.getElementById('taskEditorDate').value = dateKey;
+    document.getElementById('taskEditorSave').textContent = mode === 'move' ? 'Перенести на обрану зміну' : 'Зберегти';
+    renderTaskShiftChoices(dateKey);
+    updateTaskShiftPreview();
     document.getElementById('taskEditorError').hidden = true;
     document.getElementById('taskEditorModal').classList.add('active');
     document.getElementById(mode === 'move' ? 'taskEditorDate' : 'taskEditorText').focus();
@@ -3771,6 +3778,49 @@ document.addEventListener("DOMContentLoaded", function () {
     activeTaskEdit = null;
     if (taskEditorReturnFocus && taskEditorReturnFocus.isConnected) taskEditorReturnFocus.focus();
   }
+
+  function taskShiftLabel(dateKey) {
+    if (!window.SZVKShared.isValidDateKey(dateKey)) return '';
+    const [year, month, day] = dateKey.split('-').map(Number);
+    const assignment = getAssignedWorker(year, month - 1, day);
+    const label = new Date(year, month - 1, day).toLocaleDateString('uk-UA', {
+      weekday: 'short', day: 'numeric', month: 'long', year: 'numeric'
+    });
+    return `${label} · ${assignment.worker}${assignment.isEdited ? ' (підміна)' : ''}`;
+  }
+
+  function updateTaskShiftPreview() {
+    const dateKey = document.getElementById('taskEditorDate').value;
+    const label = taskShiftLabel(dateKey);
+    document.getElementById('taskEditorShift').textContent = label ? 'Зміна: ' + label : 'Оберіть дату, щоб побачити працівника зміни.';
+    document.querySelectorAll('#taskEditorShiftChoices button').forEach(button => {
+      button.textContent = taskShiftLabel(button.dataset.date);
+      button.setAttribute('aria-pressed', String(button.dataset.date === dateKey));
+    });
+  }
+
+  function renderTaskShiftChoices(sourceDateKey) {
+    const choices = document.getElementById('taskEditorShiftChoices');
+    choices.replaceChildren();
+    const [year, month, day] = sourceDateKey.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    for (let offset = 1; offset <= 9; offset++) {
+      date.setDate(date.getDate() + 1);
+      const key = formatDateKey(date.getFullYear(), date.getMonth(), date.getDate());
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'task-shift-choice';
+      button.dataset.date = key;
+      button.textContent = taskShiftLabel(key);
+      button.onclick = () => {
+        document.getElementById('taskEditorDate').value = key;
+        updateTaskShiftPreview();
+      };
+      choices.appendChild(button);
+    }
+  }
+
+  document.getElementById('taskEditorDate').addEventListener('input', updateTaskShiftPreview);
 
   function refreshOpenDayTasks() {
     if (activeDayModalTarget && document.getElementById('dayActionModal').classList.contains('active')) {
@@ -3794,11 +3844,12 @@ document.addEventListener("DOMContentLoaded", function () {
     const { dateKey, taskId } = activeTaskEdit;
     const targetDateKey = document.getElementById('taskEditorDate').value;
     try {
+      if (activeTaskEdit.mode === 'move' && targetDateKey === dateKey) throw new Error('Оберіть інший день для перенесення завдання.');
       const result = window.SZVKShared.updateTask(window.dayNotes, dateKey, taskId, document.getElementById('taskEditorText').value, targetDateKey);
       if (result.changed) {
         logAction({
           module: 'schedule', tab: 'day_tasks', type: result.moved ? 'task_move' : 'task_edit',
-          description: result.moved ? 'Перенесено завдання: ' + dateKey + ' → ' + targetDateKey : 'Оновлено завдання на ' + dateKey,
+          description: result.moved ? 'Перенесено завдання: ' + dateKey + ' → ' + taskShiftLabel(targetDateKey) : 'Оновлено завдання на ' + dateKey,
           details: '«' + result.task.text + '»',
           restoreData: result.moved
             ? { fromDateKey: dateKey, toDateKey: targetDateKey, taskId: result.task.id, previous: result.previous }
@@ -3837,9 +3888,9 @@ document.addEventListener("DOMContentLoaded", function () {
       const authorText = task.author ? `<span class="task-modal-author">(${escapeHtml(task.author)})</span>` : '';
 
       item.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0;">
+        <div class="task-modal-content">
           <input type="checkbox" class="task-modal-checkbox" ${task.done ? 'checked' : ''}>
-          <span class="task-modal-text" style="word-break: break-word;">${escapeHtml(task.text)}</span>
+          <span class="task-modal-text">${escapeHtml(task.text)}</span>
           ${authorText}
         </div>
         <div class="task-actions">
@@ -4433,6 +4484,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function renderApp() {
+    if (activeTaskEdit) updateTaskShiftPreview();
     const today = new Date();
     const todayKey = formatDateKey(today.getFullYear(), today.getMonth(), today.getDate());
 

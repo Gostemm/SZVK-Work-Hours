@@ -17,13 +17,13 @@
       }
     })();
   </script>
-  <script src="shared.js?v=3b3ee44c2fae"></script>
+  <script src="shared.js?v=a4dfbfb08ddb"></script>
 
   <!-- Firebase App & Firestore SDKs (Compat) -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 
-  <link rel="stylesheet" href="shared.css?v=46569fbcdecc">
+  <link rel="stylesheet" href="shared.css?v=28ca058e1ca1">
 
   <style>
     :root {
@@ -1833,8 +1833,11 @@
   <div class="top-header-bar">
     <div class="brand-title">
       <span>🛰️ SZVK Tracker Hub</span>
-      <span class="brand-badge">Сервіс</span>
     </div>
+    <nav class="module-switch" aria-label="Перемикання розділів">
+      <a href="index.html" title="Перейти до Work Hours">⏱️ Work Hours <span aria-hidden="true">↗</span></a>
+      <a href="trackers.html" aria-current="page">🛰️ Tracker Hub</a>
+    </nav>
 
     <div class="header-actions">
 
@@ -1844,10 +1847,6 @@
         <button type="button" class="theme-btn" data-theme-val="light" title="Світла тема" aria-label="Світла тема">☀️</button>
         <button type="button" class="theme-btn" data-theme-val="system" title="Системна тема" aria-label="Системна тема">💻</button>
       </div>
-
-      <a href="index.html" class="btn btn-secondary" title="Перейти до сервісу SZVK Work Hours">
-        ⏱️ SZVK Work Hours
-      </a>
 
       <div id="accountMount"></div>
     </div>
@@ -1867,13 +1866,10 @@
       </button>
 
       <button class="main-tab-btn at-tab" id="tabBtnAtCommands">
-        <span>⚡ АТ Команди (Ремайндер)</span>
-        <span class="tab-counter" id="tabCounterAt">56</span>
+        <span>⚡ АТ Команди</span>
+        <span class="tab-counter" id="tabCounterAt">4</span>
       </button>
 
-      <button class="main-tab-btn history-tab" id="tabBtnHistory">
-        <span>🕒 Історія дій</span>
-      </button>
     </div>
 
     <div class="nav-right">
@@ -2024,20 +2020,13 @@
 
   <!-- VIEW 3: AT COMMANDS REMINDER -->
   <div class="view-card" id="viewAtCommands" style="display: none;">
-    <div class="at-intro-card">
-      <div>
-        <div class="at-intro-title">
-          ⚡ Шпаргалка / Ремайндер AT команд для трекерів
-        </div>
-        <div class="at-intro-desc">
-          Зручний довідник команд для налаштування Smartico / SIM800, GSM/GPRS, прошивок, CAN та ACC запалювання. Натисніть на будь-яку команду, щоб скопіювати.
-        </div>
-      </div>
-
-      <div class="search-wrap" style="min-width: 240px;">
-        <span class="search-icon">🔍</span>
-        <input type="text" class="search-input" id="atSearchInput" placeholder="Пошук команди, опису або синтаксису...">
-      </div>
+    <div class="reference-toolbar">
+      <h2>⚡ АТ Команди</h2>
+      <button type="button" class="reference-edit-btn" id="btnEditCommands" title="Редагувати АТ команди">✎ Редагувати</button>
+    </div>
+    <div class="reference-toolbar">
+      <span class="repair-form-hint">Актуальні версії прошивок</span>
+      <button type="button" class="reference-edit-btn" id="btnEditFirmware" title="Редагувати версії прошивок">✎</button>
     </div>
 
     <!-- Firmware quick bar -->
@@ -2116,6 +2105,37 @@
 </div>
 
 <!-- MODAL: ADD / EDIT REPAIR ENTRY -->
+<div class="modal-overlay" id="referenceEditorModal" role="dialog" aria-modal="true" aria-labelledby="referenceEditorTitle">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 class="modal-title" id="referenceEditorTitle">Редагувати довідник</h3>
+      <button type="button" class="action-icon-btn" id="referenceEditorClose" aria-label="Закрити">✕</button>
+    </div>
+    <form id="referenceEditorForm" class="reference-editor-form">
+      <div id="commandEditorFields" class="reference-editor-form">
+        <label>Команда<select class="form-select" id="referenceCommandSelect"></select></label>
+        <label>Назва / опис<input class="form-input" id="referenceCommandTitle" maxlength="500"></label>
+        <label id="referenceSingleField">АТ команда<textarea class="form-textarea" id="referenceCommandText" maxlength="2000"></textarea></label>
+        <div id="referenceDualFields" class="reference-editor-form" hidden>
+          <label>Vodafone<textarea class="form-textarea" id="referenceVodafoneText" maxlength="2000"></textarea></label>
+          <label>Київстар<textarea class="form-textarea" id="referenceKyivstarText" maxlength="2000"></textarea></label>
+        </div>
+        <label>Додаткові пояснення<textarea class="form-textarea" id="referenceCommandNotes" maxlength="2000"></textarea></label>
+      </div>
+      <div id="firmwareEditorFields" class="reference-editor-form" hidden>
+        <label>Чорні трекери<input class="form-input" id="firmwareBlack" maxlength="100"></label>
+        <label>Сині трекери (8U2GX)<input class="form-input" id="firmwareBlue" maxlength="100"></label>
+        <label>Сірі трекери<input class="form-input" id="firmwareGrey" maxlength="100"></label>
+      </div>
+      <p id="referenceEditorError" class="task-editor-error" role="alert" hidden></p>
+      <div class="modal-footer">
+        <button type="button" class="btn" id="referenceEditorCancel">Скасувати</button>
+        <button type="submit" class="btn btn-primary">Зберегти</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <div class="modal-overlay" id="repairModalOverlay">
   <div class="modal-box">
     <div class="modal-header">
@@ -2127,126 +2147,105 @@
 
     <form id="repairForm">
       <input type="hidden" id="editRecordId">
-      <p class="repair-form-hint">Вкажіть авто, перевізника та проблему. Дату заявки заповнено автоматично.</p>
-      <div class="form-grid">
-        <div class="form-group">
-          <label class="form-label">Номер авто (т/з)</label>
-          <input type="text" class="form-input" id="inputVehicle" placeholder="8256, ВО 5406 НВ..." required>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Перевізник</label>
-          <input type="text" class="form-input" id="inputCarrier" list="carrierDatalist" placeholder="ТЕТ, Водоканал, МАТ..." required>
-          <datalist id="carrierDatalist"></datalist>
-        </div>
-
-        <div class="form-group form-col-2">
-          <label class="form-label">Чому / Проблема</label>
-          <textarea class="form-textarea" id="inputIssue" placeholder="Опис несправності (наприклад: Немає GPRS 3д, переривається GPS...)" required></textarea>
-          <div class="quick-templates-wrap">
-            <span class="quick-tmpl-btn" onclick="addIssueTemplate('Немає GPRS')">📶 Немає GPRS</span>
-            <span class="quick-tmpl-btn" onclick="addIssueTemplate('Пропадає GPS')">🛰️ Пропадає GPS</span>
-            <span class="quick-tmpl-btn" onclick="addIssueTemplate('Новий автобус')">🚌 Новий автобус</span>
-            <span class="quick-tmpl-btn" onclick="addIssueTemplate('Згорів запобіжник')">⚡ Згорів запобіжник</span>
-            <span class="quick-tmpl-btn" onclick="addIssueTemplate('Немає живлення')">🔌 Немає живлення</span>
-            <span class="quick-tmpl-btn" onclick="addIssueTemplate('Завис')">⚠️ Завис</span>
-          </div>
-        </div>
-
-
+      <div class="repair-step-tabs" role="tablist" aria-label="Етапи ремонту">
+        <button type="button" class="repair-step-tab" id="repairRequestTab" role="tab" aria-selected="true" aria-controls="repairRequestPanel" data-step="request">1. Звернення</button>
+        <button type="button" class="repair-step-tab" id="repairResultTab" role="tab" aria-selected="false" aria-controls="repairResultPanel" data-step="result" tabindex="-1">2. Результат ремонту</button>
       </div>
-      <details class="form-section" id="repairExtraDetails">
-        <summary>Додаткові дані: трекер, заявник, дата й нотатки</summary>
+      <div id="repairRequestPanel" role="tabpanel" aria-labelledby="repairRequestTab">
+        <p class="repair-form-hint">Заповніть звернення зараз, а результат додайте після виконання робіт.</p>
         <div class="form-grid">
-        <div class="form-group form-col-2">
-          <label class="form-label">S/N трекера</label>
-          <input type="text" class="form-input" id="inputSerial" placeholder="Наприклад: 009676 або 006163 ➜ 023048">
-          <div class="quick-templates-wrap" id="modalOfficeSnWrap" style="display: none;">
-            <span style="font-size: 10px; color: var(--text-muted);">Підставити новий з офісу:</span>
-            <!-- Chips inserted by JS -->
+          <div class="form-group">
+            <label class="form-label" for="inputVehicle">Номер авто</label>
+            <input type="text" class="form-input" id="inputVehicle" placeholder="8256, ВО 5406 НВ…" required>
           </div>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Хто звертався</label>
-          <input type="text" class="form-input" id="inputReportedBy" placeholder="Дисп, Водій, Власник...">
-        </div>
-
-        <!-- Date with Interactive Calendar -->
-        <div class="form-group">
-          <label class="form-label">Дата заявки</label>
-          <div class="datepicker-wrap" id="wrapDate">
-            <div class="date-input-group">
-              <input type="text" class="form-input" id="inputDate" placeholder="ДД.ММ.РРРР" required autocomplete="off">
-              <button type="button" class="date-btn-addon" id="btnCalDate" title="Відкрити календар">📅</button>
-              <button type="button" class="date-btn-addon date-btn-today" id="btnTodayDate" title="Встановити сьогодні">🎯 Сьогодні</button>
+          <div class="form-group">
+            <label class="form-label" for="inputCarrierSelect">Перевізник</label>
+            <select class="form-select" id="inputCarrierSelect" required></select>
+            <input type="hidden" id="inputCarrier">
+            <input type="text" class="form-input" id="inputCarrierCustom" placeholder="Назва нового перевізника" aria-label="Назва нового перевізника" hidden>
+            <datalist id="carrierDatalist"></datalist>
+          </div>
+          <div class="form-group form-col-2">
+            <label class="form-label" for="inputSerial">Номер трекера (S/N)</label>
+            <input type="text" class="form-input" id="inputSerial" placeholder="009676 або 006163 ➜ 023048">
+            <div class="quick-templates-wrap" id="modalOfficeSnWrap" style="display:none"></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="inputReportedBy">Хто звертався</label>
+            <input type="text" class="form-input" id="inputReportedBy" placeholder="Диспетчер, водій, власник…">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="inputDate">Дата звернення</label>
+            <div class="datepicker-wrap" id="wrapDate">
+              <div class="date-input-group">
+                <input type="text" class="form-input" id="inputDate" placeholder="ДД.ММ.РРРР" required autocomplete="off">
+                <button type="button" class="date-btn-addon" id="btnCalDate" title="Відкрити календар">📅</button>
+                <button type="button" class="date-btn-addon date-btn-today" id="btnTodayDate">Сьогодні</button>
+              </div>
+              <div class="calendar-popover" id="popoverDate"></div>
             </div>
-            <div class="calendar-popover" id="popoverDate"></div>
+          </div>
+          <div class="form-group form-col-2">
+            <label class="form-label" for="inputIssue">Опис проблеми</label>
+            <textarea class="form-textarea" id="inputIssue" placeholder="Оберіть типову проблему та додайте деталі…" required></textarea>
+            <div class="quick-templates-wrap" id="issueQuickChoices" aria-label="Типові проблеми з історії ремонтів">
+              <button type="button" class="quick-tmpl-btn" data-issue="Немає GPRS / GSM" title="223 згадки в історії 2022–2025">📶 Немає GPRS / GSM</button>
+              <button type="button" class="quick-tmpl-btn" data-issue="Немає GPS" title="128 згадок проблем GPS в історії 2022–2025">🛰️ Немає GPS</button>
+              <button type="button" class="quick-tmpl-btn" data-issue="Пропадає GPS">🛰️ Пропадає GPS</button>
+              <button type="button" class="quick-tmpl-btn" data-issue="Трекер не працює" title="99 згадок в історії 2022–2025">⚠️ Не працює</button>
+              <button type="button" class="quick-tmpl-btn" data-issue="Трекер зависає" title="41 згадка в історії 2022–2025">⏸️ Зависає</button>
+              <button type="button" class="quick-tmpl-btn" data-issue="Немає живлення / несправний запобіжник">🔌 Живлення / запобіжник</button>
+              <button type="button" class="quick-tmpl-btn" data-issue="Проблема з SIM-карткою">📱 SIM-картка</button>
+              <button type="button" class="quick-tmpl-btn" data-issue="Встановлення трекера на нове авто">🚌 Нове авто</button>
+              <button type="button" class="quick-tmpl-btn" data-issue="Перенесення / заміна трекера">🔄 Перенесення / заміна</button>
+            </div>
           </div>
         </div>
-
-        <div class="form-group form-col-2">
-          <label class="form-label">Нотатки / Додатково</label>
-          <input type="text" class="form-input" id="inputNotes" placeholder="Номер телефону сімки, де встановлено, тощо">
-          <div style="display: flex; align-items: center; gap: 8px; margin-top: 6px;">
-            <label style="font-size: 12px; color: #fbbf24; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
-              <input type="checkbox" id="checkboxInvoice" style="accent-color: #f59e0b; width: 16px; height: 16px;">
-              Потрібно виставити рахунок перевізнику 💳
+      </div>
+      <div id="repairResultPanel" role="tabpanel" aria-labelledby="repairResultTab" hidden>
+        <div class="form-grid">
+          <div class="form-group form-col-2">
+            <label class="form-label" for="inputSolution">Результат ремонту</label>
+            <textarea class="form-textarea" id="inputSolution" placeholder="Що було зроблено та який результат…"></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="inputSpecialist">Хто виконав роботу</label>
+            <select class="form-select" id="inputSpecialist">
+              <option value="">Ще не виконано</option>
+              <option value="Артем">Артем</option>
+              <option value="Олександр">Олександр</option>
+              <option value="Трекер">Трекер</option>
+              <option value="Перевізник">Перевізник</option>
+              <option value="__custom">Інший майстер…</option>
+            </select>
+            <input type="text" class="form-input" id="inputSpecialistCustom" placeholder="Ім’я майстра" aria-label="Ім’я іншого майстра" hidden>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="inputRepairDate">Дата виконання</label>
+            <div class="datepicker-wrap" id="wrapRepairDate">
+              <div class="date-input-group">
+                <input type="text" class="form-input" id="inputRepairDate" placeholder="ДД.ММ.РРРР" autocomplete="off">
+                <button type="button" class="date-btn-addon" id="btnCalRepairDate" title="Відкрити календар">📅</button>
+                <button type="button" class="date-btn-addon date-btn-today" id="btnTodayRepairDate">Сьогодні</button>
+              </div>
+              <div class="calendar-popover" id="popoverRepairDate"></div>
+            </div>
+          </div>
+          <div class="form-group form-col-2">
+            <label class="form-label" for="inputNotes">Додаткові нотатки</label>
+            <textarea class="form-textarea" id="inputNotes" placeholder="Розташування трекера, номер SIM-картки, деталі ремонту…"></textarea>
+            <label class="invoice-switch" for="checkboxInvoice">
+              <input type="checkbox" id="checkboxInvoice" role="switch">
+              <span>Потрібно виставити рахунок</span>
             </label>
           </div>
         </div>
-
-        </div>
-      </details>
-      <details class="form-section" id="repairResultDetails">
-        <summary>Результат ремонту</summary>
-        <div class="form-grid">
-        <!-- Repair Date with Interactive Calendar -->
-        <div class="form-group">
-          <label class="form-label">Дата ремонту (залишіть порожнім якщо в процесі)</label>
-          <div class="datepicker-wrap" id="wrapRepairDate">
-            <div class="date-input-group">
-              <input type="text" class="form-input" id="inputRepairDate" placeholder="ДД.ММ.РРРР (якщо виконано)" autocomplete="off">
-              <button type="button" class="date-btn-addon" id="btnCalRepairDate" title="Відкрити календар">📅</button>
-              <button type="button" class="date-btn-addon date-btn-today" id="btnTodayRepairDate" title="Встановити сьогодні">🎯 Сьогодні</button>
-            </div>
-            <div class="calendar-popover" id="popoverRepairDate"></div>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Fix (Спеціаліст)</label>
-          <select class="form-select" id="inputSpecialist">
-            <option value="">-- В процесі (майстра ще не призначено) --</option>
-            <option value="Артем">Артем</option>
-            <option value="Саша_jun">Саша_jun</option>
-            <option value="Саша_old">Саша_old</option>
-            <option value="Саша_old + Саша_jun">Саша_old + Саша_jun</option>
-            <option value="Артем + Саша_jun">Артем + Саша_jun</option>
-            <option value="трекер">трекер (сам ожив)</option>
-            <option value="водій/перевізник">водій/перевізник</option>
-          </select>
-        </div>
-
-        <div class="form-group form-col-2">
-          <label class="form-label">Рішення спеціаліста</label>
-          <textarea class="form-textarea" id="inputSolution" placeholder="Що було зроблено: заміна сімки, антени, запобіжника, оновлення..."></textarea>
-          <div class="quick-templates-wrap">
-            <span class="quick-tmpl-btn" onclick="addSolutionTemplate('Дригнув сімку')">Дригнув сімку</span>
-            <span class="quick-tmpl-btn" onclick="addSolutionTemplate('Замінив сімку')">Замінив сімку</span>
-            <span class="quick-tmpl-btn" onclick="addSolutionTemplate('Замінив GPS антену')">Замінив GPS антену</span>
-            <span class="quick-tmpl-btn" onclick="addSolutionTemplate('Замінив GSM антену')">Замінив GSM антену</span>
-            <span class="quick-tmpl-btn" onclick="addSolutionTemplate('Замінив запобіжник')">Замінив запобіжник</span>
-            <span class="quick-tmpl-btn" onclick="addSolutionTemplate('Встановлено новий трекер')">Новий трекер</span>
-          </div>
-        </div>
-
-
-        </div>
-      </details>
+      </div>
       <div class="modal-footer">
         <button type="button" class="btn" id="btnCancelRepairModal">Скасувати</button>
-        <button type="submit" class="btn btn-primary" id="btnSaveRepairModal">💾 Зберегти запис</button>
+        <button type="button" class="btn" id="btnRepairBack" hidden>← Звернення</button>
+        <button type="button" class="btn" id="btnRepairNext">Результат ремонту →</button>
+        <button type="submit" class="btn btn-primary" id="btnSaveRepairModal">💾 Зберегти звернення</button>
       </div>
     </form>
   </div>
@@ -2449,15 +2448,61 @@
  */
 (function() {
   'use strict';
-  window.SZVKShared.mountAccountMenu({ backup: true });
+  window.SZVKShared.mountAccountMenu({ backup: true, historyId: 'tabBtnHistory' });
 
   const STORAGE_KEY = 'szvk_trackers_data';
+    const DEFAULT_PRIMARY_COMMANDS = [
+      {
+        id: 'prim_cpbw',
+        num: 1,
+        type: 'single',
+        cmd: 'at+cpbw=10,"+380504506021"',
+        title: 'Запис номеру в контактну книгу трекера',
+        desc: 'Записує номер диспетчера/сервера на позицію 10 телефонної книги SIM-карти.',
+        tag: 'Контактна книга',
+        category: 'gprs'
+      },
+      {
+        id: 'prim_tgact',
+        num: 2,
+        type: 'single',
+        cmd: 'AT+TGACT=1,5,3600',
+        title: 'Інтервал передачі даних (рух / стоянка)',
+        desc: '1 = активна GPRS сесія; 5 сек = опитування у русі; 3600 сек = інтервал 1 год на стоянці.',
+        tag: 'Інтервал GPRS',
+        category: 'gprs'
+      },
+      {
+        id: 'prim_dual_tgprs',
+        num: 3,
+        type: 'dual',
+        title: 'Сервер та APN інтернету (взаємозамінні під SIM)',
+        desc: 'Сервер: 95.85.51.138, порт 11111. Оберіть команду залежно від оператора SIM-картки в трекері:',
+        vodafone: 'AT+TGPRS="95.85.51.138",11111,"internet","",""',
+        kyivstar: 'AT+TGPRS="95.85.51.138",11111,"www.kyivstar.net","",""',
+        tag: 'Сервер & APN',
+        category: 'gprs'
+      },
+      {
+        id: 'prim_tprotocol',
+        num: 4,
+        type: 'single',
+        cmd: 'at+tprotocol="3SV2"',
+        title: 'Протокол передачі даних трекера',
+        desc: 'Встановлення протоколу взаємодії трекера Smartico: 3SV2.',
+        tag: 'Протокол',
+        category: 'gprs'
+      }
+    ];
+
 
   // Application State
   let appData = {
     repairs: [],
     inventory: [],
-    atCommands: []
+    atCommands: [],
+    primaryCommands: {},
+    firmwareVersions: {}
   };
 
   let activeTab = 'journal'; // 'journal' | 'inventory' | 'at'
@@ -2475,7 +2520,7 @@
   let inventoryFilter = 'all';
   let inventoryPage = 1;
   const inventoryPageSize = 50;
-  const dataVersions = { repairs: 0, inventory: 0, atCommands: 0, history: 0 };
+  const dataVersions = { repairs: 0, inventory: 0, atCommands: 0, primaryCommands: 0, firmwareVersions: 0, history: 0 };
   const dataSignatures = {};
   const renderedViews = {};
   let sortedRepairsKey = '';
@@ -2493,7 +2538,7 @@
 
   function refreshDataVersions() {
     let changed = false;
-    for (const name of ['repairs', 'inventory', 'atCommands']) {
+    for (const name of ['repairs', 'inventory', 'atCommands', 'primaryCommands', 'firmwareVersions']) {
       const signature = JSON.stringify(appData[name]);
       if (signature !== dataSignatures[name]) {
         dataSignatures[name] = signature;
@@ -2513,7 +2558,7 @@
   }
 
   const scheduleActiveView = window.SZVKShared.debounce(renderActiveView);
-  const scheduleAtSearch = window.SZVKShared.debounce(renderAtCommands);
+
   const scheduleHistorySearch = window.SZVKShared.debounce(renderHistory);
 
   function renderOfficeChoices() {
@@ -2939,6 +2984,8 @@
           appData.repairs = parsed.repairs.filter(r => (r.date && r.date.match(/\d/)) || (r.vehicle && r.vehicle.match(/\d/)));
           appData.inventory = parsed.inventory || [];
           appData.atCommands = parsed.atCommands || [];
+          appData.primaryCommands = parsed.primaryCommands || {};
+          appData.firmwareVersions = parsed.firmwareVersions || {};
         }
       } catch (e) {
         console.warn('Failed to parse localStorage data', e);
@@ -2953,6 +3000,8 @@
   }
 
   function loadDefaults() {
+    appData.primaryCommands = {};
+    appData.firmwareVersions = {};
     if (window.TRACKER_INITIAL_DATA && Array.isArray(window.TRACKER_INITIAL_DATA.repairs) && window.TRACKER_INITIAL_DATA.repairs.length > 0) {
       const raw = window.TRACKER_INITIAL_DATA.repairs || [];
       appData.repairs = JSON.parse(JSON.stringify(raw.filter(r => (r.date && r.date.match(/\d/)) || (r.vehicle && r.vehicle.match(/\d/)))));
@@ -3038,6 +3087,12 @@
             appData.atCommands = cloudData.atCommands;
             updated = true;
           }
+          for (const name of ['primaryCommands', 'firmwareVersions']) {
+            if (cloudData[name] && typeof cloudData[name] === 'object' && !Array.isArray(cloudData[name])) {
+              appData[name] = cloudData[name];
+              updated = true;
+            }
+          }
 
           if (updated && refreshDataVersions()) {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
@@ -3072,6 +3127,8 @@
         repairs: appData.repairs,
         inventory: appData.inventory,
         atCommands: appData.atCommands,
+        primaryCommands: appData.primaryCommands,
+        firmwareVersions: appData.firmwareVersions,
         updatedAt: Date.now()
       };
 
@@ -3101,14 +3158,99 @@
       opt.value = c;
       datalist.appendChild(opt);
     });
+    const select = document.getElementById('inputCarrierSelect');
+    const current = document.getElementById('inputCarrier').value;
+    select.replaceChildren(new Option('Оберіть перевізника', ''));
+    [...carriers].sort((a, b) => a.localeCompare(b, 'uk')).forEach(carrier => select.add(new Option(carrier, carrier)));
+    select.add(new Option('Інший перевізник…', '__custom'));
+    setRepairCarrier(current, false);
   }
+
+  function setRepairStep(step) {
+    const result = step === 'result';
+    document.getElementById('repairRequestPanel').hidden = result;
+    document.getElementById('repairResultPanel').hidden = !result;
+    document.querySelectorAll('.repair-step-tab').forEach(button => {
+      const selected = button.dataset.step === step;
+      button.setAttribute('aria-selected', String(selected));
+      button.tabIndex = selected ? 0 : -1;
+    });
+    document.getElementById('btnRepairBack').hidden = !result;
+    document.getElementById('btnRepairNext').hidden = result;
+    document.getElementById('btnSaveRepairModal').textContent = result ? '💾 Зберегти результат' : '💾 Зберегти звернення';
+    document.querySelectorAll('.calendar-popover').forEach(popover => popover.classList.remove('active'));
+  }
+
+  function setRepairCarrier(value, refresh = true) {
+    if (refresh) populateCarriersDatalist();
+    const select = document.getElementById('inputCarrierSelect');
+    const known = [...select.options].some(option => option.value === value && value !== '__custom');
+    select.value = !value ? '' : known ? value : '__custom';
+    document.getElementById('inputCarrier').value = value;
+    const custom = document.getElementById('inputCarrierCustom');
+    custom.hidden = select.value !== '__custom';
+    custom.required = !custom.hidden;
+    custom.value = known ? '' : value;
+  }
+
+  function setRepairSpecialist(value) {
+    const select = document.getElementById('inputSpecialist');
+    const known = [...select.options].some(option => option.value === value && value !== '__custom');
+    select.value = known ? value : '__custom';
+    const custom = document.getElementById('inputSpecialistCustom');
+    custom.hidden = known;
+    custom.required = !known;
+    custom.value = known ? '' : value;
+  }
+
+  document.getElementById('inputCarrierSelect').addEventListener('change', event => {
+    if (event.target.value === '__custom') {
+      setRepairCarrier(document.getElementById('inputCarrierCustom').value, false);
+      event.target.value = '__custom';
+      const input = document.getElementById('inputCarrierCustom');
+      input.hidden = false;
+      input.required = true;
+      input.focus();
+    } else setRepairCarrier(event.target.value, false);
+  });
+  document.getElementById('inputCarrierCustom').addEventListener('input', event => {
+    document.getElementById('inputCarrier').value = event.target.value;
+  });
+  document.getElementById('inputSpecialist').addEventListener('change', event => {
+    const custom = document.getElementById('inputSpecialistCustom');
+    custom.hidden = event.target.value !== '__custom';
+    custom.required = !custom.hidden;
+    if (!custom.hidden) custom.focus();
+  });
+  document.querySelectorAll('.repair-step-tab').forEach(button => {
+    button.onclick = () => setRepairStep(button.dataset.step);
+    button.onkeydown = event => {
+      if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+      event.preventDefault();
+      const next = event.key === 'Home' ? 'request' : event.key === 'End' ? 'result' : button.dataset.step === 'request' ? 'result' : 'request';
+      setRepairStep(next);
+      document.getElementById(next === 'request' ? 'repairRequestTab' : 'repairResultTab').focus();
+    };
+  });
+  document.getElementById('btnRepairBack').onclick = () => setRepairStep('request');
+  document.getElementById('btnRepairNext').onclick = () => {
+    const fields = [...document.querySelectorAll('#repairRequestPanel input, #repairRequestPanel select, #repairRequestPanel textarea')];
+    const invalid = fields.find(field => !field.checkValidity());
+    if (invalid) { invalid.reportValidity(); return; }
+    setRepairStep('result');
+  };
+  document.getElementById('issueQuickChoices').addEventListener('click', event => {
+    const button = event.target.closest('[data-issue]');
+    if (button) window.addIssueTemplate(button.dataset.issue);
+  });
 
   // Update Stats in Dashboard
   function updateDashboardStats() {
     const pending = appData.repairs.filter(isRepairPending).length;
-    const invoice = appData.repairs.filter(item => ((item.notes || '') + ' ' + (item.solution || '')).toLowerCase().includes('рахунок')).length;
+    const invoice = appData.repairs.filter(window.SZVKShared.needsInvoice).length;
     const officeTrackers = appData.inventory.filter(item => (item.status || '').toLowerCase().includes('офіс')).length;
     document.getElementById('tabCounterJournal').textContent = appData.repairs.length;
+    document.getElementById('tabCounterAt').textContent = DEFAULT_PRIMARY_COMMANDS.length + secondaryCommands().filter(isSecondaryCommand).length;
     document.getElementById('tabCounterInventory').textContent = officeTrackers;
     document.querySelector('#filterChipsContainer [data-filter="pending"]').textContent = 'В роботі (' + pending + ')';
     document.querySelector('#filterChipsContainer [data-filter="invoice"]').textContent = 'Виставити рахунок (' + invoice + ')';
@@ -3130,7 +3272,7 @@
     if (!specialist || specialist === '\u200B') return '<span class="tech-badge tech-pending">⏳ Очікує майстра</span>';
     const s = specialist.toLowerCase();
     if (s.includes('артем')) return `<span class="tech-badge tech-artem">🟣 ${escapeHtml(specialist)}</span>`;
-    if (s.includes('саша')) return `<span class="tech-badge tech-oleksandr">🟢 ${escapeHtml(specialist)}</span>`;
+    if (s.includes('саша') || s.includes('олександр')) return `<span class="tech-badge tech-oleksandr">🟢 ${escapeHtml(specialist)}</span>`;
     if (s.includes('трекер')) return `<span class="tech-badge tech-tracker">🤖 ${escapeHtml(specialist)}</span>`;
     return `<span class="tech-badge tech-other">👤 ${escapeHtml(specialist)}</span>`;
   }
@@ -3209,15 +3351,11 @@
     if (activeFilterChip === 'pending') {
       list = list.filter(r => isRepairPending(r));
     } else if (activeFilterChip === 'invoice') {
-      list = list.filter(r => {
-        const n = (r.notes || '').toLowerCase();
-        const s = (r.solution || '').toLowerCase();
-        return n.includes('рахунок') || s.includes('рахунок');
-      });
+      list = list.filter(window.SZVKShared.needsInvoice);
     } else if (activeFilterChip === 'artem') {
       list = list.filter(r => (r.specialist || '').toLowerCase().includes('артем'));
     } else if (activeFilterChip === 'oleksandr') {
-      list = list.filter(r => (r.specialist || '').toLowerCase().includes('саша'));
+      list = list.filter(r => /саша|олександр/i.test(r.specialist || ''));
     } else if (activeFilterChip === 'tracker') {
       list = list.filter(r => (r.specialist || '').toLowerCase().includes('трекер'));
     }
@@ -3306,7 +3444,7 @@
               </div>
             </td>
             <td>
-              <div class="notes-text" title="${escapeHtml(item.notes)}">${formatNotesHtml(item.notes)}</div>
+              <div class="notes-text" title="${escapeHtml(item.notes)}">${formatNotesHtml(item.notes)}${window.SZVKShared.needsInvoice(item) ? '<div class="invoice-label">💳 Потрібно виставити рахунок</div>' : ''}</div>
             </td>
             <td>
               <div class="row-actions">
@@ -3403,109 +3541,170 @@
 
   }
 
+  const DEFAULT_FIRMWARE = {
+    black: 'SW 2.66 / HW 6.30',
+    blue: 'SW 2.72 / HW 8.02',
+    grey: 'SW 2.80 (2.79) / HW 11.10'
+  };
+
+  function renderFirmwareVersions() {
+    for (const color of Object.keys(DEFAULT_FIRMWARE)) {
+      document.querySelector('.fw-version-' + color).textContent = appData.firmwareVersions[color] || DEFAULT_FIRMWARE[color];
+    }
+  }
+
+  function secondaryCommands() {
+    return appData.atCommands.length ? appData.atCommands : (window.TRACKER_INITIAL_DATA && window.TRACKER_INITIAL_DATA.atCommandsRaw) || [];
+  }
+
+  function isSecondaryCommand(item) {
+    const command = (item.cmd || '').trim();
+    if (!/^(\+INPUT|AT)/i.test(command)) return false;
+    const lower = command.toLowerCase();
+    return !(lower.startsWith('at+cpbw=10') || command.toUpperCase() === 'AT+TGACT=1,5,3600' || command.toUpperCase().includes('TGPRS="95.85.51.138"') || lower.includes('tprotocol="3sv2"'));
+  }
+
+  let referenceEditorKind = 'commands';
+  let referenceEditorVersion = '';
+  let referenceReturnFocus = null;
+  const referenceModal = document.getElementById('referenceEditorModal');
+
+  function referenceVersion() {
+    return JSON.stringify([appData.primaryCommands, appData.atCommands, appData.firmwareVersions]);
+  }
+
+  function selectedReferenceCommand() {
+    const value = document.getElementById('referenceCommandSelect').value;
+    const primary = DEFAULT_PRIMARY_COMMANDS.find(item => item.id === value);
+    if (primary) return { primary: true, item: { ...primary, ...(appData.primaryCommands[value] || {}) } };
+    return { primary: false, index: Number(value.slice(6)), item: secondaryCommands()[Number(value.slice(6))] };
+  }
+
+  function loadReferenceCommand() {
+    const { primary, item } = selectedReferenceCommand();
+    if (!item) return;
+    const dual = item.type === 'dual';
+    document.getElementById('referenceSingleField').hidden = dual;
+    document.getElementById('referenceDualFields').hidden = !dual;
+    for (const id of ['referenceVodafoneText', 'referenceKyivstarText']) {
+      document.getElementById(id).required = dual;
+      document.getElementById(id).disabled = !dual;
+    }
+    document.getElementById('referenceCommandText').required = !dual;
+    document.getElementById('referenceCommandText').disabled = dual;
+    document.getElementById('referenceCommandTitle').value = primary ? item.title || '' : item.desc || '';
+    document.getElementById('referenceCommandText').value = item.cmd || '';
+    document.getElementById('referenceVodafoneText').value = item.vodafone || '';
+    document.getElementById('referenceKyivstarText').value = item.kyivstar || '';
+    document.getElementById('referenceCommandNotes').value = primary ? item.desc || '' : item.notes || '';
+  }
+
+  function openReferenceEditor(kind) {
+    referenceEditorKind = kind;
+    referenceReturnFocus = document.activeElement;
+    referenceEditorVersion = referenceVersion();
+    document.getElementById('referenceEditorTitle').textContent = kind === 'commands' ? 'Редагувати АТ команди' : 'Редагувати версії прошивок';
+    document.getElementById('referenceEditorError').hidden = true;
+    for (const [id, enabled] of [['commandEditorFields', kind === 'commands'], ['firmwareEditorFields', kind === 'firmware']]) {
+      const fields = document.getElementById(id);
+      fields.hidden = !enabled;
+      fields.querySelectorAll('input, select, textarea').forEach(field => { field.disabled = !enabled; });
+    }
+    if (kind === 'commands') {
+      const select = document.getElementById('referenceCommandSelect');
+      select.replaceChildren();
+      DEFAULT_PRIMARY_COMMANDS.forEach(defaultItem => {
+        const item = { ...defaultItem, ...(appData.primaryCommands[defaultItem.id] || {}) };
+        select.add(new Option(`${item.num}. ${item.title}`, item.id));
+      });
+      secondaryCommands().forEach((item, index) => {
+        if (isSecondaryCommand(item)) select.add(new Option(item.cmd + ' · ' + (item.desc || ''), 'extra:' + index));
+      });
+      loadReferenceCommand();
+    } else {
+      for (const color of Object.keys(DEFAULT_FIRMWARE)) {
+        const input = document.getElementById('firmware' + color[0].toUpperCase() + color.slice(1));
+        input.value = appData.firmwareVersions[color] || DEFAULT_FIRMWARE[color];
+        input.required = true;
+      }
+    }
+    referenceModal.classList.add('active');
+    document.getElementById(kind === 'commands' ? 'referenceCommandSelect' : 'firmwareBlack').focus();
+  }
+
+  function closeReferenceEditor() {
+    referenceModal.classList.remove('active');
+    if (referenceReturnFocus && referenceReturnFocus.isConnected) referenceReturnFocus.focus();
+  }
+
+  document.getElementById('btnEditCommands').onclick = () => openReferenceEditor('commands');
+  document.getElementById('btnEditFirmware').onclick = () => openReferenceEditor('firmware');
+  document.getElementById('referenceCommandSelect').onchange = loadReferenceCommand;
+  document.getElementById('referenceEditorClose').onclick = closeReferenceEditor;
+  document.getElementById('referenceEditorCancel').onclick = closeReferenceEditor;
+  referenceModal.addEventListener('click', event => { if (event.target === referenceModal) closeReferenceEditor(); });
+  document.addEventListener('keydown', event => { if (event.key === 'Escape' && referenceModal.classList.contains('active')) closeReferenceEditor(); });
+  document.getElementById('referenceEditorForm').addEventListener('submit', event => {
+    event.preventDefault();
+    if (referenceEditorVersion !== referenceVersion()) {
+      const error = document.getElementById('referenceEditorError');
+      error.textContent = 'Довідник оновлено на іншому пристрої. Закрийте й відкрийте редагування знову.';
+      error.hidden = false;
+      return;
+    }
+    const value = id => document.getElementById(id).value.trim();
+    const required = [...event.currentTarget.querySelectorAll('[required]')].find(input => !input.disabled && !input.value.trim());
+    if (required) {
+      const error = document.getElementById('referenceEditorError');
+      error.textContent = 'Заповніть поле: значення не може складатися лише з пробілів.';
+      error.hidden = false;
+      required.focus();
+      return;
+    }
+    if (referenceEditorKind === 'firmware') {
+      appData.firmwareVersions = {
+        black: value('firmwareBlack'), blue: value('firmwareBlue'), grey: value('firmwareGrey')
+      };
+    } else {
+      const { primary, item, index } = selectedReferenceCommand();
+      if (primary) {
+        appData.primaryCommands[item.id] = {
+          title: value('referenceCommandTitle'), desc: value('referenceCommandNotes'),
+          ...(item.type === 'dual'
+            ? { vodafone: value('referenceVodafoneText'), kyivstar: value('referenceKyivstarText') }
+            : { cmd: value('referenceCommandText') })
+        };
+      } else {
+        if (!appData.atCommands.length) appData.atCommands = JSON.parse(JSON.stringify(secondaryCommands()));
+        appData.atCommands[index] = { ...item, cmd: value('referenceCommandText'), desc: value('referenceCommandTitle'), notes: value('referenceCommandNotes') };
+      }
+    }
+    saveLocalData();
+    logAction({ module: 'tracker_hub', tab: 'at', type: 'reference_edit', description: referenceEditorKind === 'firmware' ? 'Оновлено версії прошивок трекерів' : 'Оновлено АТ команду', details: referenceEditorKind === 'commands' ? value('referenceCommandTitle') : '' });
+    closeReferenceEditor();
+    renderAtCommands();
+    showToast('Зміни довідника збережено');
+  });
+  document.getElementById('atCommandsGrid').addEventListener('click', event => {
+    const control = event.target.closest('[data-copy-command]');
+    if (control) window.copyToClipboard(control.dataset.copyCommand, 'Команду');
+  });
+
   // Render AT Commands
   function renderAtCommands() {
     if (activeTab !== 'at') return;
     const grid = document.getElementById('atCommandsGrid');
-    const q = (document.getElementById('atSearchInput').value || '').toLowerCase().trim();
-    const key = dataVersions.atCommands + ':' + q;
+    const key = [dataVersions.atCommands, dataVersions.primaryCommands, dataVersions.firmwareVersions].join(':');
     if (renderedViews.at === key) return;
     renderedViews.at = key;
+    renderFirmwareVersions();
 
     // 4 Primary Configuration Commands
-    const PRIMARY_CONFIG = [
-      {
-        id: 'prim_cpbw',
-        num: 1,
-        type: 'single',
-        cmd: 'at+cpbw=10,"+380504506021"',
-        title: 'Запис номеру в контактну книгу трекера',
-        desc: 'Записує номер диспетчера/сервера на позицію 10 телефонної книги SIM-карти.',
-        tag: 'Контактна книга',
-        category: 'gprs'
-      },
-      {
-        id: 'prim_tgact',
-        num: 2,
-        type: 'single',
-        cmd: 'AT+TGACT=1,5,3600',
-        title: 'Інтервал передачі даних (рух / стоянка)',
-        desc: '1 = активна GPRS сесія; 5 сек = опитування у русі; 3600 сек = інтервал 1 год на стоянці.',
-        tag: 'Інтервал GPRS',
-        category: 'gprs'
-      },
-      {
-        id: 'prim_dual_tgprs',
-        num: 3,
-        type: 'dual',
-        title: 'Сервер та APN інтернету (взаємозамінні під SIM)',
-        desc: 'Сервер: <strong>95.85.51.138</strong>, порт <strong>11111</strong>. Оберіть команду залежно від оператора SIM-картки в трекері:',
-        vodafone: 'AT+TGPRS="95.85.51.138",11111,"internet","",""',
-        kyivstar: 'AT+TGPRS="95.85.51.138",11111,"www.kyivstar.net","",""',
-        tag: 'Сервер & APN',
-        category: 'gprs'
-      },
-      {
-        id: 'prim_tprotocol',
-        num: 4,
-        type: 'single',
-        cmd: 'at+tprotocol="3SV2"',
-        title: 'Протокол передачі даних трекера',
-        desc: 'Встановлення протоколу взаємодії трекера Smartico: <strong>3SV2</strong>.',
-        tag: 'Протокол',
-        category: 'gprs'
-      }
-    ];
-
-    // Filter Primary Commands
-    let filteredPrimary = PRIMARY_CONFIG.filter(item => {
-      if (!q) return true;
-      if (item.type === 'single') {
-        return item.cmd.toLowerCase().includes(q) || item.title.toLowerCase().includes(q) || item.desc.toLowerCase().includes(q);
-      } else {
-        return item.vodafone.toLowerCase().includes(q) || item.kyivstar.toLowerCase().includes(q) ||
-               item.title.toLowerCase().includes(q) || item.desc.toLowerCase().includes(q) ||
-               q.includes('водафон') || q.includes('київстар') || q.includes('apn') || q.includes('gprs');
-      }
-    });
+    const filteredPrimary = DEFAULT_PRIMARY_COMMANDS.map(item => ({ ...item, ...(appData.primaryCommands[item.id] || {}) }));
 
     // Secondary / Other Commands (Cleaned: no empty cells, no non-command text, no duplicates of primary)
-    let rawList = (appData.atCommands && appData.atCommands.length > 0)
-      ? appData.atCommands
-      : (window.TRACKER_INITIAL_DATA ? window.TRACKER_INITIAL_DATA.atCommandsRaw || [] : []);
-
-    let secondaryList = rawList.filter(item => {
-      // Exclude empty commands completely
-      if (!item.cmd || !item.cmd.trim()) return false;
-      const cmdClean = item.cmd.trim();
-
-      // Exclude non-command raw prose paragraphs
-      if (!cmdClean.match(/^(\+INPUT|AT|at|ati)/i)) return false;
-
-      // Exclude primary commands from secondary list to avoid duplication
-      const cmdLower = cmdClean.toLowerCase();
-      if (cmdLower.startsWith('at+cpbw=10') ||
-          cmdClean.toUpperCase() === 'AT+TGACT=1,5,3600' ||
-          cmdClean.toUpperCase().includes('TGPRS="95.85.51.138"') ||
-          cmdLower.includes('tprotocol="3sv2"')) {
-        return false;
-      }
-
-      // Search query filter
-      if (q) {
-        const matchQ = (item.cmd && item.cmd.toLowerCase().includes(q)) ||
-                       (item.desc && item.desc.toLowerCase().includes(q)) ||
-                       (item.notes && item.notes.toLowerCase().includes(q));
-        if (!matchQ) return false;
-      }
-
-      return true;
-    });
-
-    if (filteredPrimary.length === 0 && secondaryList.length === 0) {
-      grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 35px; color: var(--text-muted);">Команд за вашим запитом не знайдено</div>`;
-      return;
-    }
+    const secondaryList = secondaryCommands().filter(isSecondaryCommand);
+    document.getElementById('tabCounterAt').textContent = filteredPrimary.length + secondaryList.length;
 
     let html = '';
 
@@ -3527,19 +3726,19 @@
             <div class="at-card is-primary">
               <div class="at-card-top">
                 <span class="badge-primary-star">⭐ ОСНОВНА КОМАНДА #${item.num}</span>
-                <button class="btn btn-sky" style="padding: 2px 8px; font-size: 10px;" onclick="copyToClipboard('${item.cmd.replace(/'/g, "\\'")}', 'Команду #${item.num}')">
+                <button class="btn btn-sky" style="padding: 2px 8px; font-size: 10px;" data-copy-command="${escapeHtml(item.cmd)}">
                   📋 Копіювати
                 </button>
               </div>
 
-              <div class="at-code-box" onclick="copyToClipboard('${item.cmd.replace(/'/g, "\\'")}', 'Команду #${item.num}')" title="Клікніть щоб скопіювати">
+              <div class="at-code-box" data-copy-command="${escapeHtml(item.cmd)}" title="Клікніть щоб скопіювати">
                 <span class="at-code-text at-primary-code">${cmdText}</span>
                 <span style="font-size: 11px; opacity: 0.8;">📋</span>
               </div>
 
               <div class="at-desc">
-                <strong class="at-item-title">${item.title}</strong>
-                <div class="at-item-desc">${item.desc}</div>
+                <strong class="at-item-title">${escapeHtml(item.title)}</strong>
+                <div class="at-item-desc">${escapeHtml(item.desc)}</div>
               </div>
             </div>
           `;
@@ -3554,15 +3753,15 @@
               </div>
 
               <div class="at-desc">
-                <strong class="at-item-title">${item.title}</strong>
-                <div class="at-item-desc">${item.desc}</div>
+                <strong class="at-item-title">${escapeHtml(item.title)}</strong>
+                <div class="at-item-desc">${escapeHtml(item.desc)}</div>
               </div>
 
               <!-- Vodafone Option -->
-              <div class="at-dual-subcard" onclick="copyToClipboard('${item.vodafone.replace(/'/g, "\\'")}', 'Vodafone GPRS команду')" title="Клікніть, щоб скопіювати команду для Vodafone">
+              <div class="at-dual-subcard" data-copy-command="${escapeHtml(item.vodafone)}" title="Клікніть, щоб скопіювати команду для Vodafone">
                 <div class="at-dual-subcard-header">
                   <span class="at-vodafone-title">🔴 Для Vodafone (APN: internet)</span>
-                  <button class="btn btn-sky" style="padding: 2px 7px; font-size: 10px;" onclick="event.stopPropagation(); copyToClipboard('${item.vodafone.replace(/'/g, "\\'")}', 'Vodafone GPRS команду')">
+                  <button class="btn btn-sky" style="padding: 2px 7px; font-size: 10px;" data-copy-command="${escapeHtml(item.vodafone)}">
                     📋 Копіювати
                   </button>
                 </div>
@@ -3572,10 +3771,10 @@
               </div>
 
               <!-- Kyivstar Option -->
-              <div class="at-dual-subcard" onclick="copyToClipboard('${item.kyivstar.replace(/'/g, "\\'")}', 'Київстар GPRS команду')" title="Клікніть, щоб скопіювати команду для Київстар">
+              <div class="at-dual-subcard" data-copy-command="${escapeHtml(item.kyivstar)}" title="Клікніть, щоб скопіювати команду для Київстар">
                 <div class="at-dual-subcard-header">
                   <span class="at-kyivstar-title">🔵 Для Київстар (APN: www.kyivstar.net)</span>
-                  <button class="btn btn-sky" style="padding: 2px 7px; font-size: 10px;" onclick="event.stopPropagation(); copyToClipboard('${item.kyivstar.replace(/'/g, "\\'")}', 'Київстар GPRS команду')">
+                  <button class="btn btn-sky" style="padding: 2px 7px; font-size: 10px;" data-copy-command="${escapeHtml(item.kyivstar)}">
                     📋 Копіювати
                   </button>
                 </div>
@@ -3616,12 +3815,12 @@
           <div class="at-card">
             <div class="at-card-top">
               <span class="at-category-tag">AT Команда</span>
-              <button class="btn btn-sky" style="padding: 2px 7px; font-size: 10px;" onclick="copyToClipboard('${item.cmd.replace(/'/g, "\\'")}', 'Команду')">
+              <button class="btn btn-sky" style="padding: 2px 7px; font-size: 10px;" data-copy-command="${escapeHtml(item.cmd)}">
                 📋 Копіювати
               </button>
             </div>
 
-            <div class="at-code-box" onclick="copyToClipboard('${item.cmd.replace(/'/g, "\\'")}', 'Команду')" title="Клікніть щоб скопіювати">
+            <div class="at-code-box" data-copy-command="${escapeHtml(item.cmd)}" title="Клікніть щоб скопіювати">
               <span class="at-code-text">${cmdText}</span>
               <span style="font-size: 11px; opacity: 0.6;">📋</span>
             </div>
@@ -3977,6 +4176,12 @@
         tabName = 'Фокус';
         badgeBg = 'rgba(56, 189, 248, 0.2)';
         badgeColor = '#38bdf8';
+      } else if (item.type === 'reference_edit') {
+        icon = '✎';
+        badgeLabel = 'Оновлено довідник';
+        tabName = 'Команди / Прошивки';
+        badgeBg = 'rgba(56, 189, 248, 0.2)';
+        badgeColor = '#38bdf8';
       } else if (item.type === 'restore') {
         icon = '↩️';
         badgeLabel = 'Відновлено';
@@ -4111,24 +4316,23 @@
 
   // Global Actions for Window
   window.editRepair = function(id) {
-    document.getElementById('repairExtraDetails').open = true;
-    document.getElementById('repairResultDetails').open = true;
+    setRepairStep('request');
     const item = appData.repairs.find(r => r.id === id);
     if (!item) return;
 
     document.getElementById('editRecordId').value = item.id;
     document.getElementById('inputDate').value = item.date || '';
-    document.getElementById('inputCarrier').value = item.carrier || '';
+    setRepairCarrier(item.carrier || '');
     document.getElementById('inputReportedBy').value = item.reportedBy || '';
     document.getElementById('inputVehicle').value = item.vehicle || '';
     document.getElementById('inputSerial').value = item.serial || '';
     document.getElementById('inputIssue').value = item.issue || '';
     document.getElementById('inputRepairDate').value = item.repairDate || '';
-    document.getElementById('inputSpecialist').value = item.specialist || '';
+    setRepairSpecialist(item.specialist || '');
     document.getElementById('inputSolution').value = item.solution || '';
     document.getElementById('inputNotes').value = item.notes || '';
 
-    const isInvoice = (item.notes || '').toLowerCase().includes('рахунок') || (item.solution || '').toLowerCase().includes('рахунок');
+    const isInvoice = window.SZVKShared.needsInvoice(item);
     document.getElementById('checkboxInvoice').checked = isInvoice;
 
     repairModalTitle.innerHTML = `<span>✏️ Редагувати заявку #${item.id} (Авто ${escapeHtml(item.vehicle)})</span>`;
@@ -4137,24 +4341,24 @@
 
   // Quick Finish in-progress repair
   window.finishRepair = function(id) {
-    document.getElementById('repairResultDetails').open = true;
+    setRepairStep('result');
     const item = appData.repairs.find(r => r.id === id);
     if (!item) return;
 
     document.getElementById('editRecordId').value = item.id;
     document.getElementById('inputDate').value = item.date || '';
-    document.getElementById('inputCarrier').value = item.carrier || '';
+    setRepairCarrier(item.carrier || '');
     document.getElementById('inputReportedBy').value = item.reportedBy || '';
     document.getElementById('inputVehicle').value = item.vehicle || '';
     document.getElementById('inputSerial').value = item.serial || '';
     document.getElementById('inputIssue').value = item.issue || '';
     // Prefill repair date with TODAY!
     document.getElementById('inputRepairDate').value = getTodayString();
-    document.getElementById('inputSpecialist').value = item.specialist || 'Артем';
+    setRepairSpecialist(item.specialist || (currentUser && currentUser.name) || 'Артем');
     document.getElementById('inputSolution').value = item.solution || '';
     document.getElementById('inputNotes').value = item.notes || '';
 
-    const isInvoice = (item.notes || '').toLowerCase().includes('рахунок') || (item.solution || '').toLowerCase().includes('рахунок');
+    const isInvoice = window.SZVKShared.needsInvoice(item);
     document.getElementById('checkboxInvoice').checked = isInvoice;
 
     repairModalTitle.innerHTML = `<span>⚡ Завершити ремонт авто #${escapeHtml(item.vehicle || item.id)}</span>`;
@@ -4166,20 +4370,19 @@
   };
 
   window.duplicateRepair = function(id) {
-    document.getElementById('repairExtraDetails').open = true;
-    document.getElementById('repairResultDetails').open = false;
+    setRepairStep('request');
     const item = appData.repairs.find(r => r.id === id);
     if (!item) return;
 
     document.getElementById('editRecordId').value = '';
     document.getElementById('inputDate').value = getTodayString();
-    document.getElementById('inputCarrier').value = item.carrier || '';
+    setRepairCarrier(item.carrier || '');
     document.getElementById('inputReportedBy').value = item.reportedBy || '';
     document.getElementById('inputVehicle').value = item.vehicle || '';
     document.getElementById('inputSerial').value = item.serial || '';
     document.getElementById('inputIssue').value = item.issue || '';
     document.getElementById('inputRepairDate').value = '';
-    document.getElementById('inputSpecialist').value = item.specialist || '';
+    setRepairSpecialist(item.specialist || '');
     document.getElementById('inputSolution').value = '';
     document.getElementById('inputNotes').value = item.notes || '';
     document.getElementById('checkboxInvoice').checked = false;
@@ -4249,17 +4452,16 @@
   };
 
   window.useTrackerForRepair = function(newSerial) {
-    document.getElementById('repairExtraDetails').open = true;
-    document.getElementById('repairResultDetails').open = true;
+    setRepairStep('result');
     document.getElementById('editRecordId').value = '';
     document.getElementById('inputDate').value = getTodayString();
-    document.getElementById('inputCarrier').value = '';
+    setRepairCarrier('');
     document.getElementById('inputReportedBy').value = '';
     document.getElementById('inputVehicle').value = '';
     document.getElementById('inputSerial').value = `[старий] ➜ ${newSerial}`;
     document.getElementById('inputIssue').value = 'Заміна трекера на новий';
     document.getElementById('inputRepairDate').value = getTodayString();
-    document.getElementById('inputSpecialist').value = 'Артем';
+    setRepairSpecialist('Артем');
     document.getElementById('inputSolution').value = `Встановлено новий трекер ${newSerial}`;
     document.getElementById('inputNotes').value = 'ВИСТАВИТИ РАХУНОК';
     document.getElementById('checkboxInvoice').checked = true;
@@ -4285,7 +4487,7 @@
     tabBtnJournal.className = 'main-tab-btn active';
     tabBtnInventory.className = 'main-tab-btn inventory-tab';
     tabBtnAtCommands.className = 'main-tab-btn at-tab';
-    tabBtnHistory.className = 'main-tab-btn history-tab';
+    tabBtnHistory.className = 'btn';
     viewJournal.style.display = 'flex';
     viewInventory.style.display = 'none';
     viewAtCommands.style.display = 'none';
@@ -4298,7 +4500,7 @@
     tabBtnJournal.className = 'main-tab-btn';
     tabBtnInventory.className = 'main-tab-btn inventory-tab active';
     tabBtnAtCommands.className = 'main-tab-btn at-tab';
-    tabBtnHistory.className = 'main-tab-btn history-tab';
+    tabBtnHistory.className = 'btn';
     viewJournal.style.display = 'none';
     viewInventory.style.display = 'flex';
     viewAtCommands.style.display = 'none';
@@ -4311,7 +4513,7 @@
     tabBtnJournal.className = 'main-tab-btn';
     tabBtnInventory.className = 'main-tab-btn inventory-tab';
     tabBtnAtCommands.className = 'main-tab-btn at-tab active';
-    tabBtnHistory.className = 'main-tab-btn history-tab';
+    tabBtnHistory.className = 'btn';
     viewJournal.style.display = 'none';
     viewInventory.style.display = 'none';
     viewAtCommands.style.display = 'flex';
@@ -4324,7 +4526,7 @@
     tabBtnJournal.className = 'main-tab-btn';
     tabBtnInventory.className = 'main-tab-btn inventory-tab';
     tabBtnAtCommands.className = 'main-tab-btn at-tab';
-    tabBtnHistory.className = 'main-tab-btn history-tab active';
+    tabBtnHistory.className = 'btn active';
     viewJournal.style.display = 'none';
     viewInventory.style.display = 'none';
     viewAtCommands.style.display = 'none';
@@ -4422,15 +4624,16 @@
 
 
 
-  document.getElementById('atSearchInput').addEventListener('input', scheduleAtSearch);
+
 
   // Modal Open / Close
   btnOpenAddModal.addEventListener('click', () => {
     populateCarriersDatalist();
-    document.getElementById('repairExtraDetails').open = false;
-    document.getElementById('repairResultDetails').open = false;
+    setRepairStep('request');
     document.getElementById('editRecordId').value = '';
     repairForm.reset();
+    setRepairCarrier('');
+    setRepairSpecialist('');
     document.getElementById('inputDate').value = getTodayString();
     document.getElementById('inputRepairDate').value = '';
     repairModalTitle.innerHTML = '<span>➕ Новий запис ремонту трекера</span>';
@@ -4438,8 +4641,8 @@
   });
 
   repairForm.addEventListener('invalid', event => {
-    const section = event.target.closest('details');
-    if (section) section.open = true;
+    const panel = event.target.closest('[role="tabpanel"]');
+    if (panel) setRepairStep(panel.id === 'repairResultPanel' ? 'result' : 'request');
   }, true);
 
   function closeRepairModal() {
@@ -4460,14 +4663,11 @@
     const serial = document.getElementById('inputSerial').value.trim();
     const issue = document.getElementById('inputIssue').value.trim();
     const repairDate = document.getElementById('inputRepairDate').value.trim();
-    const specialist = document.getElementById('inputSpecialist').value.trim();
+    const specialistChoice = document.getElementById('inputSpecialist').value;
+    const specialist = (specialistChoice === '__custom' ? document.getElementById('inputSpecialistCustom').value : specialistChoice).trim();
     const solution = document.getElementById('inputSolution').value.trim();
-    let notes = document.getElementById('inputNotes').value.trim();
+    const notes = document.getElementById('inputNotes').value.replace(/\s*\(ВИСТАВИТИ РАХУНОК\)/gi, '').replace(/^ВИСТАВИТИ РАХУНОК$/i, '').trim();
     const needInvoice = document.getElementById('checkboxInvoice').checked;
-
-    if (needInvoice && !notes.toLowerCase().includes('рахунок')) {
-      notes = notes ? `${notes} (ВИСТАВИТИ РАХУНОК)` : 'ВИСТАВИТИ РАХУНОК';
-    }
 
     if (editId) {
       // Edit existing
@@ -4484,6 +4684,7 @@
         rec.specialist = specialist;
         rec.solution = solution;
         rec.notes = notes;
+        rec.needInvoice = needInvoice;
 
         logAction({
           module: 'tracker_hub',
@@ -4510,7 +4711,8 @@
         repairDate,
         specialist,
         solution,
-        notes
+        notes,
+        needInvoice
       };
       appData.repairs.unshift(newRec);
 
@@ -4809,7 +5011,7 @@
   // Download CSV
   btnDownloadCsv.addEventListener('click', () => {
     let csv = '\uFEFF';
-    csv += 'ID;Дата;Перевізник;Хто звертався;Номер т/з;S/N трекера;Чому?;Дата ремонту;Fix;Рішення спеціаліста;Нотатки\r\n';
+    csv += 'ID;Дата;Перевізник;Хто звертався;Номер т/з;S/N трекера;Чому?;Дата ремонту;Fix;Рішення спеціаліста;Нотатки;Потрібно виставити рахунок\r\n';
 
     appData.repairs.forEach(r => {
       const row = [
@@ -4823,7 +5025,8 @@
         `"${(r.repairDate || '').replace(/"/g, '""')}"`,
         `"${(r.specialist || '').replace(/"/g, '""')}"`,
         `"${(r.solution || '').replace(/"/g, '""')}"`,
-        `"${(r.notes || '').replace(/"/g, '""')}"`
+        `"${(r.notes || '').replace(/"/g, '""')}"`,
+        window.SZVKShared.needsInvoice(r) ? 'Так' : 'Ні'
       ];
       csv += row.join(';') + '\r\n';
     });
@@ -4847,10 +5050,10 @@
       try {
         const imported = JSON.parse(evt.target.result);
         if (imported.repairs && Array.isArray(imported.repairs)) {
-          appData = imported;
+          appData = { inventory: [], atCommands: [], primaryCommands: {}, firmwareVersions: {}, ...imported };
           saveLocalData();
           populateCarriersDatalist();
-                renderRepairs();
+          renderRepairs();
           renderInventory();
           renderAtCommands();
           closeExportModal();

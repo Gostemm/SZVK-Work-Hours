@@ -174,3 +174,11 @@ test('task changes preserve legacy monthly notes and other days', () => {
   shared.updateTask(schedule.dayNotes,'2026-10-13','a','Виправлено','2026-10-14');
   assert.equal(JSON.stringify([schedule.monthlyDebts,schedule.monthFocusNotes,schedule.dayNotes['2026-11-01']]),notes);
 });
+
+test('invoice toggle takes precedence over legacy invoice notes', () => {
+  assert.equal(shared.needsInvoice({notes:'ВИСТАВИТИ РАХУНОК'}), true);
+  assert.equal(shared.needsInvoice({solution:'Потрібно виставити рахунок'}), true);
+  assert.equal(shared.needsInvoice({notes:'ВИСТАВИТИ РАХУНОК',needInvoice:false}), false);
+  assert.equal(shared.needsInvoice({notes:'',needInvoice:true}), true);
+  assert.equal(shared.needsInvoice({notes:'Поставили нову SIM'}), false);
+});

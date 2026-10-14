@@ -215,7 +215,7 @@ body {
 #repairForm .form-textarea { min-height: 70px; }
 #repairForm .modal-footer { position: sticky; bottom: 0; background: var(--card-bg); padding-top: 14px; }
 #repairModalOverlay .modal-box { max-width: 640px; }
-#repairForm .quick-templates-wrap { display: none; }
+#repairForm .quick-templates-wrap { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .repair-form-hint { font-size: 12px; color: var(--text-muted); margin-bottom: 14px; }
 @media (max-width: 600px) {
   .account-summary { font-size: 12px; padding: 5px 8px; }
@@ -568,3 +568,56 @@ body {
 
 .modal-overlay.active { display: flex; }
 .day-card.has-note { border-color: var(--note-badge); }
+
+/* Consistent module navigation and forms on both pages. */
+.module-switch { display: flex; gap: 4px; padding: 4px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg); }
+.module-switch a { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 9px 12px; color: var(--text-muted); border-radius: 7px; font-size: 12px; font-weight: 700; text-decoration: none; white-space: nowrap; }
+.module-switch a:hover { color: var(--text); background: var(--card-bg); }
+.module-switch a[aria-current="page"] { background: var(--accent); color: #fff; }
+.account-panel button.active { background: var(--accent); color: #fff; }
+.task-modal-content, .cycle-task-row .cycle-task-left { display: grid; grid-template-columns: 17px minmax(0, 1fr); align-items: start; gap: 5px 8px; flex: 1; min-width: 0; }
+.task-modal-content .task-modal-author, .cycle-task-left .cycle-task-author { grid-column: 2; margin-left: 0; white-space: normal; }
+.task-modal-content .task-modal-text, .cycle-task-left .cycle-task-text { min-width: 0; white-space: pre-wrap; word-break: normal; overflow-wrap: break-word; }
+.task-shift-preview { padding: 12px; border: 1px solid var(--accent); border-radius: 8px; font-size: 13px; line-height: 1.5; }
+.task-shift-choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; max-height: 210px; overflow-y: auto; }
+.task-shift-choice { padding: 9px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text-muted); text-align: left; cursor: pointer; font-size: 12px; line-height: 1.5; }
+.task-shift-choice:hover, .task-shift-choice[aria-pressed="true"] { border-color: var(--accent); color: var(--text); background: var(--card-bg); }
+.repair-step-tabs { display: flex; gap: 6px; margin-bottom: 16px; }
+.repair-step-tab { flex: 1; padding: 11px 8px; background: var(--bg); color: var(--text-muted); border: 1px solid var(--border); border-radius: 8px; font-weight: 700; cursor: pointer; }
+.repair-step-tab[aria-selected="true"] { color: #fff; background: var(--accent); border-color: var(--accent); }
+#repairForm .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+#repairForm .form-group { min-width: 0; }
+#repairForm .form-input, #repairForm .form-select, #repairForm .form-textarea { max-width: 100%; min-width: 0; }
+#repairForm .quick-tmpl-btn { background: var(--bg); color: var(--text-muted); border: 1px solid var(--border); font: inherit; font-size: 11px; padding: 6px 8px; cursor: pointer; border-radius: 6px; }
+#repairForm .quick-tmpl-btn:hover { border-color: var(--accent); color: var(--text); }
+.invoice-switch { display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 10px 0; color: var(--text); font-size: 13px; font-weight: 600; }
+.invoice-switch input { appearance: none; flex: 0 0 38px; width: 38px; height: 22px; border: 1px solid var(--border); background: var(--bg); border-radius: 12px; cursor: pointer; position: relative; }
+.invoice-switch input::after { content: ''; position: absolute; width: 14px; height: 14px; border-radius: 50%; top: 3px; left: 3px; background: var(--text-muted); }
+.invoice-switch input:checked { background: var(--accent); border-color: var(--accent); }
+.invoice-switch input:checked::after { left: 19px; background: #fff; }
+.reference-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.reference-toolbar h2 { font-size: 15px; }
+.reference-edit-btn { align-self: center; padding: 6px 8px; background: transparent; color: var(--text-muted); border: 1px solid transparent; border-radius: 6px; font-size: 12px; cursor: pointer; }
+.reference-edit-btn:hover { color: var(--text); border-color: var(--border); }
+.reference-editor-form { display: flex; flex-direction: column; gap: 12px; }
+.reference-editor-form label { display: flex; flex-direction: column; gap: 6px; color: var(--text-muted); font-size: 12px; }
+.reference-editor-form textarea { min-height: 80px; }
+.reference-editor-form input, .reference-editor-form textarea, .reference-editor-form select { width: 100%; }
+.notes-text { min-width: 135px; }
+.invoice-label { margin-top: 6px; color: var(--today-border); font-size: 11px; font-weight: 700; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+@media (max-width: 768px) {
+  .top-header-bar .module-switch { width: 100%; }
+  .module-switch a { flex: 1; padding: 10px 6px; }
+  .task-modal-item .task-modal-content, .cycle-task-row .cycle-task-left { flex: 1 0 100%; width: 100%; }
+  .task-modal-item .task-actions, .cycle-task-row .task-actions { margin-left: auto; }
+  .task-modal-item, .cycle-task-row { flex-wrap: wrap; }
+  .global-taskbar-item { flex-wrap: wrap; }
+  .global-taskbar-item .taskbar-text-wrap { flex: 1 0 100%; flex-wrap: wrap; }
+  .taskbar-text-wrap .taskbar-text { flex: 1; min-width: 120px; }
+  #repairForm .form-grid { grid-template-columns: minmax(0, 1fr); }
+  #repairForm .form-col-2 { grid-column: auto; }
+  #repairForm .modal-footer { flex-wrap: wrap; gap: 8px; }
+  #repairForm .form-input, #repairForm .form-select, #repairForm .form-textarea, .task-editor-form textarea, .task-editor-form input { font-size: 16px; }
+  .task-shift-choices { grid-template-columns: minmax(0, 1fr); }
+}

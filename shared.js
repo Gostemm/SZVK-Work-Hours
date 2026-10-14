@@ -96,6 +96,7 @@
             <span class="status-dot" id="cloudSyncDot"></span>
             <span id="cloudSyncText">Дані збережено</span>
           </div>
+          <button type="button" class="btn" id="${options.historyId || 'btnTabHistory'}">📜 Історія дій</button>
           ${options.backup
             ? '<button type="button" class="btn" id="btnOpenExportModal">💾 Бекап / Експорт</button>'
             : '<a class="btn" href="trackers.html?backup=1">💾 Бекап трекерів</a>'}
@@ -149,6 +150,11 @@
     if (year < 1000 || year > 9999) return false;
     const date = new Date(year, month - 1, day);
     return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
+  }
+
+  function needsInvoice(repair) {
+    if (typeof repair.needInvoice === 'boolean') return repair.needInvoice;
+    return ((repair.notes || '') + ' ' + (repair.solution || '')).toLowerCase().includes('рахунок');
   }
 
   // Change the day and/or text without changing identity, author, or completion.
@@ -287,6 +293,7 @@
     logoutAccount,
     initAccountMenu,
     isValidDateKey,
+    needsInvoice,
     updateTask,
     restoreTaskMove,
     initThemeSwitcher,
