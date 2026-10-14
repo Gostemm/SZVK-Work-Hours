@@ -5,13 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>⏱️ SZVK Work Hours</title>
 
-  <script src="shared.js?v=a4dfbfb08ddb"></script>
+  <script src="shared.js?v=eca99a5b26c8"></script>
 
   <!-- Firebase App & Firestore SDKs (Compat) -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 
-  <link rel="stylesheet" href="shared.css?v=28ca058e1ca1">
+  <link rel="stylesheet" href="shared.css?v=2ecc12a973a4">
 
   <style>
     :root {
@@ -2270,7 +2270,7 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-  const requiredSharedMethods = ['mountAccountMenu', 'updateAccount', 'escapeHtml', 'formatHistoryTime', 'initThemeSwitcher', 'updateTask', 'restoreTaskMove', 'debounce', 'setHtmlIfChanged'];
+  const requiredSharedMethods = ['mountAccountMenu', 'updateAccount', 'escapeHtml', 'formatHistoryTime', 'initThemeSwitcher', 'updateTask', 'restoreTaskMove', 'debounce', 'setHtmlIfChanged', 'shiftInfo'];
   if (!window.SZVKShared || requiredSharedMethods.some(name => typeof window.SZVKShared[name] !== 'function')) {
     const message = document.getElementById('loginErrorMessage');
     message.textContent = 'Не вдалося завантажити оновлення сервісу. Оновіть сторінку.';
@@ -3641,7 +3641,6 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  const BASE_DATE = new Date(2026, 8, 1);
   let currentSeasonIndex = 0; 
   let selectedMonthRelative = 0; 
   let activeTab = "calendar"; 
@@ -3697,15 +3696,12 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function getBaseWorker(date) {
-    const diffDays = Math.floor((date.getTime() - BASE_DATE.getTime()) / (1000 * 60 * 60 * 24));
-    const cycleIndex = Math.floor(diffDays / 3);
-    return (((cycleIndex % 2) + 2) % 2 === 0) ? "Артем" : "Олександр";
+    return window.SZVKShared.shiftInfo(formatDateKey(date.getFullYear(), date.getMonth(), date.getDate())).scheduledWorker;
   }
 
   function getAssignedWorker(year, month, day) {
     const key = formatDateKey(year, month, day);
-    if (window.overrides && window.overrides[key]) return { worker: window.overrides[key], isEdited: true };
-    return { worker: getBaseWorker(new Date(year, month, day)), isEdited: false };
+    return window.SZVKShared.shiftInfo(key, window.overrides || {});
   }
 
   function toggleShift(year, month, day) {
@@ -3756,6 +3752,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   let activeTaskEdit = null;
   let taskEditorReturnFocus = null;
+  let taskShiftChoicesSignature = '';
 
   function openTaskEditor(dateKey, taskId, mode = 'edit') {
     const task = getDayTasks(dateKey).find(item => String(item.id) === String(taskId));
@@ -3784,26 +3781,46 @@ document.addEventListener("DOMContentLoaded", function () {
     const [year, month, day] = dateKey.split('-').map(Number);
     const assignment = getAssignedWorker(year, month - 1, day);
     const label = new Date(year, month - 1, day).toLocaleDateString('uk-UA', {
-      weekday: 'short', day: 'numeric', month: 'long', year: 'numeric'
+      weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric'
     });
-    return `${label} · ${assignment.worker}${assignment.isEdited ? ' (підміна)' : ''}`;
+    return `${label} · ${assignment.worker}${assignment.isEdited ? ' (підміна)' : ''} · зміна №${assignment.shiftNum} з 3`;
   }
 
   function updateTaskShiftPreview() {
     const dateKey = document.getElementById('taskEditorDate').value;
     const label = taskShiftLabel(dateKey);
-    document.getElementById('taskEditorShift').textContent = label ? 'Зміна: ' + label : 'Оберіть дату, щоб побачити працівника зміни.';
-    document.querySelectorAll('#taskEditorShiftChoices button').forEach(button => {
-      button.textContent = taskShiftLabel(button.dataset.date);
-      button.setAttribute('aria-pressed', String(button.dataset.date === dateKey));
-    });
+    const preview = document.getElementById('taskEditorShift');
+    const info = window.SZVKShared.shiftInfo(dateKey, window.overrides || {});
+    preview.className = 'task-shift-preview' + (info ? info.worker === 'Артем' ? ' artem' : ' oleksandr' : '');
+    preview.textContent = label || 'Оберіть дату, щоб побачити працівника зміни.';
+    if (activeTaskEdit) renderTaskShiftChoices(activeTaskEdit.dateKey);
   }
 
   function renderTaskShiftChoices(sourceDateKey) {
     const choices = document.getElementById('taskEditorShiftChoices');
+    const signature = JSON.stringify([sourceDateKey, window.overrides || {}]);
+    if (signature === taskShiftChoicesSignature) {
+      const selectedDate = document.getElementById('taskEditorDate').value;
+      choices.querySelectorAll('button').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.date === selectedDate)));
+      return;
+    }
+    taskShiftChoicesSignature = signature;
     choices.replaceChildren();
     const [year, month, day] = sourceDateKey.split('-').map(Number);
     const date = new Date(year, month - 1, day);
+    const selectedDate = document.getElementById('taskEditorDate').value;
+    const groups = new Map();
+    for (const worker of ['Артем', 'Олександр']) {
+      const group = document.createElement('section');
+      group.className = 'task-worker-group ' + (worker === 'Артем' ? 'artem' : 'oleksandr');
+      const title = document.createElement('h4');
+      title.textContent = worker;
+      group.appendChild(title);
+      const list = document.createElement('div');
+      list.className = 'task-worker-shifts';
+      group.appendChild(list);
+      groups.set(worker, { group, list });
+    }
     for (let offset = 1; offset <= 9; offset++) {
       date.setDate(date.getDate() + 1);
       const key = formatDateKey(date.getFullYear(), date.getMonth(), date.getDate());
@@ -3811,13 +3828,20 @@ document.addEventListener("DOMContentLoaded", function () {
       button.type = 'button';
       button.className = 'task-shift-choice';
       button.dataset.date = key;
-      button.textContent = taskShiftLabel(key);
+      const info = window.SZVKShared.shiftInfo(key, window.overrides || {});
+      const dateLabel = date.toLocaleDateString('uk-UA', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
+      button.innerHTML = `<strong>Зміна №${info.shiftNum}</strong>${info.isEdited ? '<span class="task-shift-substitution">Підміна</span>' : ''}<span>${escapeHtml(dateLabel)}</span>`;
+      button.setAttribute('aria-label', taskShiftLabel(key));
+      button.setAttribute('aria-pressed', String(key === selectedDate));
       button.onclick = () => {
         document.getElementById('taskEditorDate').value = key;
         updateTaskShiftPreview();
       };
-      choices.appendChild(button);
+      groups.get(info.worker).list.appendChild(button);
     }
+    const upcomingGroups = [...groups.values()].filter(({ list }) => list.childElementCount)
+      .sort((a, b) => a.list.firstElementChild.dataset.date.localeCompare(b.list.firstElementChild.dataset.date));
+    for (const { group } of upcomingGroups) choices.appendChild(group);
   }
 
   document.getElementById('taskEditorDate').addEventListener('input', updateTaskShiftPreview);

@@ -70,6 +70,13 @@ async function main() {
       repairs: [{ id:1,date:'13.10.2026',vehicle:'TEST-001',carrier:'Тестовий перевізник',reportedBy:'Тестовий заявник',serial:'000001',issue:'Немає GPS',specialist:'Саша_old',repairDate:'',solution:'',notes:'ВИСТАВИТИ РАХУНОК' }],
       inventory: [], atCommands: [{ id:1,cmd:'AT+TEST',desc:'Тестова команда',notes:'' }]
     };
+    const repair = (id, date, repairDate = '') => ({ id, date, repairDate, vehicle:'ARCHIVE-' + id,carrier:'Тестовий перевізник',serial:'TEST-' + id,issue:'Тестовий ремонт ' + id,specialist:repairDate ? 'Артем' : '',solution:repairDate ? 'Виконано' : '',notes:'' });
+    trackerFixture.repairs.push(repair(2,'08.10.2026'),repair(3,'07.10.2026'),repair(4,'01.09.2026','14.10.2026'),repair(5,'15.10.2026'));
+    for (let i=10;i<75;i++) trackerFixture.repairs.push(repair(i,'30.09.2026'));
+    trackerFixture.inventory = [
+      {id:1,serial:'TEST-OFFICE',receivedDate:'13.10.2026',status:'Офіс',assignedTo:''},
+      {id:2,serial:'TEST-INSTALLED',receivedDate:'13.10.2026',status:'Встановлено',assignedTo:'Тестовий перевізник'}
+    ];
     const scheduleFixture = { overrides: {'2026-10-15':'Олександр'}, dayNotes: {'2026-10-14':[{id:'test-task',text:'Перевірити трекер та живлення у тестовому автобусі',author:'Олександр',done:false}]},monthlyDebts:{},monthFocusNotes:{} };
     await call('Page.addScriptToEvaluateOnNewDocument', { source: `
       window.Date = class extends Date { constructor(...args) { super(...(args.length ? args : ['2026-10-14T12:00:00+03:00'])); } static now() { return new Date('2026-10-14T12:00:00+03:00').getTime(); } };
@@ -93,6 +100,23 @@ async function main() {
     await waitFor("typeof window.editRepair==='function'");
     assert.equal(await evaluate("document.querySelector('#tabBtnHistory').closest('.account-panel')!==null"), true);
     assert.equal(await evaluate("document.querySelector('.brand-badge')===null && document.querySelector('#atSearchInput')===null"), true);
+    assert.deepEqual(await evaluate("[...document.querySelectorAll('.recent-repair-card')].map(card=>Number(card.dataset.repairId)).sort((a,b)=>a-b)"),[1,2,4]);
+    assert.equal(await evaluate("document.querySelector('.recent-repair-card').dataset.repairId"),'4','today’s completed old request appears first');
+    assert.equal(await evaluate("document.querySelector('#repairArchive').open"),false);
+    assert.equal(await evaluate("document.querySelector('#repairTableBody').children.length"),0,'full table stays unmounted while collapsed');
+    const weeklyShot = await call('Page.captureScreenshot',{format:'png'});
+    fs.writeFileSync(path.join(artifacts,'weekly-repairs-mobile.png'),Buffer.from(weeklyShot.data,'base64'));
+    await evaluate("document.querySelector('#repairArchive').open=true");
+    await waitFor("document.querySelector('#repairTableBody').children.length===50");
+    await evaluate("document.querySelector('#pageSizeSelect').value='all';document.querySelector('#pageSizeSelect').dispatchEvent(new Event('change'))");
+    assert.equal(await evaluate("document.querySelector('#repairTableBody').children.length"),70);
+    await evaluate("document.querySelector('#repairArchive').open=false");
+    await waitFor("document.querySelector('#repairTableBody').children.length===0");
+    await evaluate("document.querySelector('#globalSearchInput').value='ARCHIVE-74';document.querySelector('#globalSearchInput').dispatchEvent(new Event('input'))");
+    await waitFor("document.querySelector('.recent-repairs-empty')!==null");
+    await evaluate("document.querySelector('[data-open-archive]').click()");
+    await waitFor("document.querySelector('#repairTableBody').children.length===1");
+    await evaluate("document.querySelector('#searchClearBtn').click();document.querySelector('#repairArchive').open=false");
     await evaluate("document.querySelector('#btnOpenAddModal').click()");
     assert.equal(await evaluate("!document.querySelector('#repairRequestPanel').hidden && document.querySelector('#repairResultPanel').hidden"),true);
     await evaluate(`document.querySelector('#inputVehicle').value='TEST-002';document.querySelector('#inputCarrierSelect').value='Тестовий перевізник';document.querySelector('#inputCarrierSelect').dispatchEvent(new Event('change'));document.querySelector('[data-issue]').click();document.querySelector('#btnSaveRepairModal').click()`);
@@ -113,6 +137,21 @@ async function main() {
     await evaluate(`document.querySelector('#btnOpenAddModal').click();document.querySelector('#inputVehicle').value='TEST-003';document.querySelector('#inputCarrierSelect').value='__custom';document.querySelector('#inputCarrierSelect').dispatchEvent(new Event('change'));document.querySelector('#inputCarrierCustom').value='Новий тестовий перевізник';document.querySelector('#inputCarrierCustom').dispatchEvent(new Event('input'));document.querySelector('[data-issue]').click();document.querySelector('#btnSaveRepairModal').click()`);
     data = await evaluate("JSON.parse(localStorage.getItem('szvk_trackers_data'))");
     assert.equal(data.repairs[0].carrier,'Новий тестовий перевізник');
+    await evaluate("document.querySelector('#tabBtnInventory').click()");
+    assert.equal(await evaluate("document.querySelector('#invCountInstalled')===null && document.querySelector('#invCountTotal')===null"),true);
+    assert.equal(await evaluate("document.querySelector('#invCountOffice').textContent"),'1 шт');
+    await evaluate("document.querySelector('#btnOpenAddInventoryModal').click()");
+    const inventoryShot = await call('Page.captureScreenshot',{format:'png'});
+    fs.writeFileSync(path.join(artifacts,'inventory-carrier-mobile.png'),Buffer.from(inventoryShot.data,'base64'));
+    await evaluate("document.querySelector('#invInputSerial').value='TEST-SINGLE';document.querySelector('#invCarrierSelect').value='Тестовий перевізник';document.querySelector('#invCarrierSelect').dispatchEvent(new Event('change'));document.querySelector('#inventoryForm').requestSubmit()");
+    data = await evaluate("JSON.parse(localStorage.getItem('szvk_trackers_data'))");
+    assert.equal(data.inventory[0].assignedTo,'Тестовий перевізник');
+    await evaluate("document.querySelector('#btnOpenBulkInventoryModal').click();document.querySelector('#bulkCarrierSelect').value='Новий тестовий перевізник';document.querySelector('#bulkCarrierSelect').dispatchEvent(new Event('change'));document.querySelector('#bulkInputSerials').value='TEST-BULK-A\\nTEST-BULK-B';document.querySelector('#bulkInventoryForm').requestSubmit()");
+    data = await evaluate("JSON.parse(localStorage.getItem('szvk_trackers_data'))");
+    assert.equal(data.inventory.length,5);
+    assert.equal(data.inventory[0].assignedTo,'Новий тестовий перевізник');
+    assert.equal(data.inventory[1].assignedTo,'Новий тестовий перевізник');
+    assert.equal(await evaluate("document.querySelector('#invCountOffice').textContent"),'4 шт');
     await evaluate("document.querySelector('#tabBtnAtCommands').click();document.querySelector('#btnEditCommands').click()");
     const editedCommand = 'AT+TEST="quoted",\'apostrophe\'\nAT+SECOND';
     await evaluate(`document.querySelector('#referenceCommandText').value=${JSON.stringify(editedCommand)};document.querySelector('#referenceEditorForm').requestSubmit()`);
@@ -154,6 +193,13 @@ async function main() {
     fs.writeFileSync(path.join(artifacts,'work-hours-mobile.png'),Buffer.from(shot.data,'base64'));
     await evaluate("document.querySelector('.move-task').click();document.querySelector('#taskEditorShiftChoices [data-date=\"2026-10-15\"]').click()");
     assert.equal(await evaluate("document.querySelector('#taskEditorShift').textContent.includes('Олександр (підміна)')"),true);
+    assert.equal(await evaluate("document.querySelector('#taskEditorShift').textContent.includes('зміна №3 з 3') && document.querySelector('#taskEditorShift').textContent.includes('четвер')"),true);
+    assert.equal(await evaluate("document.querySelector('#taskEditorShiftChoices [data-date=\"2026-10-15\"]').closest('.task-worker-group').classList.contains('oleksandr')"),true);
+    assert.equal(await evaluate("document.querySelectorAll('#taskEditorShiftChoices .task-worker-group').length"),2);
+    assert.equal(await evaluate("[...document.querySelectorAll('#taskEditorShiftChoices button')].every(button=>button.scrollHeight<=button.clientHeight)"),true,'shift dates must not be clipped');
+    assert.equal(await evaluate("getComputedStyle(document.querySelector('.task-modal-text')).fontWeight"),'650');
+    const shiftShot=await call('Page.captureScreenshot',{format:'png'});
+    fs.writeFileSync(path.join(artifacts,'shift-transfer-mobile.png'),Buffer.from(shiftShot.data,'base64'));
     await evaluate("document.querySelector('#taskEditorSave').click()");
     const schedule = await evaluate("JSON.parse(localStorage.getItem('szvk_schedule_local_data'))");
     assert.equal(schedule.dayNotes['2026-10-14'],undefined);
@@ -163,7 +209,7 @@ async function main() {
     await evaluate("document.querySelector('#taskEditorModal').classList.remove('active');document.querySelector('#modalDayCloseX').click();document.querySelector('#userProfileMenu').open=true;document.querySelector('#btnTabHistory').click()");
     assert.equal(await evaluate("document.querySelector('#historyView').style.display==='block' && !document.querySelector('#userProfileMenu').open"),true);
     assert.equal(errors.length,0,JSON.stringify(errors));
-    console.log('Browser checks passed: repair workflow, legacy values, custom specialist, invoice, command editing/copy, firmware persistence, responsive notes, profile history, shift transfer.');
+    console.log('Browser checks passed: weekly repairs and archive, warehouse carrier menus/count, dark typography, colored shift groups/numbers, repair workflow, legacy values, references, responsive notes, history.');
     console.log('Screenshots: ' + artifacts);
   } finally {
     if (socket) socket.close();

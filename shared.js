@@ -157,6 +157,44 @@
     return ((repair.notes || '') + ' ' + (repair.solution || '')).toLowerCase().includes('рахунок');
   }
 
+  function shiftInfo(dateKey, overrides = {}) {
+    if (!isValidDateKey(dateKey)) return null;
+    const [year, month, day] = dateKey.split('-').map(Number);
+    const days = Math.round((Date.UTC(year, month - 1, day) - Date.UTC(2026, 8, 1)) / 86400000);
+    const cycleIndex = Math.floor(days / 3);
+    const scheduledWorker = ((cycleIndex % 2) + 2) % 2 === 0 ? 'Артем' : 'Олександр';
+    return {
+      worker: overrides[dateKey] || scheduledWorker,
+      scheduledWorker,
+      isEdited: Boolean(overrides[dateKey]),
+      shiftNum: ((days % 3) + 3) % 3 + 1,
+      cycleIndex
+    };
+  }
+
+  function kyivDateKey(now = new Date()) {
+    const parts = new Intl.DateTimeFormat('en', { timeZone: 'Europe/Kiev', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(now);
+    const value = type => parts.find(part => part.type === type).value;
+    return `${value('year')}-${value('month')}-${value('day')}`;
+  }
+
+  function repairDay(value) {
+    const text = String(value || '').trim();
+    const match = text.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+    const key = match ? `${match[3]}-${match[2].padStart(2, '0')}-${match[1].padStart(2, '0')}` : text;
+    if (!isValidDateKey(key)) return NaN;
+    const [year, month, day] = key.split('-').map(Number);
+    return Date.UTC(year, month - 1, day) / 86400000;
+  }
+
+  function isRecentRepair(repair, todayKey = kyivDateKey()) {
+    const today = repairDay(todayKey);
+    return [repair.date, repair.repairDate].some(value => {
+      const day = repairDay(value);
+      return day >= today - 6 && day <= today;
+    });
+  }
+
   // Change the day and/or text without changing identity, author, or completion.
   function updateTask(dayNotes, sourceDateKey, taskId, text, targetDateKey) {
     const cleanText = String(text || '').trim();
@@ -294,6 +332,9 @@
     initAccountMenu,
     isValidDateKey,
     needsInvoice,
+    shiftInfo,
+    kyivDateKey,
+    isRecentRepair,
     updateTask,
     restoreTaskMove,
     initThemeSwitcher,

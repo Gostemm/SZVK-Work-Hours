@@ -17,13 +17,13 @@
       }
     })();
   </script>
-  <script src="shared.js?v=a4dfbfb08ddb"></script>
+  <script src="shared.js?v=eca99a5b26c8"></script>
 
   <!-- Firebase App & Firestore SDKs (Compat) -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 
-  <link rel="stylesheet" href="shared.css?v=28ca058e1ca1">
+  <link rel="stylesheet" href="shared.css?v=2ecc12a973a4">
 
   <style>
     :root {
@@ -1900,6 +1900,22 @@
       <span class="filter-chip chip-bill" data-filter="invoice">💳 Виставити рахунок</span>
     </div>
 
+    <section class="recent-repairs-section" aria-labelledby="recentRepairsTitle">
+      <div class="recent-repairs-heading">
+        <h2 id="recentRepairsTitle">Останні 7 днів</h2>
+        <span id="recentRepairsRange" class="recent-repairs-range"></span>
+      </div>
+      <p class="recent-repairs-hint">Звернення та виконані роботи. Старіші записи — у повному журналі нижче.</p>
+      <div class="recent-repairs-list" id="recentRepairsList"></div>
+    </section>
+
+    <details class="repair-archive" id="repairArchive">
+      <summary>
+        <span class="repair-archive-title">📋 Повний журнал ремонтів</span>
+        <span id="repairArchiveCount" class="repair-archive-count"></span>
+        <span class="repair-archive-action" aria-hidden="true"></span>
+      </summary>
+      <div class="repair-archive-content">
     <!-- Table Mode -->
     <div class="table-container" id="tableModeContainer">
       <table class="repair-table">
@@ -1934,6 +1950,8 @@
           <option value="25">25</option>
           <option value="50" selected>50</option>
           <option value="100">100</option>
+          <option value="250">250</option>
+          <option value="500">500</option>
           <option value="all">Всі</option>
         </select>
         <button class="btn" id="btnPrevPage" style="padding: 4px 8px;">◀</button>
@@ -1941,6 +1959,8 @@
         <button class="btn" id="btnNextPage" style="padding: 4px 8px;">▶</button>
       </div>
     </div>
+      </div>
+    </details>
   </div>
 
   <!-- VIEW 2: NEW TRACKERS (WAREHOUSE & INSTALLED) -->
@@ -1950,14 +1970,6 @@
         <div class="inv-stat-item">
           <span class="inv-stat-label">🏢 Вільні на складі (Офіс)</span>
           <span class="inv-stat-count inv-count-office" id="invCountOffice">6 шт</span>
-        </div>
-        <div class="inv-stat-item">
-          <span class="inv-stat-label">🚌 Встановлено на маршрути</span>
-          <span class="inv-stat-count inv-count-installed" id="invCountInstalled">19 шт</span>
-        </div>
-        <div class="inv-stat-item">
-          <span class="inv-stat-label">📦 Всього нових трекерів</span>
-          <span class="inv-stat-count inv-count-total" id="invCountTotal">25 шт</span>
         </div>
       </div>
 
@@ -2282,8 +2294,9 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label">Кому / Куди встановлено</label>
-          <input type="text" class="form-input" id="invInputAssigned" placeholder="ТЕТ, Водоканал, номер авто...">
+          <label class="form-label" for="invCarrierSelect">Перевізник / Кому призначено</label>
+          <select class="form-select" id="invCarrierSelect"></select>
+          <input type="text" class="form-input" id="invInputAssigned" placeholder="Назва перевізника або власна примітка" aria-label="Інший перевізник або примітка" hidden>
         </div>
       </div>
 
@@ -2331,8 +2344,9 @@
         </div>
 
         <div class="form-group form-col-2">
-          <label class="form-label">Кому призначено / Примітка до партії (необов'язково)</label>
-          <input type="text" class="form-input" id="bulkInputAssigned" placeholder="Наприклад: Нова поставка, партія з заводу або ТЕТ, Водоканал...">
+          <label class="form-label" for="bulkCarrierSelect">Перевізник / Кому призначено партію</label>
+          <select class="form-select" id="bulkCarrierSelect"></select>
+          <input type="text" class="form-input" id="bulkInputAssigned" placeholder="Назва перевізника або примітка до партії" aria-label="Інший перевізник або примітка до партії" hidden>
         </div>
       </div>
 
@@ -3181,6 +3195,31 @@
     document.querySelectorAll('.calendar-popover').forEach(popover => popover.classList.remove('active'));
   }
 
+  function populateInventoryCarrierSelect(selectId, inputId) {
+    populateCarriersDatalist();
+    const select = document.getElementById(selectId);
+    const input = document.getElementById(inputId);
+    select.replaceChildren(new Option('Офіс / без перевізника', ''));
+    [...document.getElementById('carrierDatalist').options]
+      .map(option => option.value).sort((a, b) => a.localeCompare(b, 'uk'))
+      .forEach(carrier => select.add(new Option(carrier, carrier)));
+    select.add(new Option('Інший перевізник / власна примітка…', '__custom'));
+    input.value = '';
+    input.hidden = true;
+    input.required = false;
+  }
+
+  for (const [selectId, inputId] of [['invCarrierSelect', 'invInputAssigned'], ['bulkCarrierSelect', 'bulkInputAssigned']]) {
+    document.getElementById(selectId).addEventListener('change', event => {
+      const input = document.getElementById(inputId);
+      const custom = event.target.value === '__custom';
+      input.hidden = !custom;
+      input.required = custom;
+      input.value = custom ? '' : event.target.value;
+      if (custom) input.focus();
+    });
+  }
+
   function setRepairCarrier(value, refresh = true) {
     if (refresh) populateCarriersDatalist();
     const select = document.getElementById('inputCarrierSelect');
@@ -3363,15 +3402,75 @@
     return list;
   }
 
-  // Render Repairs Table
+  function renderRecentRepairs(items, todayKey) {
+    const [year, month, day] = todayKey.split('-').map(Number);
+    const last = new Date(year, month - 1, day);
+    const first = new Date(year, month - 1, day - 6);
+    const format = date => date.toLocaleDateString('uk-UA', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    document.getElementById('recentRepairsRange').textContent = format(first) + ' — ' + format(last);
+    const container = document.getElementById('recentRepairsList');
+    if (!items.length) {
+      window.SZVKShared.setHtmlIfChanged(container, '<div class="recent-repairs-empty"><p>За останні 7 днів записів за цими фільтрами немає.</p><button type="button" class="btn" data-open-archive>Відкрити повний журнал</button></div>');
+      return;
+    }
+    const entries = items.map(item => {
+      const dates = [item.date, item.repairDate].filter(date => window.SZVKShared.isRecentRepair({ date }, todayKey));
+      dates.sort((a, b) => dateTimestamp(b) - dateTimestamp(a));
+      return { item, date: dates[0] };
+    }).sort((a, b) => dateTimestamp(b.date) - dateTimestamp(a.date));
+    const html = entries.map(({ item, date }) => {
+      const pending = isRepairPending(item);
+      const recentWork = date === item.repairDate;
+      return `
+        <article class="recent-repair-card" data-repair-id="${escapeHtml(item.id)}">
+          <div class="recent-repair-header">
+            <strong class="recent-repair-vehicle">Авто ${escapeHtml(item.vehicle || '—')}</strong>
+            <span class="recent-repair-date">${recentWork ? 'Робота' : 'Звернення'}: ${escapeHtml(date)}</span>
+          </div>
+          <div class="recent-repair-carrier">${escapeHtml(item.carrier || 'Без перевізника')} · S/N ${escapeHtml(item.serial || '—')}</div>
+          <p class="recent-repair-issue" title="${escapeHtml(item.issue)}">${escapeHtml(item.issue || 'Проблему не вказано')}</p>
+          ${item.solution ? `<p class="recent-repair-solution" title="${escapeHtml(item.solution)}">${escapeHtml(item.solution)}</p>` : ''}
+          <div class="recent-repair-meta">
+            <span class="recent-repair-status ${pending ? 'pending' : 'completed'}">${pending ? '⏳ В роботі' : '✓ Виконано'}</span>
+            ${getTechBadgeHtml(item.specialist)}
+            ${window.SZVKShared.needsInvoice(item) ? '<span class="invoice-label">💳 Потрібен рахунок</span>' : ''}
+          </div>
+          <div class="recent-repair-actions">
+            <button type="button" class="btn" data-edit-repair="${escapeHtml(item.id)}">Відкрити запис</button>
+            ${pending ? `<button type="button" class="btn btn-primary" data-finish-repair="${escapeHtml(item.id)}">Завершити ремонт</button>` : ''}
+          </div>
+        </article>`;
+    }).join('');
+    window.SZVKShared.setHtmlIfChanged(container, html);
+  }
+
+  document.getElementById('recentRepairsList').addEventListener('click', event => {
+    const edit = event.target.closest('[data-edit-repair]');
+    const finish = event.target.closest('[data-finish-repair]');
+    if (edit) window.editRepair(Number(edit.dataset.editRepair));
+    else if (finish) window.finishRepair(Number(finish.dataset.finishRepair));
+    else if (event.target.closest('[data-open-archive]')) document.getElementById('repairArchive').open = true;
+  });
+  document.getElementById('repairArchive').addEventListener('toggle', renderRepairs);
+
+  // The full table is rendered only while its disclosure is open.
   function renderRepairs() {
     if (activeTab !== 'journal') return;
-    const key = [dataVersions.repairs, searchQuery, activeFilterChip, specialistFilter, monthFilter, sortField, sortDirection, currentPage, pageSize].join('|');
+    const todayKey = window.SZVKShared.kyivDateKey();
+    const archive = document.getElementById('repairArchive');
+    const key = [dataVersions.repairs, searchQuery, activeFilterChip, specialistFilter, monthFilter, sortField, sortDirection, currentPage, pageSize, todayKey, archive.open].join('|');
     if (renderedViews.journal === key) return;
     renderedViews.journal = key;
     const filtered = getFilteredRepairs();
     const totalCount = filtered.length;
-    filteredCountBadge.textContent = `(показано: ${totalCount})`;
+    const recent = filtered.filter(item => window.SZVKShared.isRecentRepair(item, todayKey));
+    filteredCountBadge.textContent = `(${recent.length} за 7 днів)`;
+    document.getElementById('repairArchiveCount').textContent = `${totalCount} записів`;
+    renderRecentRepairs(recent, todayKey);
+    if (!archive.open) {
+      window.SZVKShared.reconcileRows(repairTableBody, [], () => '');
+      return;
+    }
 
     // Pagination calculations
     let effectivePageSize = pageSize === 'all' ? totalCount : parseInt(pageSize, 10);
@@ -3477,8 +3576,6 @@
     const officeList = sortedOffice;
     const installedList = sortedInstalled;
     document.getElementById('invCountOffice').textContent = officeList.length + ' шт';
-    document.getElementById('invCountInstalled').textContent = installedList.length + ' шт';
-    document.getElementById('invCountTotal').textContent = appData.inventory.length + ' шт';
     renderOfficeChoices();
 
     let list = [];
@@ -4749,6 +4846,7 @@
   // Inventory Modal Open / Close
   btnOpenAddInventoryModal.addEventListener('click', () => {
     inventoryForm.reset();
+    populateInventoryCarrierSelect('invCarrierSelect', 'invInputAssigned');
     document.getElementById('invInputDate').value = getTodayString();
     inventoryModalOverlay.classList.add('active');
   });
@@ -4851,6 +4949,7 @@
 
   function openBulkInvModal() {
     bulkInventoryForm.reset();
+    populateInventoryCarrierSelect('bulkCarrierSelect', 'bulkInputAssigned');
     document.getElementById('bulkInputDate').value = getTodayString();
     document.getElementById('bulkInputStatus').value = 'Офіс';
     document.getElementById('bulkInputAssigned').value = '';

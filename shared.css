@@ -621,3 +621,68 @@ body {
   #repairForm .form-input, #repairForm .form-select, #repairForm .form-textarea, .task-editor-form textarea, .task-editor-form input { font-size: 16px; }
   .task-shift-choices { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* Worker colors follow the actual assigned shift, including substitutions. */
+.task-shift-choices { grid-template-columns: repeat(2, minmax(0, 1fr)); max-height: none; overflow: visible; align-items: start; gap: 8px; }
+.task-worker-group { --worker-color: var(--artem); --worker-tint: rgba(139, 92, 246, 0.12); min-width: 0; padding: 8px; border: 1px solid var(--worker-color); border-radius: 10px; background: var(--worker-tint); }
+.task-worker-group.oleksandr, .task-shift-preview.oleksandr { --worker-color: var(--oleksandr); --worker-tint: rgba(16, 185, 129, 0.12); }
+.task-worker-group h4 { color: var(--text); border-left: 4px solid var(--worker-color); padding-left: 8px; font-size: 14px; margin-bottom: 10px; }
+.task-worker-shifts { display: flex; flex-direction: column; gap: 6px; max-height: 245px; overflow-y: auto; }
+.task-worker-group .task-shift-choice { display: flex; flex: 0 0 auto; flex-direction: column; gap: 3px; min-height: 60px; padding: 8px 6px; font-size: 12px; font-weight: 600; }
+.task-shift-substitution { color: var(--worker-color); font-weight: 700; }
+.task-shift-choice strong { color: var(--text); font-size: 13px; }
+.task-worker-group .task-shift-choice:hover, .task-worker-group .task-shift-choice[aria-pressed="true"] { border-color: var(--worker-color); background: var(--worker-tint); }
+.task-worker-group .task-shift-choice[aria-pressed="true"] { box-shadow: inset 3px 0 var(--worker-color); }
+.task-shift-preview.artem { --worker-color: var(--artem); --worker-tint: rgba(139, 92, 246, 0.12); }
+.task-shift-preview.artem, .task-shift-preview.oleksandr { border-color: var(--worker-color); background: var(--worker-tint); border-left-width: 4px; font-weight: 650; }
+
+.recent-repairs-section { display: flex; flex-direction: column; gap: 12px; }
+.recent-repairs-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.recent-repairs-heading h2 { font-size: 17px; font-weight: 750; }
+.recent-repairs-range, .recent-repairs-hint { color: var(--text-muted); font-size: 13px; line-height: 1.5; }
+.recent-repairs-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.recent-repair-card { display: flex; flex-direction: column; gap: 10px; padding: 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--bg); min-width: 0; }
+.recent-repair-header { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.recent-repair-vehicle { font-size: 16px; color: var(--text); }
+.recent-repair-date, .recent-repair-carrier { color: var(--text-muted); font-size: 13px; line-height: 1.5; overflow-wrap: break-word; }
+.recent-repair-issue, .recent-repair-solution { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; font-size: 14px; line-height: 1.55; overflow-wrap: break-word; }
+.recent-repair-issue { color: var(--text); font-weight: 650; }
+.recent-repair-solution { color: var(--text-muted); }
+.recent-repair-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: auto; }
+.recent-repair-status { font-size: 13px; font-weight: 700; }
+.recent-repair-status.pending { color: var(--today-border); }
+.recent-repair-status.completed { color: var(--oleksandr); }
+.recent-repair-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.recent-repair-meta .invoice-label { margin-top: 0; }
+.recent-repairs-empty { grid-column: 1 / -1; color: var(--text-muted); padding: 22px; border: 1px dashed var(--border); border-radius: 10px; font-size: 14px; line-height: 1.5; }
+.recent-repairs-empty .btn { margin-top: 12px; }
+.repair-archive { margin-top: 8px; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+.repair-archive > summary { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; cursor: pointer; padding: 16px; list-style: none; background: var(--bg); }
+.repair-archive > summary::-webkit-details-marker { display: none; }
+.repair-archive-title { font-size: 14px; font-weight: 700; }
+.repair-archive-count { color: var(--text-muted); font-size: 13px; }
+.repair-archive-action { margin-left: auto; font-size: 13px; color: var(--accent); font-weight: 700; }
+.repair-archive-action::after { content: 'Розгорнути ↓'; }
+.repair-archive[open] .repair-archive-action::after { content: 'Згорнути ↑'; }
+.repair-archive-content { display: flex; flex-direction: column; gap: 12px; padding: 14px; }
+#inventoryForm .form-grid, #bulkInventoryForm .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+#inventoryForm .form-group, #bulkInventoryForm .form-group { min-width: 0; }
+#inventoryForm .form-input, #inventoryForm .form-select, #bulkInventoryForm .form-input, #bulkInventoryForm .form-select { max-width: 100%; min-width: 0; }
+
+/* More substantial body text and clearer secondary text in dark mode. */
+html[data-theme="dark"] { --text-muted: #b8c5d8; }
+html[data-theme="dark"] body { font-weight: 500; }
+html[data-theme="dark"] .repair-table td { font-size: 14px; font-weight: 600; line-height: 1.5; }
+html[data-theme="dark"] :is(.issue-text, .solution-text, .notes-text, .task-modal-text, .cycle-task-text, .taskbar-text) { font-size: 14px; font-weight: 650; line-height: 1.5; }
+html[data-theme="dark"] :is(.form-input, .form-select, .form-textarea, .search-input) { font-size: 14px; font-weight: 600; }
+html[data-theme="dark"] :is(.btn, .filter-chip, .filter-select, .task-action-btn, .tab-btn, .main-tab-btn) { font-size: 13px; font-weight: 700; }
+html[data-theme="dark"] :is(.form-label, .reported-by-sub, .repair-form-hint, .at-notes, .at-item-desc, .history-item-details) { font-weight: 600; }
+@media (max-width: 768px) {
+  .recent-repairs-list { grid-template-columns: minmax(0, 1fr); }
+  .recent-repair-card { padding: 13px; }
+  .repair-archive-content { padding: 8px; }
+  #inventoryForm .form-grid, #bulkInventoryForm .form-grid { grid-template-columns: minmax(0, 1fr); }
+  #inventoryForm .form-col-2, #bulkInventoryForm .form-col-2 { grid-column: auto; }
+  #inventoryForm .form-input, #inventoryForm .form-select, #bulkInventoryForm .form-input, #bulkInventoryForm .form-select { font-size: 16px; }
+  html[data-theme="dark"] .main-tab-btn { white-space: normal; line-height: 1.4; }
+}

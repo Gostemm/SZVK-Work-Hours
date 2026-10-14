@@ -182,3 +182,38 @@ test('invoice toggle takes precedence over legacy invoice notes', () => {
   assert.equal(shared.needsInvoice({notes:'',needInvoice:true}), true);
   assert.equal(shared.needsInvoice({notes:'Поставили нову SIM'}), false);
 });
+
+test('shift numbers follow three-day cycles across boundaries and substitutions', () => {
+  for (const [date, worker, number] of [
+    ['2026-09-01','Артем',1], ['2026-09-03','Артем',3],
+    ['2026-09-04','Олександр',1], ['2026-09-06','Олександр',3],
+    ['2026-08-31','Олександр',3], ['2026-10-25','Артем',1],
+    ['2026-10-26','Артем',2], ['2027-01-01','Артем',3], ['2027-01-02','Олександр',1]
+  ]) {
+    const info = shared.shiftInfo(date);
+    assert.equal(info.worker,worker,date);
+    assert.equal(info.shiftNum,number,date);
+  }
+  const substituted = shared.shiftInfo('2026-10-15', {'2026-10-15':'Олександр'});
+  assert.equal(substituted.worker,'Олександр');
+  assert.equal(substituted.scheduledWorker,'Артем');
+  assert.equal(substituted.shiftNum,3);
+  assert.equal(substituted.isEdited,true);
+  assert.equal(shared.shiftInfo('2026-02-31'),null);
+});
+
+test('recent repairs include seven calendar days and newly completed old requests', () => {
+  const today = '2026-10-14';
+  for (const date of ['08.10.2026','14.10.2026','2026-10-13']) assert.equal(shared.isRecentRepair({date},today),true);
+  for (const date of ['07.10.2026','15.10.2026','31.02.2026','В процесі','']) assert.equal(shared.isRecentRepair({date},today),false);
+  assert.equal(shared.isRecentRepair({date:'01.09.2026',repairDate:'14.10.2026'},today),true);
+  assert.equal(shared.isRecentRepair({date:'01.09.2026',repairDate:'В процесі'},today),false);
+  assert.equal(shared.isRecentRepair({date:'24.02.2028'},'2028-03-01'),true);
+  assert.equal(shared.isRecentRepair({date:'23.02.2028'},'2028-03-01'),false);
+});
+
+test('the current journal day uses Kyiv time around midnight and clock changes', () => {
+  assert.equal(shared.kyivDateKey(new Date('2026-10-13T21:30:00Z')),'2026-10-14');
+  assert.equal(shared.kyivDateKey(new Date('2026-10-24T21:30:00Z')),'2026-10-25');
+  assert.equal(shared.kyivDateKey(new Date('2026-10-25T22:30:00Z')),'2026-10-26');
+});
