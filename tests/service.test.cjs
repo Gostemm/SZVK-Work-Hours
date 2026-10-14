@@ -143,6 +143,89 @@ test('unchanged task does not create a new action', () => {
   assert.equal(shared.updateTask(data,'2026-10-13','a','Завдання','2026-10-13').changed, false);
 });
 
+test('optional task time can be added, changed, cleared and preserved when moving', () => {
+  const data = { '2026-10-14': [{ id: 'time-task', text: 'Виклик', done: false, author: 'Артем' }] };
+  assert.equal(shared.updateTask(data, '2026-10-14', 'time-task', 'Виклик', '2026-10-14', '09:35').changed, true);
+  assert.equal(data['2026-10-14'][0].time, '09:35');
+  assert.equal(shared.updateTask(data, '2026-10-14', 'time-task', 'Виклик', '2026-10-14', '09:35').changed, false);
+  shared.updateTask(data, '2026-10-14', 'time-task', 'Виклик', '2026-10-15');
+  assert.equal(data['2026-10-15'][0].time, '09:35');
+  shared.updateTask(data, '2026-10-15', 'time-task', 'Виклик', '2026-10-15', '16:00');
+  shared.updateTask(data, '2026-10-15', 'time-task', 'Виклик', '2026-10-15', '');
+  assert.equal(Object.hasOwn(data['2026-10-15'][0], 'time'), false);
+});
+
+test('invalid task times cannot mutate or move a task', () => {
+  for (const time of ['24:00', '12:60', '9:00', '12:00:00', null]) {
+    const data = { '2026-10-14': [{ id: 'a', text: 'Виклик', time: '10:00' }] };
+    const before = JSON.stringify(data);
+    assert.throws(() => shared.updateTask(data, '2026-10-14', 'a', 'Виклик', '2026-10-15', time));
+    assert.equal(JSON.stringify(data), before);
+  }
+});
+
+test('rolling back a move restores time while keeping later completion', () => {
+  const data = { '2026-10-14': [{ id: 'a', text: 'Виклик', time: '10:00', done: false }] };
+  const result = shared.updateTask(data, '2026-10-14', 'a', 'Виклик', '2026-10-15', '12:00');
+  data['2026-10-15'][0].done = true;
+  shared.restoreTaskMove(data, { fromDateKey: '2026-10-14', toDateKey: '2026-10-15', taskId: 'a', previous: result.previous });
+  assert.equal(data['2026-10-14'][0].time, '10:00');
+  assert.equal(data['2026-10-14'][0].done, true);
+});
+
+test('new repairs create one compact note without importing legacy repairs', () => {
+  const data = { '2026-10-14': [{ id: 'manual', text: 'Нотатка' }] };
+  const repairs = [
+    { id: 1, date: '14.10.2026', carrier: 'Перевізник', vehicle: '123', issue: 'Довгий опис', workHoursTask: { dateKey: '2026-10-14', author: 'Артем' } },
+    { id: 2, date: '14.10.2026', carrier: 'Старий', vehicle: '456' }
+  ];
+  assert.equal(shared.reconcileRepairTasks(data, repairs), true);
+  assert.deepEqual(copy(data['2026-10-14'][1]), { id: 'repair-1', repairId: 1, text: 'Перевізник · 123', done: false, author: 'Артем' });
+  assert.equal(shared.reconcileRepairTasks(data, repairs), false);
+  assert.equal(data['2026-10-14'].length, 2);
+});
+
+test('repair completion and reopening follow a moved note while preserving its time and identity', () => {
+  const repair = { id: 7, date: '14.10.2026', carrier: 'Перевізник', vehicle: '123', workHoursTask: { dateKey: '2026-10-14', author: 'Артем' } };
+  const data = {};
+  shared.reconcileRepairTasks(data, [repair]);
+  shared.updateTask(data, '2026-10-14', 'repair-7', 'Змінений текст', '2027-01-01', '14:30');
+  Object.assign(repair, { repairDate: '15.10.2026', specialist: 'Олександр', carrier: 'Новий перевізник' });
+  shared.reconcileRepairTasks(data, [repair]);
+  assert.equal(data['2026-10-14'], undefined);
+  assert.deepEqual(copy(data['2027-01-01'][0]), { id: 'repair-7', repairId: 7, text: 'Новий перевізник · 123', done: true, author: 'Артем', time: '14:30' });
+  repair.repairDate = '';
+  shared.reconcileRepairTasks(data, [repair]);
+  assert.equal(data['2027-01-01'][0].done, false);
+  assert.equal(shared.reconcileRepairTasks(data, null), false, 'missing cache must preserve existing links');
+  assert.equal(data['2027-01-01'].length, 1);
+});
+
+test('deleting a repair removes only its note and removes duplicate links', () => {
+  const data = { '2026-10-14': [{ id: 'manual', text: 'Нотатка' }, { id: 'repair-1', repairId: 1 }], '2026-10-15': [{ id: 'duplicate', repairId: 1 }] };
+  const repair = { id: 1, carrier: 'Перевізник', vehicle: '123' };
+  shared.reconcileRepairTasks(data, [repair]);
+  assert.equal(data['2026-10-15'], undefined);
+  shared.reconcileRepairTasks(data, []);
+  assert.deepEqual(copy(data), { '2026-10-14': [{ id: 'manual', text: 'Нотатка' }] });
+});
+
+test('an incomplete repair cache cannot discard a transferred note before cloud data arrives', () => {
+  const data = { '2026-10-15': [{ id: 'repair-7', repairId: 7, text: 'Перевізник · 123', time: '11:45', done: false }] };
+  assert.equal(shared.reconcileRepairTasks(data, [], false), false);
+  const repair = { id: 7, carrier: 'Перевізник', vehicle: '123', workHoursTask: { dateKey: '2026-10-14' } };
+  shared.reconcileRepairTasks(data, [repair]);
+  assert.equal(data['2026-10-14'], undefined);
+  assert.equal(data['2026-10-15'][0].time, '11:45');
+});
+
+test('repair notes use the same pending criteria as the repair journal', () => {
+  for (const repair of [ {}, {repairDate:'В процесі',specialist:'Артем'}, {repairDate:'14.10.2026',specialist:'—'}, {repairDate:'14.10.2026',specialist:'\u200B'} ]) assert.equal(shared.isRepairPending(repair), true);
+  assert.equal(shared.isRepairPending({repairDate:'14.10.2026',specialist:'Артем'}), false);
+  assert.equal(shared.repairTaskDateKey({date:'31.02.2026',workHoursTask:{dateKey:'2026-10-15'}}), '2026-10-15');
+  assert.equal(shared.repairTaskDateKey({date:'14.10.2026'}), '2026-10-14');
+});
+
 test('invalid dates, empty text, missing tasks and collisions do not lose data', () => {
   for (const [id,text,date] of [['a','Текст','2026-02-31'],['a','Текст','not-a-date'],['a',' ','2026-10-14'],['missing','Текст','2026-10-14'],['a','Текст','2026-10-15']]) {
     const data = {'2026-10-13':[{id:'a',text:'Оригінал'}],'2026-10-15':[{id:'a',text:'Інше'}]};

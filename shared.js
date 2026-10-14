@@ -209,20 +209,129 @@
     });
   }
 
-  // Change the day and/or text without changing identity, author, or completion.
-  function updateTask(dayNotes, sourceDateKey, taskId, text, targetDateKey) {
+  function isValidTaskTime(value) {
+    return value === '' || /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value);
+  }
+
+  function taskTimePickerHtml() {
+    return `<details class="task-time-picker">
+      <summary>◷ Час</summary>
+      <div class="task-time-controls">
+        <label>Час завдання <input type="time" class="task-time-input" step="60"></label>
+        <button type="button" class="task-time-clear">Без часу</button>
+        <div class="task-time-choices" aria-label="Швидкий вибір часу">
+          ${['09:00', '10:00', '12:00', '14:00', '16:00', '18:00'].map(time => `<button type="button" data-task-time="${time}">${time}</button>`).join('')}
+        </div>
+      </div>
+    </details>`;
+  }
+
+  function setTaskTimePicker(picker, value = '') {
+    picker.querySelector('.task-time-input').value = value;
+    picker.querySelector('summary').textContent = value ? '◷ ' + value : '◷ Час';
+    picker.querySelectorAll('[data-task-time]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.taskTime === value)));
+  }
+
+  function initTaskTimePickers(container) {
+    container.querySelectorAll('.task-time-picker').forEach(picker => {
+      if (picker.dataset.initialized) return;
+      picker.dataset.initialized = 'true';
+      const input = picker.querySelector('.task-time-input');
+      input.addEventListener('input', () => setTaskTimePicker(picker, input.value));
+      picker.addEventListener('click', event => {
+        const button = event.target.closest('[data-task-time], .task-time-clear');
+        if (!button) return;
+        setTaskTimePicker(picker, button.dataset.taskTime || '');
+        picker.open = false;
+      });
+      setTaskTimePicker(picker, input.value);
+    });
+  }
+
+  function isRepairPending(repair) {
+    const date = String(repair.repairDate || '').trim();
+    const specialist = String(repair.specialist || '').trim();
+    return !date || date === '—' || date.toLowerCase().includes('процес') || !specialist || specialist === '—' || specialist === '\u200B';
+  }
+
+  function repairTaskDateKey(repair) {
+    const metadata = repair.workHoursTask || {};
+    if (isValidDateKey(metadata.dateKey)) return metadata.dateKey;
+    const day = repairDay(repair.date);
+    return Number.isFinite(day) ? new Date(day * 86400000).toISOString().slice(0, 10) : kyivDateKey();
+  }
+
+  // The journal owns repair text/status; a note owns its chosen day and time.
+  // Reconcile by repair ID across every day so transfers never break completion.
+  function reconcileRepairTasks(dayNotes, repairs, removeMissing = true) {
+    if (!Array.isArray(repairs)) return false;
+    const before = JSON.stringify(dayNotes);
+    const byId = new Map(repairs.map(repair => [String(repair.id), repair]));
+    const linked = new Set();
+    for (const [dateKey, tasks] of Object.entries(dayNotes)) {
+      if (!Array.isArray(tasks)) continue;
+      const remaining = tasks.filter(task => {
+        if (task.repairId == null) return true;
+        const repairId = String(task.repairId);
+        const repair = byId.get(repairId);
+        if (!repair) return !removeMissing;
+        if (linked.has(repairId)) return false;
+        linked.add(repairId);
+        task.text = [repair.carrier || 'Без перевізника', repair.vehicle || '—'].join(' · ');
+        task.done = !isRepairPending(repair);
+        return true;
+      });
+      if (remaining.length !== tasks.length) {
+        if (remaining.length) dayNotes[dateKey] = remaining;
+        else delete dayNotes[dateKey];
+      }
+    }
+    for (const repair of repairs) {
+      if (!repair.workHoursTask || linked.has(String(repair.id))) continue;
+      const dateKey = repairTaskDateKey(repair);
+      if (!Array.isArray(dayNotes[dateKey])) dayNotes[dateKey] = [];
+      dayNotes[dateKey].push({
+        id: 'repair-' + repair.id,
+        repairId: repair.id,
+        text: [repair.carrier || 'Без перевізника', repair.vehicle || '—'].join(' · '),
+        done: !isRepairPending(repair),
+        author: repair.workHoursTask.author || 'Користувач'
+      });
+      linked.add(String(repair.id));
+    }
+    return before !== JSON.stringify(dayNotes);
+  }
+
+  function syncLocalRepairTasks(repairs, removeMissing = true) {
+    try {
+      const key = 'szvk_schedule_local_data';
+      const schedule = JSON.parse(localStorage.getItem(key) || '{}');
+      if (!schedule.dayNotes) schedule.dayNotes = {};
+      if (reconcileRepairTasks(schedule.dayNotes, repairs, removeMissing)) localStorage.setItem(key, JSON.stringify(schedule));
+    } catch (error) {
+      console.warn('Repair notes cache notice:', error);
+    }
+  }
+
+  // Change the day, text and optional time without changing identity or completion.
+  function updateTask(dayNotes, sourceDateKey, taskId, text, targetDateKey, time) {
     const cleanText = String(text || '').trim();
-    if (!cleanText || cleanText.length > 70) throw new Error('Введіть завдання до 70 символів.');
     if (!isValidDateKey(targetDateKey)) throw new Error('Оберіть коректну дату.');
     const source = dayNotes[sourceDateKey] || [];
     const index = source.findIndex(task => String(task.id) === String(taskId));
     if (index === -1) throw new Error('Це завдання вже перенесено або видалено. Оновіть список.');
     const previous = { ...source[index] };
+    if (previous.repairId == null && (!cleanText || cleanText.length > 70)) throw new Error('Введіть завдання до 70 символів.');
+    if (time !== undefined && !isValidTaskTime(time)) throw new Error('Оберіть коректний час.');
     const moved = sourceDateKey !== targetDateKey;
     if (moved && (dayNotes[targetDateKey] || []).some(task => String(task.id) === String(taskId))) {
       throw new Error('Це завдання вже є на вибраний день.');
     }
-    const task = { ...previous, text: cleanText };
+    const task = { ...previous, text: previous.repairId != null ? previous.text : cleanText };
+    if (time !== undefined) {
+      if (time) task.time = time;
+      else delete task.time;
+    }
     if (moved) {
       source.splice(index, 1);
       if (!source.length) delete dayNotes[sourceDateKey];
@@ -231,12 +340,12 @@
     } else {
       source[index] = task;
     }
-    return { task, previous, moved, changed: moved || previous.text !== cleanText };
+    return { task, previous, moved, changed: moved || previous.text !== task.text || (previous.time || '') !== (task.time || '') };
   }
 
   function restoreTaskMove(dayNotes, restoreData) {
     const { fromDateKey, toDateKey, taskId, previous } = restoreData;
-    const result = updateTask(dayNotes, toDateKey, taskId, previous.text, fromDateKey);
+    const result = updateTask(dayNotes, toDateKey, taskId, previous.text, fromDateKey, previous.time || '');
     // Keep later completion changes while restoring the original text and day.
     return result.task;
   }
@@ -350,6 +459,14 @@
     kyivDateKey,
     isRecentRepair,
     calendarMonthDays,
+    isValidTaskTime,
+    taskTimePickerHtml,
+    setTaskTimePicker,
+    initTaskTimePickers,
+    isRepairPending,
+    repairTaskDateKey,
+    reconcileRepairTasks,
+    syncLocalRepairTasks,
     updateTask,
     restoreTaskMove,
     initThemeSwitcher,

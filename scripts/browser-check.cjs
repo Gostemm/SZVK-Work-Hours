@@ -140,6 +140,10 @@ async function main() {
     assert.equal(data.repairs[0].carrier,'Тестовий перевізник');
     assert.equal(data.repairs[0].needInvoice,false);
     assert.equal(data.repairs[0].repairDate,'');
+    const linkedRepairId = data.repairs[0].id;
+    const initialRepairNote = await evaluate("Object.values(JSON.parse(localStorage.getItem('szvk_schedule_local_data')).dayNotes).flat().find(task=>task.repairId===" + linkedRepairId + ")");
+    assert.equal(initialRepairNote.text, 'Тестовий перевізник · TEST-002');
+    assert.equal(initialRepairNote.done, false);
     await evaluate("window.editRepair(1)");
     assert.equal(await evaluate("document.querySelector('#inputSpecialistCustom').value"),'Саша_old');
     assert.equal(await evaluate("document.querySelector('#checkboxInvoice').checked"),true);
@@ -230,14 +234,115 @@ async function main() {
     fs.writeFileSync(path.join(artifacts,'shift-transfer-mobile.png'),Buffer.from(shiftShot.data,'base64'));
     await evaluate("document.querySelector('#taskEditorSave').click()");
     const schedule = await evaluate("JSON.parse(localStorage.getItem('szvk_schedule_local_data'))");
-    assert.equal(schedule.dayNotes['2026-10-14'],undefined);
+    assert.equal((schedule.dayNotes['2026-10-14'] || []).some(task => task.id === 'test-task'), false);
     assert.equal(schedule.dayNotes['2026-10-15'][0].id,'test-task');
     assert.equal(schedule.dayNotes['2026-10-15'][0].author,'Олександр');
     assert.equal(schedule.dayNotes['2026-10-15'][0].done,false);
     await evaluate("document.querySelector('#taskEditorModal').classList.remove('active');document.querySelector('#modalDayCloseX').click();document.querySelector('#userProfileMenu').open=true;document.querySelector('#btnTabHistory').click()");
     assert.equal(await evaluate("document.querySelector('#historyView').style.display==='block' && !document.querySelector('#userProfileMenu').open"),true);
+
+    await navigate('index.html');
+    await waitFor("document.querySelector('#mainAppContainer').style.display==='flex'");
+    await evaluate("[...document.querySelectorAll('.day-card')].find(card=>card.querySelector('.day-num')?.textContent==='14').click()");
+    assert.equal(await evaluate("document.querySelector('#modalNewTaskTimeMount details').open"), false, 'time picker starts collapsed');
+    assert.equal(await evaluate("document.querySelector('#modalNewTaskTimeMount input').required"), false);
+    await evaluate("document.querySelector('#modalNewTaskTimeMount details').open=true;document.querySelector('#modalNewTaskTimeMount [data-task-time=\"14:00\"]').click();document.querySelector('#modalNewTaskInput').value='Запланований виклик';document.querySelector('#modalAddNewTaskBtn').click()");
+    assert.equal(await evaluate("window.dayNotes['2026-10-14'].find(task=>task.text==='Запланований виклик').time"), '14:00');
+    assert.equal(await evaluate("document.querySelector('#modalNewTaskTimeMount .task-time-input').value"), '', 'adding resets optional time');
+    await evaluate("[...document.querySelectorAll('.task-modal-item')].find(row=>row.textContent.includes('Запланований виклик')).querySelector('.edit-task').click();document.querySelector('#taskEditorTimeMount .task-time-input').value='16:25';document.querySelector('#taskEditorTimeMount .task-time-input').dispatchEvent(new Event('input'));document.querySelector('#taskEditorSave').click()");
+    assert.equal(await evaluate("window.dayNotes['2026-10-14'].find(task=>task.text==='Запланований виклик').time"), '16:25');
+    await evaluate("[...document.querySelectorAll('.task-modal-item')].find(row=>row.textContent.includes('Запланований виклик')).querySelector('.edit-task').click();document.querySelector('#taskEditorTimeMount details').open=true;document.querySelector('#taskEditorTimeMount .task-time-clear').click();document.querySelector('#taskEditorSave').click();document.querySelector('#modalNewTaskInput').value='Завдання без часу';document.querySelector('#modalAddNewTaskBtn').click()");
+    assert.equal(await evaluate("window.dayNotes['2026-10-14'].filter(task=>task.repairId==null).every(task=>!Object.hasOwn(task,'time'))"), true);
+
+    const repairLink = await evaluate("document.querySelector('.task-repair-link').getAttribute('href')");
+    assert.equal(repairLink, 'trackers.html?editRepair=' + linkedRepairId);
+    assert.equal(await evaluate("document.querySelector('.task-repair-link').closest('.task-modal-item').querySelector('.task-modal-checkbox').disabled"), true);
+    assert.equal(await evaluate("document.querySelector('.task-repair-link').closest('.task-modal-item').querySelector('.delete-task')"), null);
+    assert.equal(await evaluate("document.querySelector('#modalDayTasksList').scrollWidth<=document.querySelector('#modalDayTasksList').clientWidth"), true, 'repair actions must fit on mobile');
+    await evaluate("document.querySelector('.task-repair-link').closest('.task-modal-item').querySelector('.move-task').click();document.querySelector('#taskCalendarDays [data-date=\"2026-10-15\"]').click();document.querySelector('#taskEditorTimeMount .task-time-input').value='14:30';document.querySelector('#taskEditorSave').click()");
+    assert.equal(await evaluate("window.dayNotes['2026-10-14'].some(task=>task.repairId===" + linkedRepairId + ")"), false);
+    assert.equal(await evaluate("window.dayNotes['2026-10-15'].find(task=>task.repairId!=null).time"), '14:30');
+    await navigate(repairLink);
+    await waitFor("document.querySelector('#repairModalOverlay').classList.contains('active')");
+    assert.equal(await evaluate("document.querySelector('#inputVehicle').value"), 'TEST-002');
+    await evaluate("document.querySelector('#repairResultTab').click();document.querySelector('#inputRepairDate').value='15.10.2026';document.querySelector('#inputSpecialist').value='Артем';document.querySelector('#inputSolution').value='Трекер відремонтовано';document.querySelector('#btnSaveRepairModal').click()");
+    assert.equal(await evaluate("Object.values(JSON.parse(localStorage.getItem('szvk_schedule_local_data')).dayNotes).flat().find(task=>task.repairId===" + linkedRepairId + ").done"), true);
+    await navigate('index.html');
+    await waitFor("document.querySelector('#mainAppContainer').style.display==='flex'");
+    assert.equal(await evaluate("Object.values(window.dayNotes).flat().filter(task=>task.repairId===" + linkedRepairId + ").length"), 1);
+    await evaluate("[...document.querySelectorAll('.day-card')].find(card=>card.querySelector('.day-num')?.textContent==='15').click()");
+    assert.equal(await evaluate("document.querySelector('.task-repair-link').closest('.task-modal-item').querySelector('.task-modal-checkbox').checked"), true);
+    assert.equal(await evaluate("document.querySelector('.task-repair-link').closest('.task-modal-item').querySelector('.task-time-badge').textContent"), '14:30');
+    assert.equal(await evaluate("document.documentElement.scrollWidth<=window.innerWidth"), true);
+
+    // Emulate a journal update in another tab while Work Hours stays open.
+    await evaluate("{ const data=JSON.parse(localStorage.getItem('szvk_trackers_data'));const repair=data.repairs.find(item=>item.id===" + linkedRepairId + ");repair.repairDate='';localStorage.setItem('szvk_trackers_data',JSON.stringify(data));window.dispatchEvent(new StorageEvent('storage',{key:'szvk_trackers_data'})); }");
+    assert.equal(await evaluate("document.querySelector('.task-repair-link').closest('.task-modal-item').querySelector('.task-modal-checkbox').checked"), false);
+    assert.equal(await evaluate("window.dayNotes['2026-10-15'].find(task=>task.repairId!=null).time"), '14:30');
+
+    await evaluate("document.querySelector('#modalDayCloseX').click();document.querySelector('#btnToggleCycleTasks').click()");
+    const cycleDay = await evaluate("document.querySelector('.cycle-shift-quick-add').dataset.date");
+    await evaluate("{const form=document.querySelector('.cycle-shift-quick-add');form.querySelector('details').open=true;form.querySelector('[data-task-time=\"10:00\"]').click();form.querySelector('.cycle-quick-input').value='Виклик із блоку змін';form.querySelector('[type=submit]').click();}");
+    assert.equal(await evaluate("window.dayNotes['" + cycleDay + "'].find(task=>task.text==='Виклик із блоку змін').time"), '10:00');
+    assert.equal(await evaluate("document.querySelector('.cycle-task-row .task-time-badge')!==null"), true);
+    const timedShot=await call('Page.captureScreenshot',{format:'png'});
+    fs.writeFileSync(path.join(artifacts,'timed-tasks-mobile.png'),Buffer.from(timedShot.data,'base64'));
+
+    // Use controlled realtime snapshots to check cloud arrival order and fresh devices.
+    await call('Page.addScriptToEvaluateOnNewDocument', { source: `
+      window.__cloudListeners = {};
+      window.__cloudWrites = [];
+      window.__cloudData = {
+        schedule: JSON.parse(localStorage.getItem('szvk_schedule_local_data')),
+        trackers: JSON.parse(localStorage.getItem('szvk_trackers_data') || localStorage.getItem('szvk_mock_cloud_trackers')),
+        history: { items: [] }, users: { usersList: {} }
+      };
+      const cloudOnlyRepair = JSON.parse(localStorage.getItem('szvk_mock_cloud_only_repair') || 'null');
+      if (cloudOnlyRepair) window.__cloudData.trackers.repairs.push(cloudOnlyRepair);
+      window.__emitCloud = (name, data, fromCache = false, exists = true) => {
+        window.__cloudListeners[name]?.({ exists, metadata: { fromCache }, data: () => structuredClone(data) });
+      };
+      window.firebase = { apps: [{}], firestore: () => ({ collection: () => ({ doc: name => ({
+        onSnapshot: callback => {
+          window.__cloudListeners[name] = callback;
+          setTimeout(() => window.__emitCloud(name, window.__cloudData[name]), name === 'trackers' ? 40 : 0);
+          return () => { delete window.__cloudListeners[name]; };
+        },
+        get: async () => ({ exists: true, data: () => structuredClone(window.__cloudData[name]) }),
+        set: async data => { window.__cloudWrites.push({ name, data: structuredClone(data) }); }
+      }) }) }) };
+    ` });
+    await evaluate("{const data=JSON.parse(localStorage.getItem('szvk_schedule_local_data'));data.dayNotes['2026-10-16']=[{id:'repair-555',repairId:555,text:'Перевізник · CLOUD-555',time:'11:45',done:false}];localStorage.setItem('szvk_schedule_local_data',JSON.stringify(data));localStorage.setItem('szvk_mock_cloud_only_repair',JSON.stringify({id:555,date:'14.10.2026',carrier:'Перевізник',vehicle:'CLOUD-555',workHoursTask:{dateKey:'2026-10-14'}}));}");
+    await navigate('index.html');
+    await waitFor("!!window.__cloudListeners.trackers && !!window.__cloudData.trackers");
+    await waitFor("JSON.parse(localStorage.getItem('szvk_trackers_data')).repairs.some(repair=>repair.id===555)");
+    assert.equal(await evaluate("window.dayNotes['2026-10-16'].find(task=>task.repairId===555).time"), '11:45', 'stale tracker cache must preserve cloud task transfers');
+    assert.equal(await evaluate("window.dayNotes['2026-10-14'].some(task=>task.repairId===555)"), false);
+    await evaluate("localStorage.removeItem('szvk_mock_cloud_only_repair')");
+    await evaluate("[...document.querySelectorAll('.day-card')].find(card=>card.querySelector('.day-num')?.textContent==='15').click()");
+    await evaluate("{const data=structuredClone(window.__cloudData.trackers);const repair=data.repairs.find(item=>item.id===" + linkedRepairId + ");repair.repairDate='15.10.2026';repair.specialist='Артем';window.__cloudData.trackers=data;window.__emitCloud('trackers',data);}");
+    assert.equal(await evaluate("window.dayNotes['2026-10-15'].find(task=>task.repairId===" + linkedRepairId + ").done"), true);
+    await evaluate("window.__emitCloud('schedule',window.__cloudData.schedule)");
+    assert.equal(await evaluate("window.dayNotes['2026-10-15'].find(task=>task.repairId===" + linkedRepairId + ").done"), true, 'late schedule snapshots cannot undo journal completion');
+    assert.equal(await evaluate("document.querySelector('.task-repair-link').closest('.task-modal-item').querySelector('.task-time-badge').textContent"), '14:30');
+    await evaluate("window.__emitCloud('trackers',null,true,false)");
+    assert.equal(await evaluate("window.dayNotes['2026-10-15'].find(task=>task.repairId===" + linkedRepairId + ").time"), '14:30', 'empty offline cache must not remove linked notes');
+
+    await evaluate("localStorage.setItem('szvk_mock_cloud_trackers',JSON.stringify(window.__cloudData.trackers));localStorage.removeItem('szvk_trackers_data')");
+    await navigate(repairLink);
+    await waitFor("document.querySelector('#repairModalOverlay').classList.contains('active')");
+    assert.equal(await evaluate("document.querySelector('#inputVehicle').value"), 'TEST-002', 'deep link opens after cloud-only data arrives');
+    assert.equal(await evaluate("Object.values(JSON.parse(localStorage.getItem('szvk_schedule_local_data')).dayNotes).flat().find(task=>task.repairId===" + linkedRepairId + ").time"), '14:30');
+
+    await navigate('index.html');
+    await waitFor("!!window.__cloudListeners.trackers");
+    await evaluate("{const data=structuredClone(window.__cloudData.trackers);data.repairs.push({id:987654,date:'14.10.2026',carrier:'Хмарний перевізник',vehicle:'CLOUD-001',workHoursTask:{dateKey:'2026-10-14',author:'Артем'}});window.__emitCloud('trackers',data);}");
+    assert.equal(await evaluate("window.dayNotes['2026-10-14'].find(task=>task.repairId===987654).text"), 'Хмарний перевізник · CLOUD-001');
+    await evaluate("window.__emitCloud('trackers',window.__cloudData.trackers)");
+    assert.equal(await evaluate("Object.values(window.dayNotes).flat().some(task=>task.repairId===987654)"), false);
+    assert.equal(await evaluate("Object.values(window.dayNotes).flat().some(task=>task.text==='Завдання без часу')"), true, 'remote repair deletion preserves manual notes');
     assert.equal(errors.length,0,JSON.stringify(errors));
-    console.log('Browser checks passed: identical repair tables, all search results shown directly, archive state restored, mini-calendar selection/navigation/keyboard, warehouse forms, legacy repairs, references, responsive notes, history.');
+    console.log('Browser checks passed: repair tables/search, calendars, warehouse/references, optional time create/edit/clear, timed cycle tasks, linked repair creation/transfer/completion/reopening, direct repair link, responsive notes, mocked cloud updates/arrival order/deletion/fresh-device links, history.');
     console.log('Screenshots: ' + artifacts);
   } finally {
     if (socket) socket.close();

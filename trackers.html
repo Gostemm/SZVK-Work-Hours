@@ -17,13 +17,13 @@
       }
     })();
   </script>
-  <script src="shared.js?v=096a89c672b8"></script>
+  <script src="shared.js?v=ad9808574db7"></script>
 
   <!-- Firebase App & Firestore SDKs (Compat) -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 
-  <link rel="stylesheet" href="shared.css?v=41e904b7e38c">
+  <link rel="stylesheet" href="shared.css?v=d6da8b13e0d4">
 
   <style>
     :root {
@@ -2737,9 +2737,7 @@
 
   // Check if a repair is currently "В роботі" (Pending)
   function isRepairPending(item) {
-    const hasRepairDate = item.repairDate && item.repairDate.trim() && item.repairDate.trim() !== '—' && !item.repairDate.toLowerCase().includes('процес');
-    const hasSpecialist = item.specialist && item.specialist.trim() && item.specialist.trim() !== '—' && item.specialist.trim() !== '\u200B';
-    return !hasRepairDate || !hasSpecialist;
+    return window.SZVKShared.isRepairPending(item);
   }
 
   /**
@@ -3000,10 +2998,12 @@
   function initData() {
     // 1. Спочатку завантажуємо локальний кеш (для миттєвого відображення без затримок)
     const saved = localStorage.getItem(STORAGE_KEY);
+    let hasLocalRepairs = false;
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
         if (parsed.repairs && Array.isArray(parsed.repairs)) {
+          hasLocalRepairs = true;
           appData.repairs = parsed.repairs.filter(r => (r.date && r.date.match(/\d/)) || (r.vehicle && r.vehicle.match(/\d/)));
           appData.inventory = parsed.inventory || [];
           appData.atCommands = parsed.atCommands || [];
@@ -3015,6 +3015,7 @@
       }
     }
 
+    if (hasLocalRepairs) window.SZVKShared.syncLocalRepairTasks(appData.repairs, false);
     refreshDataVersions();
     renderActiveView();
 
@@ -3041,6 +3042,7 @@
 
   function saveLocalData(triggerCloud = true) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+    window.SZVKShared.syncLocalRepairTasks(appData.repairs);
     refreshDataVersions();
     if (triggerCloud) {
       syncWithCloud();
@@ -3119,7 +3121,9 @@
 
           if (updated && refreshDataVersions()) {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+            window.SZVKShared.syncLocalRepairTasks(appData.repairs, !(docSnap.metadata && docSnap.metadata.fromCache));
             renderActiveView();
+            openLinkedRepair();
           }
         }
         cloudSyncDot.className = 'status-dot';
@@ -4081,7 +4085,14 @@
           } else if (entry.type === 'task_edit') {
             const { dateKey, taskId, prevText } = entry.restoreData;
             const task = (sData.dayNotes?.[dateKey] || []).find(item => String(item.id) === String(taskId));
-            if (task) { task.text = prevText; changed = true; }
+            if (task) {
+              task.text = prevText;
+              if (Object.prototype.hasOwnProperty.call(entry.restoreData, 'prevTime')) {
+                if (entry.restoreData.prevTime) task.time = entry.restoreData.prevTime;
+                else delete task.time;
+              }
+              changed = true;
+            }
           } else if (entry.type === 'debt_delete') {
             const { mKey, item } = entry.restoreData;
             if (!sData.monthlyDebts) sData.monthlyDebts = {};
@@ -4775,7 +4786,7 @@
       // New record (insert at top)
       const maxId = appData.repairs.reduce((max, r) => Math.max(max, r.id || 0), 0);
       const newRec = {
-        id: maxId + 1,
+        id: Math.max(Date.now(), maxId + 1),
         date,
         carrier,
         reportedBy,
@@ -4786,7 +4797,8 @@
         specialist,
         solution,
         notes,
-        needInvoice
+        needInvoice,
+        workHoursTask: { dateKey: window.SZVKShared.repairTaskDateKey({ date }), author: currentUser ? currentUser.name : 'Користувач' }
       };
       appData.repairs.unshift(newRec);
 
@@ -5156,6 +5168,8 @@
   });
 
   const urlParams = new URLSearchParams(window.location.search);
+  const editRepairParam = urlParams.get('editRepair');
+  let linkedRepairOpened = false;
   window.SZVKShared.initThemeSwitcher(urlParams.get('theme'));
 
   if (urlParams.get('backup') === '1') btnOpenExportModal.click();
@@ -5173,18 +5187,16 @@
     tabBtnHistory.click();
   }
 
-  const editRepairParam = urlParams.get('editRepair');
-  if (editRepairParam) {
-    const repId = parseInt(editRepairParam, 10);
-    if (!isNaN(repId)) {
+  function openLinkedRepair() {
+    if (linkedRepairOpened || !editRepairParam) return;
+    const repId = Number(editRepairParam);
+    if (Number.isSafeInteger(repId) && appData.repairs.some(repair => repair.id === repId)) {
+      linkedRepairOpened = true;
       tabBtnJournal.click();
-      setTimeout(() => {
-        if (typeof window.editRepair === 'function') {
-          window.editRepair(repId);
-        }
-      }, 300);
+      window.editRepair(repId);
     }
   }
+  openLinkedRepair();
 
 })();
 </script>

@@ -5,13 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>⏱️ SZVK Work Hours</title>
 
-  <script src="shared.js?v=096a89c672b8"></script>
+  <script src="shared.js?v=ad9808574db7"></script>
 
   <!-- Firebase App & Firestore SDKs (Compat) -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 
-  <link rel="stylesheet" href="shared.css?v=41e904b7e38c">
+  <link rel="stylesheet" href="shared.css?v=d6da8b13e0d4">
 
   <style>
     :root {
@@ -2221,6 +2221,7 @@
       <label>Завдання
         <textarea id="taskEditorText" maxlength="70" required rows="3"></textarea>
       </label>
+      <div id="taskEditorTimeMount"></div>
       <input type="hidden" id="taskEditorDate">
       <div class="task-shift-preview" id="taskEditorShift" role="status" aria-live="polite"></div>
       <section class="task-mini-calendar" aria-label="Календар вибору дня виконання">
@@ -2273,13 +2274,14 @@
         <input type="text" id="modalNewTaskInput" class="debt-input" maxlength="70" placeholder="+ Додати завдання (макс. 70 симв.)">
         <button class="btn" id="modalAddNewTaskBtn" style="background: #10b981; color: #fff;">+ Додати</button>
       </div>
+      <div id="modalNewTaskTimeMount"></div>
     </div>
   </div>
 </div>
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-  const requiredSharedMethods = ['mountAccountMenu', 'updateAccount', 'escapeHtml', 'formatHistoryTime', 'initThemeSwitcher', 'updateTask', 'restoreTaskMove', 'debounce', 'setHtmlIfChanged', 'shiftInfo', 'calendarMonthDays'];
+  const requiredSharedMethods = ['mountAccountMenu', 'updateAccount', 'escapeHtml', 'formatHistoryTime', 'initThemeSwitcher', 'updateTask', 'restoreTaskMove', 'debounce', 'setHtmlIfChanged', 'shiftInfo', 'calendarMonthDays', 'taskTimePickerHtml', 'initTaskTimePickers', 'reconcileRepairTasks'];
   if (!window.SZVKShared || requiredSharedMethods.some(name => typeof window.SZVKShared[name] !== 'function')) {
     const message = document.getElementById('loginErrorMessage');
     message.textContent = 'Не вдалося завантажити оновлення сервісу. Оновіть сторінку.';
@@ -2294,6 +2296,10 @@ document.addEventListener("DOMContentLoaded", function () {
     return;
   }
   window.SZVKShared.mountAccountMenu({ admin: true });
+  for (const id of ['taskEditorTimeMount', 'modalNewTaskTimeMount']) {
+    document.getElementById(id).innerHTML = window.SZVKShared.taskTimePickerHtml();
+  }
+  window.SZVKShared.initTaskTimePickers(document);
   // --- FIREBASE FIRESTORE CLOUD CONFIG ---
   const firebaseConfig = window.SZVKShared.firebaseConfig;
 
@@ -2437,6 +2443,39 @@ document.addEventListener("DOMContentLoaded", function () {
   let unsubscribeSchedule = null;
   let unsubscribeUsers = null;
   let unsubscribeHistory = null;
+  let unsubscribeRepairs = null;
+  let linkedRepairs = readLocalRepairs();
+  let hasRemoteRepairs = false;
+
+  function readLocalRepairs() {
+    try {
+      const data = JSON.parse(localStorage.getItem('szvk_trackers_data') || 'null');
+      return data && Array.isArray(data.repairs) ? data.repairs : null;
+    } catch (error) { return null; }
+  }
+
+  function refreshRepairNotes(repairs, removeMissing = true) {
+    linkedRepairs = repairs;
+    if (!window.SZVKShared.reconcileRepairTasks(window.dayNotes, linkedRepairs, removeMissing)) return;
+    monthlyCountCache.clear();
+    lastScheduleSignature = scheduleSignature({ overrides: window.overrides, dayNotes: window.dayNotes });
+    cacheSchedule();
+    renderApp();
+    refreshOpenDayTasks();
+  }
+
+  function cacheSchedule() {
+    const payload = {
+      overrides: window.overrides || {}, dayNotes: window.dayNotes || {},
+      monthlyDebts: window.monthlyDebts || {}, monthFocusNotes: window.monthFocusNotes || {}, updatedAt: Date.now()
+    };
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...loadLocalData(), ...payload })); } catch (error) {}
+    return payload;
+  }
+
+  window.addEventListener('storage', event => {
+    if (event.key === 'szvk_trackers_data') refreshRepairNotes(readLocalRepairs(), hasRemoteRepairs || !isFirebaseReady);
+  });
 
   function updateSyncIndicator(state) {
     const dot = document.getElementById('cloudSyncDot');
@@ -2635,6 +2674,7 @@ document.addEventListener("DOMContentLoaded", function () {
     if (unsubscribeSchedule) unsubscribeSchedule();
     if (unsubscribeUsers) unsubscribeUsers();
     if (unsubscribeHistory) unsubscribeHistory();
+    if (unsubscribeRepairs) unsubscribeRepairs();
     clearAuth();
     document.getElementById("passwordInput").value = "";
     applyAccessState();
@@ -2860,6 +2900,7 @@ document.addEventListener("DOMContentLoaded", function () {
       if (docSnapshot.exists) {
         const data = docSnapshot.data();
         if (data) {
+          window.SZVKShared.reconcileRepairTasks(data.dayNotes || (data.dayNotes = {}), linkedRepairs, hasRemoteRepairs);
           const signature = scheduleSignature(data);
           const changed = lastScheduleSignature !== signature;
           lastScheduleSignature = signature;
@@ -2886,6 +2927,20 @@ document.addEventListener("DOMContentLoaded", function () {
       console.warn("Firestore schedule sync notice:", error);
       updateSyncIndicator("error", "Офлайн");
     });
+
+    if (unsubscribeRepairs) unsubscribeRepairs();
+    if (DB_TRACKERS_DOC) {
+      unsubscribeRepairs = DB_TRACKERS_DOC.onSnapshot(snapshot => {
+        if (!snapshot.exists && snapshot.metadata && snapshot.metadata.fromCache) return;
+        const data = snapshot.exists ? snapshot.data() : { repairs: [] };
+        if (data && Array.isArray(data.repairs)) {
+          const fromCache = snapshot.metadata && snapshot.metadata.fromCache;
+          if (!fromCache) hasRemoteRepairs = true;
+          try { localStorage.setItem('szvk_trackers_data', JSON.stringify(data)); } catch (error) {}
+          refreshRepairNotes(data.repairs, !fromCache);
+        }
+      }, error => console.warn('Repair notes sync notice:', error));
+    }
 
     // Real-time listener for Unified History (Trackers + Schedule)
     if (unsubscribeHistory) unsubscribeHistory();
@@ -2924,16 +2979,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function pushScheduleToFirestore() {
-    const payload = {
-      overrides: window.overrides || {},
-      dayNotes: window.dayNotes || {},
-      monthlyDebts: window.monthlyDebts || {},
-      monthFocusNotes: window.monthFocusNotes || {},
-      updatedAt: Date.now()
-    };
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-    } catch(e) {}
+    const payload = cacheSchedule();
 
     if (!isFirebaseReady || !currentUser) return;
 
@@ -2971,6 +3017,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function saveLocalData() {
+    window.SZVKShared.reconcileRepairTasks(window.dayNotes, linkedRepairs, hasRemoteRepairs || !isFirebaseReady);
     monthlyCountCache.clear();
     lastScheduleSignature = scheduleSignature({ overrides: window.overrides, dayNotes: window.dayNotes });
     pushScheduleToFirestore();
@@ -2985,7 +3032,9 @@ document.addEventListener("DOMContentLoaded", function () {
   window.dayNotes = initialData.dayNotes || {};
   window.monthlyDebts = initialData.monthlyDebts || {};
   window.monthFocusNotes = initialData.monthFocusNotes || {};
-  lastScheduleSignature = scheduleSignature(initialData);
+  window.SZVKShared.reconcileRepairTasks(window.dayNotes, linkedRepairs, !isFirebaseReady);
+  lastScheduleSignature = scheduleSignature({ overrides: window.overrides, dayNotes: window.dayNotes });
+  cacheSchedule();
 
   function loadLocalUnifiedHistory() {
     try {
@@ -3095,6 +3144,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const { dateKey, task } = entry.restoreData;
         if (!window.dayNotes[dateKey]) window.dayNotes[dateKey] = [];
         const restoredTask = {
+          ...task,
           id: Date.now().toString(),
           text: task.text,
           done: task.done || false,
@@ -3141,6 +3191,10 @@ document.addEventListener("DOMContentLoaded", function () {
         if (target && prevText) {
           const old = target.text;
           target.text = prevText;
+          if (Object.prototype.hasOwnProperty.call(entry.restoreData, 'prevTime')) {
+            if (entry.restoreData.prevTime) target.time = entry.restoreData.prevTime;
+            else delete target.time;
+          }
           logAction({
             module: "schedule",
             tab: "day_tasks",
@@ -3771,6 +3825,11 @@ document.addEventListener("DOMContentLoaded", function () {
     taskEditorReturnFocus = document.activeElement;
     document.getElementById('taskEditorTitle').textContent = mode === 'move' ? 'Перенести завдання' : 'Редагувати завдання';
     document.getElementById('taskEditorText').value = task.text;
+    document.getElementById('taskEditorText').readOnly = task.repairId != null;
+    document.getElementById('taskEditorText').maxLength = task.repairId != null ? Math.max(70, task.text.length) : 70;
+    const picker = document.querySelector('#taskEditorTimeMount .task-time-picker');
+    window.SZVKShared.setTaskTimePicker(picker, task.time || '');
+    picker.open = false;
     document.getElementById('taskEditorDate').value = dateKey;
     document.getElementById('taskEditorSave').textContent = mode === 'move' ? 'Перенести на обрану зміну' : 'Зберегти';
     const [year, month] = dateKey.split('-').map(Number);
@@ -3897,15 +3956,15 @@ document.addEventListener("DOMContentLoaded", function () {
     const targetDateKey = document.getElementById('taskEditorDate').value;
     try {
       if (activeTaskEdit.mode === 'move' && targetDateKey === dateKey) throw new Error('Оберіть інший день для перенесення завдання.');
-      const result = window.SZVKShared.updateTask(window.dayNotes, dateKey, taskId, document.getElementById('taskEditorText').value, targetDateKey);
+      const result = window.SZVKShared.updateTask(window.dayNotes, dateKey, taskId, document.getElementById('taskEditorText').value, targetDateKey, document.querySelector('#taskEditorTimeMount .task-time-input').value);
       if (result.changed) {
         logAction({
           module: 'schedule', tab: 'day_tasks', type: result.moved ? 'task_move' : 'task_edit',
           description: result.moved ? 'Перенесено завдання: ' + dateKey + ' → ' + taskShiftLabel(targetDateKey) : 'Оновлено завдання на ' + dateKey,
-          details: '«' + result.task.text + '»',
+          details: '«' + result.task.text + '»' + (result.task.time ? ' · ' + result.task.time : ''),
           restoreData: result.moved
             ? { fromDateKey: dateKey, toDateKey: targetDateKey, taskId: result.task.id, previous: result.previous }
-            : { dateKey, taskId: result.task.id, prevText: result.previous.text },
+            : { dateKey, taskId: result.task.id, prevText: result.previous.text, prevTime: result.previous.time || '' },
           editRef: { module: 'schedule', type: 'task', dateKey: targetDateKey, taskId: result.task.id }
         });
         saveLocalData();
@@ -3937,22 +3996,24 @@ document.addEventListener("DOMContentLoaded", function () {
     tasks.forEach((task, idx) => {
       const item = document.createElement("div");
       item.className = `task-modal-item ${task.done ? 'done' : ''}`;
-      const authorText = task.author ? `<span class="task-modal-author">(${escapeHtml(task.author)})</span>` : '';
+      const authorText = task.author && task.repairId == null ? `<span class="task-modal-author">(${escapeHtml(task.author)})</span>` : '';
 
       item.innerHTML = `
         <div class="task-modal-content">
-          <input type="checkbox" class="task-modal-checkbox" ${task.done ? 'checked' : ''}>
-          <span class="task-modal-text">${escapeHtml(task.text)}</span>
+          <input type="checkbox" class="task-modal-checkbox" ${task.done ? 'checked' : ''} ${task.repairId != null ? 'disabled title="Статус оновлюється в журналі ремонтів"' : 'aria-label="Позначити завдання виконаним"'}>
+          <span class="task-modal-text">${task.time ? `<span class="task-time-badge">${escapeHtml(task.time)}</span> ` : ''}${escapeHtml(task.text)}</span>
           ${authorText}
         </div>
         <div class="task-actions">
+          ${task.repairId != null ? `<a class="task-action-btn task-repair-link" href="trackers.html?editRepair=${encodeURIComponent(task.repairId)}">↗ Ремонт</a>` : ''}
           <button type="button" class="task-action-btn edit-task" title="Редагувати завдання">Редагувати</button>
           <button type="button" class="task-action-btn move-task" title="Перенести на інший день">Перенести</button>
-          <button type="button" class="task-action-btn delete-task" title="Видалити завдання" aria-label="Видалити завдання">✕</button>
+          ${task.repairId == null ? '<button type="button" class="task-action-btn delete-task" title="Видалити завдання" aria-label="Видалити завдання">✕</button>' : ''}
         </div>
       `;
 
       item.querySelector(".task-modal-checkbox").onchange = (e) => {
+        if (task.repairId != null) return;
         task.done = e.target.checked;
         window.dayNotes[dateKey] = tasks;
         logAction('task_toggle', `${task.done ? 'Виконано' : 'Повернуто в роботу'} завдання на ${dateKey}`, `«${task.text}»`, {
@@ -3966,7 +4027,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
       item.querySelector('.edit-task').onclick = () => openTaskEditor(dateKey, task.id);
       item.querySelector('.move-task').onclick = () => openTaskEditor(dateKey, task.id, 'move');
-      item.querySelector('.delete-task').onclick = () => {
+      const deleteButton = item.querySelector('.delete-task');
+      if (deleteButton) deleteButton.onclick = () => {
         const deletedTask = tasks.splice(idx, 1)[0];
         if (tasks.length === 0) delete window.dayNotes[dateKey];
         else window.dayNotes[dateKey] = tasks;
@@ -3995,6 +4057,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
     renderModalTasks(getDayTasks(dateKey), dateKey);
     document.getElementById("modalNewTaskInput").value = "";
+    const picker = document.querySelector('#modalNewTaskTimeMount .task-time-picker');
+    window.SZVKShared.setTaskTimePicker(picker);
+    picker.open = false;
     document.getElementById("dayActionModal").classList.add("active");
   }
 
@@ -4023,11 +4088,14 @@ document.addEventListener("DOMContentLoaded", function () {
     const tasks = getDayTasks(dateKey);
 
     const newTask = {
-      id: Date.now().toString(),
+      id: window.crypto && typeof window.crypto.randomUUID === 'function' ? window.crypto.randomUUID() : Date.now().toString() + '-' + Math.random().toString(36).slice(2),
       text: val.slice(0, 70),
       done: false,
       author: currentUser ? currentUser.name : "Користувач"
     };
+    const picker = document.querySelector('#modalNewTaskTimeMount .task-time-picker');
+    const time = picker.querySelector('.task-time-input').value;
+    if (time) newTask.time = time;
     tasks.push(newTask);
 
     window.dayNotes[dateKey] = tasks;
@@ -4037,6 +4105,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
     saveLocalData();
     dayInputEl.value = "";
+    window.SZVKShared.setTaskTimePicker(picker);
+    picker.open = false;
     renderModalTasks(tasks, dateKey);
     renderApp();
   };
@@ -4072,9 +4142,9 @@ document.addEventListener("DOMContentLoaded", function () {
           let tasksHtml = dayTasks.map(t => `
             <div class="overview-task-line">
               <span class="overview-task-text">
-                <span class="overview-bullet-day">•</span> ${escapeHtml(t.text)}
+                <span class="overview-bullet-day">•</span> ${t.time ? `<span class="task-time-badge">${escapeHtml(t.time)}</span> ` : ''}${escapeHtml(t.text)}
               </span>
-              ${t.author ? `<span class="author-badge">${escapeHtml(t.author)}</span>` : ''}
+              ${t.repairId != null ? `<a class="task-action-btn task-repair-link" href="trackers.html?editRepair=${encodeURIComponent(t.repairId)}">↗ Ремонт</a>` : t.author ? `<span class="author-badge">${escapeHtml(t.author)}</span>` : ''}
             </div>
           `).join('');
 
@@ -4303,16 +4373,17 @@ document.addEventListener("DOMContentLoaded", function () {
         `;
       } else {
         tasksListHtml = shiftTasks.map((t) => `
-          <div class="cycle-task-row ${t.done ? 'done' : ''}" data-date="${shift.dateKey}" data-task-id="${t.id}">
+          <div class="cycle-task-row ${t.done ? 'done' : ''}" data-date="${shift.dateKey}" data-task-id="${escapeHtml(t.id)}">
             <div class="cycle-task-left">
-              <input type="checkbox" class="cycle-task-cb" ${t.done ? 'checked' : ''} data-date="${shift.dateKey}" data-task-id="${t.id}" title="${t.done ? 'Позначити як невиконане' : 'Позначити як виконане'}">
-              <span class="cycle-task-text" title="${escapeHtml(t.text)}">${escapeHtml(t.text)}</span>
-              ${t.author ? `<span class="cycle-task-author">(${escapeHtml(t.author)})</span>` : ''}
+              <input type="checkbox" class="cycle-task-cb" ${t.done ? 'checked' : ''} ${t.repairId != null ? 'disabled' : ''} data-date="${shift.dateKey}" data-task-id="${escapeHtml(t.id)}" title="${t.repairId != null ? 'Статус оновлюється в журналі ремонтів' : t.done ? 'Позначити як невиконане' : 'Позначити як виконане'}">
+              <span class="cycle-task-text" title="${escapeHtml(t.text)}">${t.time ? `<span class="task-time-badge">${escapeHtml(t.time)}</span> ` : ''}${escapeHtml(t.text)}</span>
+              ${t.author && t.repairId == null ? `<span class="cycle-task-author">(${escapeHtml(t.author)})</span>` : ''}
             </div>
             <div class="task-actions">
+              ${t.repairId != null ? `<a class="task-action-btn task-repair-link" href="trackers.html?editRepair=${encodeURIComponent(t.repairId)}">↗ Ремонт</a>` : ''}
               <button type="button" class="task-action-btn cycle-task-edit" data-date="${shift.dateKey}" data-task-id="${escapeHtml(t.id)}" title="Редагувати завдання" aria-label="Редагувати завдання">✎</button>
               <button type="button" class="task-action-btn cycle-task-move" data-date="${shift.dateKey}" data-task-id="${escapeHtml(t.id)}" title="Перенести на інший день" aria-label="Перенести на інший день">↗</button>
-              <button type="button" class="task-action-btn cycle-task-del-btn" data-date="${shift.dateKey}" data-task-id="${escapeHtml(t.id)}" title="Видалити завдання" aria-label="Видалити завдання">✕</button>
+              ${t.repairId == null ? `<button type="button" class="task-action-btn cycle-task-del-btn" data-date="${shift.dateKey}" data-task-id="${escapeHtml(t.id)}" title="Видалити завдання" aria-label="Видалити завдання">✕</button>` : ''}
             </div>
           </div>
         `).join('');
@@ -4349,6 +4420,7 @@ document.addEventListener("DOMContentLoaded", function () {
           <form class="cycle-shift-quick-add" data-date="${shift.dateKey}" data-year="${shift.year}" data-month="${shift.month}" data-day="${shift.day}">
             <input type="text" class="cycle-quick-input" placeholder="+ Додати таск на зміну..." maxlength="70" required>
             <button type="submit" class="cycle-quick-btn" title="Додати завдання">+</button>
+            ${window.SZVKShared.taskTimePickerHtml()}
           </form>
 
           <div class="cycle-shift-footer">
@@ -4363,7 +4435,7 @@ document.addEventListener("DOMContentLoaded", function () {
     gridHtml += `</div>`;
 
     block.innerHTML = headerHtml + gridHtml;
-
+    window.SZVKShared.initTaskTimePickers(block);
     attachCycleHeaderEvents(baseWorker, cycleInfo);
     attachCycleTaskEvents();
   }
@@ -4474,7 +4546,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const year = parseInt(form.getAttribute("data-year"), 10);
         const month = parseInt(form.getAttribute("data-month"), 10);
         const day = parseInt(form.getAttribute("data-day"), 10);
-        addTaskFromCycle(dateKey, val, year, month, day);
+        addTaskFromCycle(dateKey, val, year, month, day, form.querySelector('.task-time-input').value);
       };
     });
 
@@ -4491,7 +4563,7 @@ document.addEventListener("DOMContentLoaded", function () {
   function toggleTaskFromCycle(dateKey, taskId, newDone) {
     const tasks = getDayTasks(dateKey);
     const task = tasks.find(t => t.id === taskId);
-    if (!task) return;
+    if (!task || task.repairId != null) return;
     const prevDone = task.done;
     task.done = newDone;
     window.dayNotes[dateKey] = tasks;
@@ -4502,16 +4574,17 @@ document.addEventListener("DOMContentLoaded", function () {
     renderApp();
   }
 
-  function addTaskFromCycle(dateKey, text, year, month, day) {
+  function addTaskFromCycle(dateKey, text, year, month, day, time = '') {
     const val = (text || "").trim();
     if (!val) return;
     const tasks = getDayTasks(dateKey);
     const newTask = {
-      id: Date.now().toString(),
+      id: window.crypto && typeof window.crypto.randomUUID === 'function' ? window.crypto.randomUUID() : Date.now().toString() + '-' + Math.random().toString(36).slice(2),
       text: val.slice(0, 70),
       done: false,
       author: currentUser ? currentUser.name : "Користувач"
     };
+    if (time) newTask.time = time;
     tasks.push(newTask);
     window.dayNotes[dateKey] = tasks;
     logAction('task_add', `Додано завдання на ${day} ${MONTH_NAMES[month]} ${year}`, `«${newTask.text}» (автор: ${newTask.author})`, {
@@ -4524,7 +4597,7 @@ document.addEventListener("DOMContentLoaded", function () {
   function deleteTaskFromCycle(dateKey, taskId) {
     const tasks = getDayTasks(dateKey);
     const idx = tasks.findIndex(t => t.id === taskId);
-    if (idx === -1) return;
+    if (idx === -1 || tasks[idx].repairId != null) return;
     const deletedTask = tasks.splice(idx, 1)[0];
     if (tasks.length === 0) delete window.dayNotes[dateKey];
     else window.dayNotes[dateKey] = tasks;

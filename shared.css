@@ -175,7 +175,7 @@ body {
   cursor: pointer;
 }
 .repair-create-btn:hover { background: #1d4ed8; }
-.task-actions { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.task-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 4px; flex-shrink: 0; max-width: 100%; }
 .task-action-btn {
   padding: 5px 7px;
   border: 1px solid var(--border);
@@ -199,6 +199,22 @@ body {
   font: inherit;
 }
 .task-editor-form textarea { min-height: 85px; resize: vertical; }
+.task-time-picker { margin-top: 7px; font-size: 12px; color: var(--text-muted); min-width: 0; }
+.task-time-picker summary { cursor: pointer; width: fit-content; padding: 4px 0; }
+.task-time-picker summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+.task-time-controls { display: flex; flex-wrap: wrap; align-items: end; gap: 8px; padding-top: 6px; }
+.task-time-controls label { display: flex; flex-direction: column; gap: 5px; font-size: 12px; }
+.task-time-controls .task-time-input { width: 132px; max-width: 100%; box-sizing: border-box; padding: 7px 9px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); font: inherit; color-scheme: dark; }
+[data-theme="light"] .task-time-controls .task-time-input { color-scheme: light; }
+.task-time-controls button { padding: 6px 9px; border: 1px solid var(--border); border-radius: 6px; background: transparent; color: var(--text-muted); font: inherit; cursor: pointer; }
+.task-time-controls button:hover, .task-time-controls button[aria-pressed="true"] { color: var(--text); border-color: var(--accent); }
+.task-time-choices { flex: 1 0 100%; display: flex; flex-wrap: wrap; gap: 5px; }
+.cycle-shift-quick-add { flex-wrap: wrap; }
+.cycle-shift-quick-add .cycle-quick-input { min-width: 0; flex: 1; }
+.cycle-shift-quick-add .task-time-picker { flex: 1 0 100%; }
+.task-time-badge { display: inline-block; font-size: 11px; font-weight: 750; color: var(--text-muted); border: 1px solid var(--border); padding: 0 5px; border-radius: 5px; white-space: nowrap; vertical-align: middle; }
+.task-repair-link { text-decoration: none; color: var(--accent); white-space: nowrap; }
+.task-modal-checkbox:disabled, .cycle-task-cb:disabled { cursor: default; opacity: 0.8; }
 .task-editor-form input[type="date"] { color-scheme: dark; }
 [data-theme="light"] .task-editor-form input[type="date"] { color-scheme: light; }
 .task-editor-error { font-size: 12px; color: #f87171; }
