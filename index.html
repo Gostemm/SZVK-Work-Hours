@@ -5,13 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>⏱️ SZVK Work Hours</title>
 
-  <script src="shared.js?v=eca99a5b26c8"></script>
+  <script src="shared.js?v=096a89c672b8"></script>
 
   <!-- Firebase App & Firestore SDKs (Compat) -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 
-  <link rel="stylesheet" href="shared.css?v=2ecc12a973a4">
+  <link rel="stylesheet" href="shared.css?v=41e904b7e38c">
 
   <style>
     :root {
@@ -2221,11 +2221,20 @@
       <label>Завдання
         <textarea id="taskEditorText" maxlength="70" required rows="3"></textarea>
       </label>
-      <label>День виконання
-        <input type="date" id="taskEditorDate" required min="1000-01-01" max="9999-12-31">
-      </label>
+      <input type="hidden" id="taskEditorDate">
       <div class="task-shift-preview" id="taskEditorShift" role="status" aria-live="polite"></div>
-      <div class="task-shift-choices" id="taskEditorShiftChoices" aria-label="Найближчі зміни"></div>
+      <section class="task-mini-calendar" aria-label="Календар вибору дня виконання">
+        <div class="task-calendar-header">
+          <button type="button" class="task-calendar-nav" id="taskCalendarPrev" aria-label="Попередній місяць">‹</button>
+          <h4 id="taskCalendarMonth" role="status" aria-live="polite"></h4>
+          <button type="button" class="task-calendar-nav" id="taskCalendarNext" aria-label="Наступний місяць">›</button>
+        </div>
+        <div class="task-calendar-weekdays" aria-hidden="true"><span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span><span>Сб</span><span>Нд</span></div>
+        <div class="task-calendar-days" id="taskCalendarDays" role="group" aria-label="Дні місяця"></div>
+        <div class="task-calendar-legend">
+          <span class="artem">● Артем</span><span class="oleksandr">● Олександр</span><span>↔ підміна · № зміни</span>
+        </div>
+      </section>
       <p class="task-editor-error" id="taskEditorError" role="alert" hidden></p>
       <div class="modal-footer">
         <button type="button" class="btn" id="taskEditorCancel">Скасувати</button>
@@ -2270,7 +2279,7 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-  const requiredSharedMethods = ['mountAccountMenu', 'updateAccount', 'escapeHtml', 'formatHistoryTime', 'initThemeSwitcher', 'updateTask', 'restoreTaskMove', 'debounce', 'setHtmlIfChanged', 'shiftInfo'];
+  const requiredSharedMethods = ['mountAccountMenu', 'updateAccount', 'escapeHtml', 'formatHistoryTime', 'initThemeSwitcher', 'updateTask', 'restoreTaskMove', 'debounce', 'setHtmlIfChanged', 'shiftInfo', 'calendarMonthDays'];
   if (!window.SZVKShared || requiredSharedMethods.some(name => typeof window.SZVKShared[name] !== 'function')) {
     const message = document.getElementById('loginErrorMessage');
     message.textContent = 'Не вдалося завантажити оновлення сервісу. Оновіть сторінку.';
@@ -3752,7 +3761,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
   let activeTaskEdit = null;
   let taskEditorReturnFocus = null;
-  let taskShiftChoicesSignature = '';
+  let taskCalendarView = null;
+  let taskCalendarSignature = '';
 
   function openTaskEditor(dateKey, taskId, mode = 'edit') {
     const task = getDayTasks(dateKey).find(item => String(item.id) === String(taskId));
@@ -3763,11 +3773,14 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById('taskEditorText').value = task.text;
     document.getElementById('taskEditorDate').value = dateKey;
     document.getElementById('taskEditorSave').textContent = mode === 'move' ? 'Перенести на обрану зміну' : 'Зберегти';
-    renderTaskShiftChoices(dateKey);
+    const [year, month] = dateKey.split('-').map(Number);
+    taskCalendarView = { year, month: month - 1 };
+    taskCalendarSignature = '';
     updateTaskShiftPreview();
     document.getElementById('taskEditorError').hidden = true;
     document.getElementById('taskEditorModal').classList.add('active');
-    document.getElementById(mode === 'move' ? 'taskEditorDate' : 'taskEditorText').focus();
+    if (mode === 'move') document.querySelector('#taskCalendarDays [aria-pressed="true"]').focus();
+    else document.getElementById('taskEditorText').focus();
   }
 
   function closeTaskEditor() {
@@ -3793,58 +3806,73 @@ document.addEventListener("DOMContentLoaded", function () {
     const info = window.SZVKShared.shiftInfo(dateKey, window.overrides || {});
     preview.className = 'task-shift-preview' + (info ? info.worker === 'Артем' ? ' artem' : ' oleksandr' : '');
     preview.textContent = label || 'Оберіть дату, щоб побачити працівника зміни.';
-    if (activeTaskEdit) renderTaskShiftChoices(activeTaskEdit.dateKey);
+    if (activeTaskEdit) renderTaskCalendar();
   }
 
-  function renderTaskShiftChoices(sourceDateKey) {
-    const choices = document.getElementById('taskEditorShiftChoices');
-    const signature = JSON.stringify([sourceDateKey, window.overrides || {}]);
-    if (signature === taskShiftChoicesSignature) {
-      const selectedDate = document.getElementById('taskEditorDate').value;
-      choices.querySelectorAll('button').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.date === selectedDate)));
-      return;
-    }
-    taskShiftChoicesSignature = signature;
-    choices.replaceChildren();
-    const [year, month, day] = sourceDateKey.split('-').map(Number);
-    const date = new Date(year, month - 1, day);
+  function renderTaskCalendar() {
+    if (!taskCalendarView || !activeTaskEdit) return;
+    const { year, month } = taskCalendarView;
+    const days = document.getElementById('taskCalendarDays');
     const selectedDate = document.getElementById('taskEditorDate').value;
-    const groups = new Map();
-    for (const worker of ['Артем', 'Олександр']) {
-      const group = document.createElement('section');
-      group.className = 'task-worker-group ' + (worker === 'Артем' ? 'artem' : 'oleksandr');
-      const title = document.createElement('h4');
-      title.textContent = worker;
-      group.appendChild(title);
-      const list = document.createElement('div');
-      list.className = 'task-worker-shifts';
-      group.appendChild(list);
-      groups.set(worker, { group, list });
-    }
-    for (let offset = 1; offset <= 9; offset++) {
-      date.setDate(date.getDate() + 1);
-      const key = formatDateKey(date.getFullYear(), date.getMonth(), date.getDate());
+    const todayKey = window.SZVKShared.kyivDateKey();
+    const signature = JSON.stringify([year, month, selectedDate, todayKey, activeTaskEdit.dateKey, window.overrides || {}]);
+    if (taskCalendarSignature === signature) return;
+    taskCalendarSignature = signature;
+    document.getElementById('taskCalendarMonth').textContent = MONTH_NAMES[month] + ' ' + year;
+    document.getElementById('taskCalendarPrev').disabled = year === 1000 && month === 0;
+    document.getElementById('taskCalendarNext').disabled = year === 9999 && month === 11;
+    days.replaceChildren();
+    for (const entry of window.SZVKShared.calendarMonthDays(year, month)) {
+      const key = entry.dateKey;
+      const info = window.SZVKShared.shiftInfo(key, window.overrides || {});
       const button = document.createElement('button');
       button.type = 'button';
-      button.className = 'task-shift-choice';
+      button.className = 'task-calendar-day' + (!entry.inMonth ? ' other-month' : '') + (info ? info.worker === 'Артем' ? ' artem' : ' oleksandr' : '');
       button.dataset.date = key;
-      const info = window.SZVKShared.shiftInfo(key, window.overrides || {});
-      const dateLabel = date.toLocaleDateString('uk-UA', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
-      button.innerHTML = `<strong>Зміна №${info.shiftNum}</strong>${info.isEdited ? '<span class="task-shift-substitution">Підміна</span>' : ''}<span>${escapeHtml(dateLabel)}</span>`;
-      button.setAttribute('aria-label', taskShiftLabel(key));
+      button.disabled = !info;
+      button.innerHTML = `<span class="task-calendar-day-number">${entry.day}</span>${info ? `<span class="task-calendar-worker">${info.worker === 'Артем' ? 'А' : 'О'}·${info.shiftNum}</span>${info.isEdited ? '<span class="task-calendar-substitution" aria-hidden="true">↔</span>' : ''}` : ''}`;
+      button.setAttribute('aria-label', info ? taskShiftLabel(key) + (key === activeTaskEdit.dateKey ? ' · Поточний день завдання' : '') : 'Дата недоступна');
+      button.title = button.getAttribute('aria-label');
       button.setAttribute('aria-pressed', String(key === selectedDate));
-      button.onclick = () => {
-        document.getElementById('taskEditorDate').value = key;
-        updateTaskShiftPreview();
-      };
-      groups.get(info.worker).list.appendChild(button);
+      button.tabIndex = key === selectedDate ? 0 : -1;
+      if (key === todayKey) { button.classList.add('today'); button.setAttribute('aria-current', 'date'); }
+      if (key === activeTaskEdit.dateKey) button.classList.add('source-day');
+      days.appendChild(button);
     }
-    const upcomingGroups = [...groups.values()].filter(({ list }) => list.childElementCount)
-      .sort((a, b) => a.list.firstElementChild.dataset.date.localeCompare(b.list.firstElementChild.dataset.date));
-    for (const { group } of upcomingGroups) choices.appendChild(group);
+    if (!days.querySelector('[tabindex="0"]')) days.querySelector('button:not(.other-month):not(:disabled)').tabIndex = 0;
   }
 
-  document.getElementById('taskEditorDate').addEventListener('input', updateTaskShiftPreview);
+  function selectTaskDate(dateKey) {
+    if (!window.SZVKShared.isValidDateKey(dateKey)) return;
+    document.getElementById('taskEditorDate').value = dateKey;
+    const [year, month] = dateKey.split('-').map(Number);
+    taskCalendarView = { year, month: month - 1 };
+    updateTaskShiftPreview();
+    document.querySelector('#taskCalendarDays [aria-pressed="true"]').focus();
+  }
+
+  document.getElementById('taskCalendarDays').addEventListener('click', event => {
+    const button = event.target.closest('[data-date]');
+    if (button && !button.disabled) selectTaskDate(button.dataset.date);
+  });
+  document.getElementById('taskCalendarDays').addEventListener('keydown', event => {
+    const button = event.target.closest('[data-date]');
+    const offsets = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 };
+    if (!button || !(event.key in offsets)) return;
+    event.preventDefault();
+    const [year, month, day] = button.dataset.date.split('-').map(Number);
+    const date = new Date(year, month - 1, day + offsets[event.key]);
+    selectTaskDate(formatDateKey(date.getFullYear(), date.getMonth(), date.getDate()));
+  });
+  function navigateTaskMonth(offset) {
+    const next = new Date(taskCalendarView.year, taskCalendarView.month + offset, 1);
+    if (next.getFullYear() < 1000 || next.getFullYear() > 9999) return;
+    taskCalendarView = { year: next.getFullYear(), month: next.getMonth() };
+    renderTaskCalendar();
+  }
+  document.getElementById('taskCalendarPrev').onclick = () => navigateTaskMonth(-1);
+  document.getElementById('taskCalendarNext').onclick = () => navigateTaskMonth(1);
+  document.getElementById('taskEditorDate').addEventListener('input', () => selectTaskDate(document.getElementById('taskEditorDate').value));
 
   function refreshOpenDayTasks() {
     if (activeDayModalTarget && document.getElementById('dayActionModal').classList.contains('active')) {

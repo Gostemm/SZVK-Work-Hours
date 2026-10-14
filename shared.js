@@ -195,6 +195,20 @@
     });
   }
 
+  function calendarMonthDays(year, month) {
+    if (!Number.isInteger(year) || !Number.isInteger(month) || year < 1000 || year > 9999 || month < 0 || month > 11) return [];
+    const first = new Date(Date.UTC(year, month, 1));
+    const offset = (first.getUTCDay() + 6) % 7;
+    return Array.from({ length: 42 }, (_, index) => {
+      const date = new Date(Date.UTC(year, month, 1 - offset + index));
+      return {
+        dateKey: `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`,
+        day: date.getUTCDate(),
+        inMonth: date.getUTCFullYear() === year && date.getUTCMonth() === month
+      };
+    });
+  }
+
   // Change the day and/or text without changing identity, author, or completion.
   function updateTask(dayNotes, sourceDateKey, taskId, text, targetDateKey) {
     const cleanText = String(text || '').trim();
@@ -335,6 +349,7 @@
     shiftInfo,
     kyivDateKey,
     isRecentRepair,
+    calendarMonthDays,
     updateTask,
     restoreTaskMove,
     initThemeSwitcher,

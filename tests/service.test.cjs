@@ -217,3 +217,19 @@ test('the current journal day uses Kyiv time around midnight and clock changes',
   assert.equal(shared.kyivDateKey(new Date('2026-10-24T21:30:00Z')),'2026-10-25');
   assert.equal(shared.kyivDateKey(new Date('2026-10-25T22:30:00Z')),'2026-10-26');
 });
+
+test('mini calendars align Monday-first weeks and include leap days and adjacent months', () => {
+  const october = copy(shared.calendarMonthDays(2026,9));
+  assert.equal(october.length,42);
+  assert.equal(october[0].dateKey,'2026-09-28');
+  assert.equal(october[41].dateKey,'2026-11-08');
+  assert.equal(october.filter(day=>day.inMonth).length,31);
+  assert.equal(october.find(day=>day.dateKey==='2026-10-15').day,15);
+  const leap = copy(shared.calendarMonthDays(2028,1));
+  assert.equal(leap.filter(day=>day.inMonth).length,29);
+  assert.ok(leap.some(day=>day.dateKey==='2028-02-29' && day.inMonth));
+  const january = copy(shared.calendarMonthDays(2027,0));
+  assert.equal(january[0].dateKey,'2026-12-28');
+  assert.equal(january[41].dateKey,'2027-02-07');
+  assert.equal(shared.calendarMonthDays(2026,12).length,0);
+});

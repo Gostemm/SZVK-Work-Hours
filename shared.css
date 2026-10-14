@@ -579,9 +579,6 @@ body {
 .task-modal-content .task-modal-author, .cycle-task-left .cycle-task-author { grid-column: 2; margin-left: 0; white-space: normal; }
 .task-modal-content .task-modal-text, .cycle-task-left .cycle-task-text { min-width: 0; white-space: pre-wrap; word-break: normal; overflow-wrap: break-word; }
 .task-shift-preview { padding: 12px; border: 1px solid var(--accent); border-radius: 8px; font-size: 13px; line-height: 1.5; }
-.task-shift-choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; max-height: 210px; overflow-y: auto; }
-.task-shift-choice { padding: 9px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text-muted); text-align: left; cursor: pointer; font-size: 12px; line-height: 1.5; }
-.task-shift-choice:hover, .task-shift-choice[aria-pressed="true"] { border-color: var(--accent); color: var(--text); background: var(--card-bg); }
 .repair-step-tabs { display: flex; gap: 6px; margin-bottom: 16px; }
 .repair-step-tab { flex: 1; padding: 11px 8px; background: var(--bg); color: var(--text-muted); border: 1px solid var(--border); border-radius: 8px; font-weight: 700; cursor: pointer; }
 .repair-step-tab[aria-selected="true"] { color: #fff; background: var(--accent); border-color: var(--accent); }
@@ -619,43 +616,41 @@ body {
   #repairForm .form-col-2 { grid-column: auto; }
   #repairForm .modal-footer { flex-wrap: wrap; gap: 8px; }
   #repairForm .form-input, #repairForm .form-select, #repairForm .form-textarea, .task-editor-form textarea, .task-editor-form input { font-size: 16px; }
-  .task-shift-choices { grid-template-columns: minmax(0, 1fr); }
 }
 
 /* Worker colors follow the actual assigned shift, including substitutions. */
-.task-shift-choices { grid-template-columns: repeat(2, minmax(0, 1fr)); max-height: none; overflow: visible; align-items: start; gap: 8px; }
-.task-worker-group { --worker-color: var(--artem); --worker-tint: rgba(139, 92, 246, 0.12); min-width: 0; padding: 8px; border: 1px solid var(--worker-color); border-radius: 10px; background: var(--worker-tint); }
-.task-worker-group.oleksandr, .task-shift-preview.oleksandr { --worker-color: var(--oleksandr); --worker-tint: rgba(16, 185, 129, 0.12); }
-.task-worker-group h4 { color: var(--text); border-left: 4px solid var(--worker-color); padding-left: 8px; font-size: 14px; margin-bottom: 10px; }
-.task-worker-shifts { display: flex; flex-direction: column; gap: 6px; max-height: 245px; overflow-y: auto; }
-.task-worker-group .task-shift-choice { display: flex; flex: 0 0 auto; flex-direction: column; gap: 3px; min-height: 60px; padding: 8px 6px; font-size: 12px; font-weight: 600; }
-.task-shift-substitution { color: var(--worker-color); font-weight: 700; }
-.task-shift-choice strong { color: var(--text); font-size: 13px; }
-.task-worker-group .task-shift-choice:hover, .task-worker-group .task-shift-choice[aria-pressed="true"] { border-color: var(--worker-color); background: var(--worker-tint); }
-.task-worker-group .task-shift-choice[aria-pressed="true"] { box-shadow: inset 3px 0 var(--worker-color); }
 .task-shift-preview.artem { --worker-color: var(--artem); --worker-tint: rgba(139, 92, 246, 0.12); }
+.task-shift-preview.oleksandr { --worker-color: var(--oleksandr); --worker-tint: rgba(16, 185, 129, 0.12); }
 .task-shift-preview.artem, .task-shift-preview.oleksandr { border-color: var(--worker-color); background: var(--worker-tint); border-left-width: 4px; font-weight: 650; }
+
+.task-mini-calendar { border: 1px solid var(--border); border-radius: 10px; padding: 10px; background: var(--bg); }
+.task-calendar-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.task-calendar-header h4 { font-size: 14px; font-weight: 750; }
+.task-calendar-nav { display: grid; place-items: center; width: 32px; height: 30px; border-radius: 7px; border: 1px solid var(--border); background: var(--card-bg); color: var(--text); font-size: 22px; font-weight: 700; cursor: pointer; }
+.task-calendar-nav:disabled { opacity: 0.4; cursor: default; }
+.task-calendar-weekdays, .task-calendar-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.task-calendar-weekdays { margin-bottom: 5px; text-align: center; font-size: 11px; color: var(--text-muted); font-weight: 700; }
+.task-calendar-day { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-width: 0; min-height: 44px; padding: 4px 1px; border: 1px solid var(--border); border-radius: 7px; background: var(--card-bg); color: var(--text); cursor: pointer; position: relative; }
+.task-calendar-day.artem { background: rgba(139, 92, 246, 0.15); border-color: var(--artem); }
+.task-calendar-day.oleksandr { background: rgba(16, 185, 129, 0.15); border-color: var(--oleksandr); }
+.task-calendar-day.other-month { opacity: 0.5; }
+.task-calendar-day.today { border: 2px solid var(--today-border); }
+.task-calendar-day[aria-pressed="true"] { opacity: 1; outline: 2px solid var(--accent); outline-offset: 1px; background: var(--card-bg); }
+.task-calendar-day:hover { opacity: 1; outline: 1px solid var(--text-muted); }
+.task-calendar-day:disabled { opacity: 0.25; cursor: default; }
+.task-calendar-day-number { font-size: 14px; font-weight: 800; line-height: 1; }
+.task-calendar-worker { font-size: 9px; font-weight: 700; white-space: nowrap; line-height: 1; }
+.task-calendar-substitution { position: absolute; top: 1px; right: 1px; font-size: 9px; line-height: 1; }
+.task-calendar-legend { display: flex; gap: 6px 12px; flex-wrap: wrap; margin-top: 12px; font-size: 11px; color: var(--text-muted); line-height: 1.5; font-weight: 650; }
+.task-calendar-legend .artem { color: var(--artem); }
+.task-calendar-legend .oleksandr { color: var(--oleksandr); }
+#taskEditorModal .modal-box { max-width: 480px; }
 
 .recent-repairs-section { display: flex; flex-direction: column; gap: 12px; }
 .recent-repairs-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
 .recent-repairs-heading h2 { font-size: 17px; font-weight: 750; }
 .recent-repairs-range, .recent-repairs-hint { color: var(--text-muted); font-size: 13px; line-height: 1.5; }
-.recent-repairs-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-.recent-repair-card { display: flex; flex-direction: column; gap: 10px; padding: 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--bg); min-width: 0; }
-.recent-repair-header { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
-.recent-repair-vehicle { font-size: 16px; color: var(--text); }
-.recent-repair-date, .recent-repair-carrier { color: var(--text-muted); font-size: 13px; line-height: 1.5; overflow-wrap: break-word; }
-.recent-repair-issue, .recent-repair-solution { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; font-size: 14px; line-height: 1.55; overflow-wrap: break-word; }
-.recent-repair-issue { color: var(--text); font-weight: 650; }
-.recent-repair-solution { color: var(--text-muted); }
-.recent-repair-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: auto; }
-.recent-repair-status { font-size: 13px; font-weight: 700; }
-.recent-repair-status.pending { color: var(--today-border); }
-.recent-repair-status.completed { color: var(--oleksandr); }
-.recent-repair-actions { display: flex; flex-wrap: wrap; gap: 8px; }
-.recent-repair-meta .invoice-label { margin-top: 0; }
-.recent-repairs-empty { grid-column: 1 / -1; color: var(--text-muted); padding: 22px; border: 1px dashed var(--border); border-radius: 10px; font-size: 14px; line-height: 1.5; }
-.recent-repairs-empty .btn { margin-top: 12px; }
+.repair-table .repair-table-empty { text-align: center; padding: 24px; color: var(--text-muted); font-size: 14px; line-height: 1.5; }
 .repair-archive { margin-top: 8px; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
 .repair-archive > summary { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; cursor: pointer; padding: 16px; list-style: none; background: var(--bg); }
 .repair-archive > summary::-webkit-details-marker { display: none; }
@@ -678,8 +673,6 @@ html[data-theme="dark"] :is(.form-input, .form-select, .form-textarea, .search-i
 html[data-theme="dark"] :is(.btn, .filter-chip, .filter-select, .task-action-btn, .tab-btn, .main-tab-btn) { font-size: 13px; font-weight: 700; }
 html[data-theme="dark"] :is(.form-label, .reported-by-sub, .repair-form-hint, .at-notes, .at-item-desc, .history-item-details) { font-weight: 600; }
 @media (max-width: 768px) {
-  .recent-repairs-list { grid-template-columns: minmax(0, 1fr); }
-  .recent-repair-card { padding: 13px; }
   .repair-archive-content { padding: 8px; }
   #inventoryForm .form-grid, #bulkInventoryForm .form-grid { grid-template-columns: minmax(0, 1fr); }
   #inventoryForm .form-col-2, #bulkInventoryForm .form-col-2 { grid-column: auto; }

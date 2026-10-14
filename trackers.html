@@ -17,13 +17,13 @@
       }
     })();
   </script>
-  <script src="shared.js?v=eca99a5b26c8"></script>
+  <script src="shared.js?v=096a89c672b8"></script>
 
   <!-- Firebase App & Firestore SDKs (Compat) -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 
-  <link rel="stylesheet" href="shared.css?v=2ecc12a973a4">
+  <link rel="stylesheet" href="shared.css?v=41e904b7e38c">
 
   <style>
     :root {
@@ -1882,6 +1882,25 @@
     </div>
   </div>
 
+  <template id="repairTableHeading">
+        <thead>
+          <tr>
+            <th style="width: 88px;" class="sortable-th" data-repair-date-sort title="Сортування по даті (клікніть щоб змінити)">
+              📅 Дата <span class="sort-indicator">▼</span>
+            </th>
+            <th style="width: 100px;">Перевізник</th>
+            <th style="width: 85px;">Номер т/з</th>
+            <th style="width: 110px;">S/N трекера</th>
+            <th style="min-width: 150px;">Проблема / Опис</th>
+            <th style="width: 115px;">Дата рем. / Статус</th>
+            <th style="width: 95px;">Fix</th>
+            <th style="min-width: 150px;">Рішення спеціаліста</th>
+            <th style="min-width: 135px;">Нотатки</th>
+            <th style="width: 70px; text-align: center;">Дії</th>
+          </tr>
+        </thead>
+  </template>
+
   <!-- VIEW 1: REPAIRS JOURNAL -->
   <div class="view-card" id="viewJournal">
     <div class="card-header-row">
@@ -1906,7 +1925,11 @@
         <span id="recentRepairsRange" class="recent-repairs-range"></span>
       </div>
       <p class="recent-repairs-hint">Звернення та виконані роботи. Старіші записи — у повному журналі нижче.</p>
-      <div class="recent-repairs-list" id="recentRepairsList"></div>
+      <div class="table-container">
+        <table class="repair-table" data-repair-table>
+          <tbody id="recentRepairTableBody"></tbody>
+        </table>
+      </div>
     </section>
 
     <details class="repair-archive" id="repairArchive">
@@ -1918,23 +1941,8 @@
       <div class="repair-archive-content">
     <!-- Table Mode -->
     <div class="table-container" id="tableModeContainer">
-      <table class="repair-table">
-        <thead>
-          <tr>
-            <th style="width: 88px;" class="sortable-th" id="thSortDate" title="Сортування по даті (клікніть щоб змінити)">
-              📅 Дата <span class="sort-indicator" id="sortDateIcon">▼</span>
-            </th>
-            <th style="width: 100px;">Перевізник</th>
-            <th style="width: 85px;">Номер т/з</th>
-            <th style="width: 110px;">S/N трекера</th>
-            <th style="min-width: 150px;">Проблема / Опис</th>
-            <th style="width: 115px;">Дата рем. / Статус</th>
-            <th style="width: 95px;">Fix</th>
-            <th style="min-width: 150px;">Рішення спеціаліста</th>
-            <th style="min-width: 135px;">Нотатки</th>
-            <th style="width: 70px; text-align: center;">Дії</th>
-          </tr>
-        </thead>
+      <table class="repair-table" data-repair-table>
+
         <tbody id="repairTableBody">
           <!-- Filled by JS -->
         </tbody>
@@ -2463,6 +2471,9 @@
 (function() {
   'use strict';
   window.SZVKShared.mountAccountMenu({ backup: true, historyId: 'tabBtnHistory' });
+  document.querySelectorAll('[data-repair-table]').forEach(table => {
+    table.prepend(document.getElementById('repairTableHeading').content.cloneNode(true));
+  });
 
   const STORAGE_KEY = 'szvk_trackers_data';
     const DEFAULT_PRIMARY_COMMANDS = [
@@ -2616,8 +2627,6 @@
   const btnNextPage = document.getElementById('btnNextPage');
   const pageCurrentLabel = document.getElementById('pageCurrentLabel');
 
-  const thSortDate = document.getElementById('thSortDate');
-  const sortDateIcon = document.getElementById('sortDateIcon');
 
   // Modal elements
   const repairModalOverlay = document.getElementById('repairModalOverlay');
@@ -3402,103 +3411,13 @@
     return list;
   }
 
-  function renderRecentRepairs(items, todayKey) {
-    const [year, month, day] = todayKey.split('-').map(Number);
-    const last = new Date(year, month - 1, day);
-    const first = new Date(year, month - 1, day - 6);
-    const format = date => date.toLocaleDateString('uk-UA', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    document.getElementById('recentRepairsRange').textContent = format(first) + ' — ' + format(last);
-    const container = document.getElementById('recentRepairsList');
-    if (!items.length) {
-      window.SZVKShared.setHtmlIfChanged(container, '<div class="recent-repairs-empty"><p>За останні 7 днів записів за цими фільтрами немає.</p><button type="button" class="btn" data-open-archive>Відкрити повний журнал</button></div>');
-      return;
-    }
-    const entries = items.map(item => {
-      const dates = [item.date, item.repairDate].filter(date => window.SZVKShared.isRecentRepair({ date }, todayKey));
-      dates.sort((a, b) => dateTimestamp(b) - dateTimestamp(a));
-      return { item, date: dates[0] };
-    }).sort((a, b) => dateTimestamp(b.date) - dateTimestamp(a.date));
-    const html = entries.map(({ item, date }) => {
-      const pending = isRepairPending(item);
-      const recentWork = date === item.repairDate;
-      return `
-        <article class="recent-repair-card" data-repair-id="${escapeHtml(item.id)}">
-          <div class="recent-repair-header">
-            <strong class="recent-repair-vehicle">Авто ${escapeHtml(item.vehicle || '—')}</strong>
-            <span class="recent-repair-date">${recentWork ? 'Робота' : 'Звернення'}: ${escapeHtml(date)}</span>
-          </div>
-          <div class="recent-repair-carrier">${escapeHtml(item.carrier || 'Без перевізника')} · S/N ${escapeHtml(item.serial || '—')}</div>
-          <p class="recent-repair-issue" title="${escapeHtml(item.issue)}">${escapeHtml(item.issue || 'Проблему не вказано')}</p>
-          ${item.solution ? `<p class="recent-repair-solution" title="${escapeHtml(item.solution)}">${escapeHtml(item.solution)}</p>` : ''}
-          <div class="recent-repair-meta">
-            <span class="recent-repair-status ${pending ? 'pending' : 'completed'}">${pending ? '⏳ В роботі' : '✓ Виконано'}</span>
-            ${getTechBadgeHtml(item.specialist)}
-            ${window.SZVKShared.needsInvoice(item) ? '<span class="invoice-label">💳 Потрібен рахунок</span>' : ''}
-          </div>
-          <div class="recent-repair-actions">
-            <button type="button" class="btn" data-edit-repair="${escapeHtml(item.id)}">Відкрити запис</button>
-            ${pending ? `<button type="button" class="btn btn-primary" data-finish-repair="${escapeHtml(item.id)}">Завершити ремонт</button>` : ''}
-          </div>
-        </article>`;
-    }).join('');
-    window.SZVKShared.setHtmlIfChanged(container, html);
-  }
-
-  document.getElementById('recentRepairsList').addEventListener('click', event => {
-    const edit = event.target.closest('[data-edit-repair]');
-    const finish = event.target.closest('[data-finish-repair]');
-    if (edit) window.editRepair(Number(edit.dataset.editRepair));
-    else if (finish) window.finishRepair(Number(finish.dataset.finishRepair));
-    else if (event.target.closest('[data-open-archive]')) document.getElementById('repairArchive').open = true;
-  });
-  document.getElementById('repairArchive').addEventListener('toggle', renderRepairs);
-
-  // The full table is rendered only while its disclosure is open.
-  function renderRepairs() {
-    if (activeTab !== 'journal') return;
-    const todayKey = window.SZVKShared.kyivDateKey();
-    const archive = document.getElementById('repairArchive');
-    const key = [dataVersions.repairs, searchQuery, activeFilterChip, specialistFilter, monthFilter, sortField, sortDirection, currentPage, pageSize, todayKey, archive.open].join('|');
-    if (renderedViews.journal === key) return;
-    renderedViews.journal = key;
-    const filtered = getFilteredRepairs();
-    const totalCount = filtered.length;
-    const recent = filtered.filter(item => window.SZVKShared.isRecentRepair(item, todayKey));
-    filteredCountBadge.textContent = `(${recent.length} за 7 днів)`;
-    document.getElementById('repairArchiveCount').textContent = `${totalCount} записів`;
-    renderRecentRepairs(recent, todayKey);
-    if (!archive.open) {
-      window.SZVKShared.reconcileRows(repairTableBody, [], () => '');
-      return;
-    }
-
-    // Pagination calculations
-    let effectivePageSize = pageSize === 'all' ? totalCount : parseInt(pageSize, 10);
-    if (!effectivePageSize || effectivePageSize <= 0) effectivePageSize = totalCount || 1;
-    const totalPages = Math.ceil(totalCount / effectivePageSize) || 1;
-    if (currentPage > totalPages) currentPage = totalPages;
-    if (currentPage < 1) currentPage = 1;
-
-    const startIdx = (currentPage - 1) * effectivePageSize;
-    const endIdx = pageSize === 'all' ? totalCount : Math.min(startIdx + effectivePageSize, totalCount);
-    const pageItems = filtered.slice(startIdx, endIdx);
-
-    paginationInfo.textContent = totalCount === 0 ? 'Записів не знайдено' : `Показано ${startIdx + 1} - ${endIdx} із ${totalCount}`;
-    pageCurrentLabel.textContent = `${currentPage} / ${totalPages}`;
-    btnPrevPage.disabled = currentPage <= 1;
-    btnNextPage.disabled = currentPage >= totalPages;
-
-    // Render Table
-    if (pageItems.length === 0) {
-      repairTableBody.innerHTML = `<tr><td colspan="10" style="text-align: center; padding: 35px; color: var(--text-muted);">Записів за вашим запитом не знайдено</td></tr>`;
-    } else {
-      window.SZVKShared.reconcileRows(repairTableBody, pageItems, item => {
+  function buildRepairRow(item) {
         const isPending = isRepairPending(item);
         const rowClass = isPending ? 'row-pending' : '';
         const carrierTagClass = getCarrierClass(item.carrier);
 
         return `
-          <tr class="${rowClass}">
+          <tr class="${rowClass}" data-repair-id="${escapeHtml(item.id)}">
             <td class="cell-date">
               ${escapeHtml(item.date)}
             </td>
@@ -3554,10 +3473,60 @@
             </td>
           </tr>
         `;
-      });
+  }
 
+  function renderRepairRows(container, items, emptyText) {
+    window.SZVKShared.reconcileRows(container, items, buildRepairRow);
+    if (!items.length) container.innerHTML = '<tr><td colspan="10" class="repair-table-empty">' + escapeHtml(emptyText) + '</td></tr>';
+  }
+
+  document.getElementById('repairArchive').addEventListener('toggle', renderRepairs);
+
+  function renderRepairs() {
+    if (activeTab !== 'journal') return;
+    const todayKey = window.SZVKShared.kyivDateKey();
+    const archive = document.getElementById('repairArchive');
+    const searching = Boolean(searchQuery.trim());
+    const key = [dataVersions.repairs, searchQuery, activeFilterChip, specialistFilter, monthFilter, sortField, sortDirection, currentPage, pageSize, todayKey, archive.open].join('|');
+    if (renderedViews.journal === key) return;
+    renderedViews.journal = key;
+    const filtered = getFilteredRepairs();
+    const totalCount = filtered.length;
+    const visible = searching ? filtered : filtered.filter(item => window.SZVKShared.isRecentRepair(item, todayKey));
+    archive.hidden = searching;
+    filteredCountBadge.textContent = searching ? '(' + totalCount + ' результатів)' : '(' + visible.length + ' за 7 днів)';
+    document.getElementById('repairArchiveCount').textContent = totalCount + ' записів';
+    document.getElementById('recentRepairsTitle').textContent = searching ? 'Результати пошуку' : 'Останні 7 днів';
+    document.querySelector('.recent-repairs-hint').textContent = searching
+      ? 'Усі знайдені записи в журналі ремонтів.'
+      : 'Звернення та виконані роботи. Старіші записи — у повному журналі нижче.';
+    if (searching) {
+      document.getElementById('recentRepairsRange').textContent = totalCount + ' записів';
+    } else {
+      const [year, month, day] = todayKey.split('-').map(Number);
+      const format = date => date.toLocaleDateString('uk-UA', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      document.getElementById('recentRepairsRange').textContent = format(new Date(year, month - 1, day - 6)) + ' — ' + format(new Date(year, month - 1, day));
+    }
+    renderRepairRows(document.getElementById('recentRepairTableBody'), visible, searching
+      ? 'Записів за вашим запитом не знайдено.'
+      : 'За останні 7 днів записів за цими фільтрами немає.');
+    if (searching || !archive.open) {
+      window.SZVKShared.reconcileRows(repairTableBody, [], buildRepairRow);
+      return;
     }
 
+    // Preserve the archive page size when entering and clearing search.
+    let effectivePageSize = pageSize === 'all' ? totalCount : parseInt(pageSize, 10);
+    if (!effectivePageSize || effectivePageSize <= 0) effectivePageSize = totalCount || 1;
+    const totalPages = Math.ceil(totalCount / effectivePageSize) || 1;
+    currentPage = Math.max(1, Math.min(currentPage, totalPages));
+    const startIdx = (currentPage - 1) * effectivePageSize;
+    const endIdx = Math.min(startIdx + effectivePageSize, totalCount);
+    paginationInfo.textContent = totalCount === 0 ? 'Записів не знайдено' : 'Показано ' + (startIdx + 1) + ' — ' + endIdx + ' із ' + totalCount;
+    pageCurrentLabel.textContent = currentPage + ' / ' + totalPages;
+    btnPrevPage.disabled = currentPage <= 1;
+    btnNextPage.disabled = currentPage >= totalPages;
+    renderRepairRows(repairTableBody, filtered.slice(startIdx, endIdx), 'Записів за вашим запитом не знайдено.');
   }
 
   // Render Inventory (New Trackers)
@@ -4631,17 +4600,25 @@
     renderHistory();
   });
 
-  // SORT BY DATE CLICK
-  thSortDate.addEventListener('click', () => {
-    if (sortField === 'date') {
-      sortDirection = sortDirection === 'desc' ? 'asc' : 'desc';
-    } else {
+  // The weekly, search and archive tables share date sorting.
+  document.querySelectorAll('[data-repair-date-sort]').forEach(header => {
+    header.tabIndex = 0;
+    header.setAttribute('aria-sort', 'descending');
+    const toggleSort = () => {
       sortField = 'date';
-      sortDirection = 'desc';
-    }
-    sortDateIcon.textContent = sortDirection === 'desc' ? '▼' : '▲';
-    thSortDate.title = sortDirection === 'desc' ? 'Сортування: найновіші (клікніть для зміни)' : 'Сортування: найстаріші (клікніть для зміни)';
-    renderRepairs();
+      sortDirection = sortDirection === 'desc' ? 'asc' : 'desc';
+      document.querySelectorAll('[data-repair-date-sort]').forEach(column => {
+        column.querySelector('.sort-indicator').textContent = sortDirection === 'desc' ? '▼' : '▲';
+        column.setAttribute('aria-sort', sortDirection === 'desc' ? 'descending' : 'ascending');
+        column.title = sortDirection === 'desc' ? 'Сортування: найновіші (натисніть для зміни)' : 'Сортування: найстаріші (натисніть для зміни)';
+      });
+      currentPage = 1;
+      renderRepairs();
+    };
+    header.addEventListener('click', toggleSort);
+    header.addEventListener('keydown', event => {
+      if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); toggleSort(); }
+    });
   });
 
   // Global Search
