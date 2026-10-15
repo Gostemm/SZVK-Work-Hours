@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <title>SZVK — робочий час і GPS-трекери</title>
+  <rect width="64" height="64" rx="15" fill="#0f172a"/>
+  <path d="M32 7C19.85 7 10 16.6 10 28.5 10 43 32 58 32 58s22-15 22-29.5C54 16.6 44.15 7 32 7Z" fill="#3b82f6"/>
+  <circle cx="32" cy="28" r="13" fill="#0f172a"/>
+  <path d="M32 19v9l6 4" fill="none" stroke="#f8fafc" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
