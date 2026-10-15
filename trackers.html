@@ -8,19 +8,16 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg" sizes="any">
   <link rel="apple-touch-icon" href="apple-touch-icon.png" sizes="180x180">
 
+  <script src="shared.js?v=72adb4e9f4d9"></script>
   <script>
     // Auth guard
     (function() {
-      if (window.location.protocol.startsWith("http")) {
-        var token = localStorage.getItem('szvk_auth_token') || sessionStorage.getItem('szvk_auth_token');
-        if (!token) {
-          window.location.replace("index.html");
-          return;
-        }
+      if (!window.SZVKShared || typeof window.SZVKShared.readAuthSession !== 'function' || !window.SZVKShared.readAuthSession()) {
+        document.documentElement.style.visibility = 'hidden';
+        window.location.replace("index.html");
       }
     })();
   </script>
-  <script src="shared.js?v=8d1463cb948b"></script>
 
   <!-- Firebase App & Firestore SDKs (Compat) -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
@@ -2473,6 +2470,9 @@
  */
 (function() {
   'use strict';
+  if (!window.SZVKShared || typeof window.SZVKShared.readAuthSession !== 'function') return;
+  const currentUser = window.SZVKShared.readAuthSession();
+  if (!currentUser) return;
   window.SZVKShared.mountAccountMenu({ backup: true, historyId: 'tabBtnHistory' });
   document.querySelectorAll('[data-repair-table]').forEach(table => {
     table.prepend(document.getElementById('repairTableHeading').content.cloneNode(true));
@@ -2966,12 +2966,6 @@
   let DB_HISTORY_DOC = null;
   let DB_SCHEDULE_DOC = null;
   const UNIFIED_HISTORY_STORAGE_KEY = 'szvk_action_history_unified';
-
-  let currentUser = null;
-  try {
-    const sess = localStorage.getItem('szvk_internal_session');
-    if (sess) currentUser = JSON.parse(sess);
-  } catch(e) {}
 
   window.SZVKShared.updateAccount(currentUser);
   document.getElementById('btnLogoutBtn').onclick = window.SZVKShared.logoutAccount;

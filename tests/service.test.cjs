@@ -15,6 +15,178 @@ vm.runInContext(fs.readFileSync(path.join(root, 'shared.js'), 'utf8'), context);
 const shared = context.window.SZVKShared;
 const copy = value => JSON.parse(JSON.stringify(value));
 
+function authFixture(localEntries = {}, sessionEntries = {}) {
+  const storage = entries => {
+    const data = new Map(Object.entries(entries));
+    return { getItem: key => data.get(key) ?? null, setItem: (key, value) => data.set(key, String(value)), removeItem: key => data.delete(key) };
+  };
+  const local = storage(localEntries);
+  const session = storage(sessionEntries);
+  const authContext = vm.createContext({
+    window: { location: { search: '', replace() {} }, matchMedia: () => ({ matches: false }) },
+    localStorage: local, sessionStorage: session,
+    document: { documentElement: { setAttribute() {}, style: {} } },
+    URLSearchParams, Date
+  });
+  vm.runInContext(fs.readFileSync(path.join(root, 'shared.js'), 'utf8'), authContext);
+  return { context: authContext, shared: authContext.window.SZVKShared, local, session };
+}
+
+test('the one-time reset rejects legacy sessions in either storage without deleting work data', () => {
+  for (const remember of [true, false]) {
+    const fixture = authFixture({
+      szvk_internal_session: JSON.stringify({ username: 'Artem', name: 'Артем', role: 'admin', active: true }),
+      szvk_schedule_local_data: 'work data', szvk_trackers_data: 'repair data',
+      szvk_remembered_username: 'Artem', szvk_remembered_credentials: 'legacy credentials',
+      ...(remember ? { szvk_auth_token: 'old-token' } : {})
+    }, remember ? {} : { szvk_auth_token: 'old-token' });
+    assert.equal(fixture.shared.readAuthSession(), null);
+    assert.equal(fixture.local.getItem('szvk_auth_token'), null);
+    assert.equal(fixture.session.getItem('szvk_auth_token'), null);
+    assert.equal(fixture.local.getItem('szvk_internal_session'), null);
+    assert.equal(fixture.local.getItem('szvk_remembered_credentials'), null);
+    assert.equal(fixture.local.getItem('szvk_schedule_local_data'), 'work data');
+    assert.equal(fixture.local.getItem('szvk_trackers_data'), 'repair data');
+    assert.equal(fixture.local.getItem('szvk_remembered_username'), 'Artem');
+  }
+});
+
+test('a successful new login survives reloads and honors the remember checkbox', () => {
+  for (const remember of [true, false]) {
+    const fixture = authFixture();
+    const saved = fixture.shared.saveAuthSession({ username: 'Artem', name: 'Артем', role: 'admin', passwordHash: 'never store in session' }, remember);
+    assert.equal(saved.sessionVersion, fixture.shared.authSessionVersion);
+    assert.equal(saved.passwordHash, undefined);
+    assert.equal(!!fixture.local.getItem('szvk_auth_token'), remember);
+    assert.equal(!!fixture.session.getItem('szvk_auth_token'), !remember);
+    for (let reload = 0; reload < 3; reload++) {
+      vm.runInContext(fs.readFileSync(path.join(root, 'shared.js'), 'utf8'), fixture.context);
+      assert.deepEqual(copy(fixture.context.window.SZVKShared.readAuthSession()), copy(saved));
+    }
+    if (!remember) {
+      fixture.session.removeItem('szvk_auth_token');
+      assert.equal(fixture.shared.readAuthSession(), null, 'closing the session must require login again');
+    }
+  }
+});
+
+test('corrupted, incomplete, disabled and outdated sessions never restore access', () => {
+  const valid = { username: 'Artem', role: 'admin', active: true, sessionVersion: shared.authSessionVersion };
+  for (const raw of ['{invalid json', 'null', JSON.stringify({ ...valid, sessionVersion: 'old' }), JSON.stringify({ ...valid, active: false }), JSON.stringify({ ...valid, username: '' }), JSON.stringify({ ...valid, role: 'unknown' })]) {
+    const fixture = authFixture({ szvk_auth_token: 'token', szvk_internal_session: raw });
+    assert.equal(fixture.shared.readAuthSession(), null);
+  }
+  assert.equal(authFixture({ szvk_internal_session: JSON.stringify(valid) }).shared.readAuthSession(), null);
+});
+
+test('login fetches accounts from the server and rejects offline, cached or unconfirmed credentials', async () => {
+  const calls = [];
+  const accounts = { adminPasswordHash: 'current hash', usersList: {} };
+  const snapshot = { exists: true, metadata: { fromCache: false, hasPendingWrites: false }, data: () => accounts };
+  assert.equal(await shared.fetchLoginAccounts({ get: async options => { calls.push(copy(options)); return snapshot; } }), accounts);
+  assert.deepEqual(calls, [{ source: 'server' }]);
+  await assert.rejects(shared.fetchLoginAccounts(null));
+  await assert.rejects(shared.fetchLoginAccounts({ get: async () => { throw new Error('offline'); } }), /offline/);
+  for (const invalid of [
+    { ...snapshot, exists: false },
+    { ...snapshot, metadata: { fromCache: true } },
+    { ...snapshot, metadata: { hasPendingWrites: true } },
+    { ...snapshot, data: () => null }
+  ]) await assert.rejects(shared.fetchLoginAccounts({ get: async () => invalid }));
+});
+
+async function submitLogin({ username = 'Artem', password = 'new-password', accounts = {}, offline = false, remember = true, firebaseReady = true } = {}) {
+  const fixture = authFixture({
+    szvk_admin_pwd_hash: 'hash:old-password',
+    szvk_custom_users: JSON.stringify({ operator: { username: 'operator', active: true, passwordHash: 'hash:old-password' } })
+  });
+  const fields = { loginInput: { value: username }, passwordInput: { value: password } };
+  const button = { disabled: false, textContent: '' };
+  const requests = [];
+  const state = { accessApplied: 0, syncStarted: 0 };
+  Object.assign(fixture.context, {
+    document: { getElementById: id => fields[id] },
+    loginForm: { querySelector: () => button }, loginError: { style: {} },
+    rememberCheckbox: { checked: remember }, currentUser: null,
+    isFirebaseReady: firebaseReady,
+    DB_USERS_DOC: { get: async options => {
+      requests.push(copy(options));
+      if (offline) throw new Error('offline');
+      return { exists: true, metadata: { fromCache: false, hasPendingWrites: false }, data: () => accounts };
+    } },
+    REMEMBER_USER_KEY: 'szvk_remembered_username',
+    hashPassword: async value => 'hash:' + value,
+    applyAccessState: () => state.accessApplied++, initRealtimeSync: () => state.syncStarted++
+  });
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  const handler = html.match(/  loginForm\.onsubmit = async function\(e\) \{[\s\S]*?\n  \};/)[0];
+  vm.runInContext(handler, fixture.context);
+  await fixture.context.loginForm.onsubmit({ preventDefault() {} });
+  assert.equal(button.disabled, false, 'retry must remain available');
+  return { ...fixture, fields, requests, state };
+}
+
+test('the login form accepts the current admin password and rejects cached or default passwords', async () => {
+  const accounts = { adminPasswordHash: 'hash:new-password', usersList: { duplicate: { username: 'Artem', active: true, passwordHash: 'hash:old-password' } } };
+  const rejected = await submitLogin({ password: 'old-password', accounts });
+  assert.equal(rejected.context.currentUser, null);
+  assert.equal(rejected.shared.readAuthSession(), null);
+  assert.equal(rejected.state.syncStarted, 0);
+  assert.equal(rejected.context.loginError.style.display, 'block');
+  const accepted = await submitLogin({ accounts });
+  assert.equal(accepted.shared.readAuthSession().role, 'admin');
+  assert.equal(accepted.state.accessApplied, 1);
+  assert.equal(accepted.state.syncStarted, 1);
+  assert.equal(accepted.fields.passwordInput.value, '');
+  assert.deepEqual(accepted.requests, [{ source: 'server' }]);
+  const missing = await submitLogin({ accounts: {} });
+  assert.equal(missing.context.currentUser, null, 'missing account configuration cannot fall back to a seed password');
+});
+
+test('user logins reject old passwords and disabled accounts and keep session-only login working', async () => {
+  const account = { username: 'operator', name: 'Оператор', active: true, role: 'editor', passwordHash: 'hash:new-password' };
+  const accounts = { usersList: { operator: account } };
+  const rejected = await submitLogin({ username: 'operator', password: 'old-password', accounts });
+  assert.equal(rejected.context.currentUser, null);
+  const accepted = await submitLogin({ username: 'operator', accounts, remember: false });
+  assert.equal(accepted.shared.readAuthSession().username, 'operator');
+  assert.equal(accepted.local.getItem('szvk_auth_token'), null);
+  assert.ok(accepted.session.getItem('szvk_auth_token'));
+  const disabled = await submitLogin({ username: 'operator', accounts: { usersList: { operator: { ...account, active: false } } } });
+  assert.equal(disabled.context.currentUser, null);
+});
+
+test('an unavailable server or SDK cannot authenticate through locally cached passwords', async () => {
+  for (const username of ['Artem', 'operator']) {
+    for (const options of [{ offline: true }, { firebaseReady: false }]) {
+      const fixture = await submitLogin({ username, password: 'old-password', ...options });
+      assert.equal(fixture.context.currentUser, null);
+      assert.equal(fixture.local.getItem('szvk_auth_token'), null);
+      assert.equal(fixture.state.syncStarted, 0);
+      assert.equal(fixture.context.loginError.style.display, 'block');
+    }
+  }
+});
+
+test('direct Tracker Hub links redirect legacy sessions and cannot start app or cloud initialization', () => {
+  const html = fs.readFileSync(path.join(root, 'trackers.html'), 'utf8');
+  const inline = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)].filter(match => !match[1].includes('src='));
+  const guard = inline.find(match => match[2].includes('// Auth guard'))[2];
+  const app = inline.find(match => match[2].includes('SZVK Tracker Hub Application Logic'))[2];
+  const fixture = authFixture({ szvk_auth_token: 'old-token', szvk_internal_session: JSON.stringify({ username: 'Artem', role: 'admin' }) });
+  const redirects = [];
+  fixture.context.window.location.replace = url => redirects.push(url);
+  vm.runInContext(guard, fixture.context);
+  vm.runInContext(app, fixture.context);
+  assert.deepEqual(redirects, ['index.html']);
+  assert.equal(fixture.context.document.documentElement.style.visibility, 'hidden');
+  assert.equal(fixture.local.getItem('szvk_auth_token'), null);
+  fixture.shared.saveAuthSession({ username: 'Artem', name: 'Артем', role: 'admin' }, true);
+  redirects.length = 0;
+  vm.runInContext(guard, fixture.context);
+  assert.deepEqual(redirects, [], 'new sessions can navigate directly to Tracker Hub');
+});
+
 test('search debounce runs only the latest query and can cancel pending work', () => {
   const pending = new Map();
   let id = 0;

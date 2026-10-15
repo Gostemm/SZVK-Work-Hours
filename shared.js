@@ -2,6 +2,55 @@
 (function () {
   'use strict';
 
+  // Increment only when all existing browser sessions must sign in again.
+  // This is a client migration marker, not server-side authentication.
+  const AUTH_SESSION_VERSION = '2026-10-15-1';
+
+  function clearAuthSession() {
+    localStorage.removeItem('szvk_auth_token');
+    sessionStorage.removeItem('szvk_auth_token');
+    localStorage.removeItem('szvk_internal_session');
+    localStorage.removeItem('szvk_remembered_credentials');
+  }
+
+  function readAuthSession() {
+    try {
+      const token = localStorage.getItem('szvk_auth_token') || sessionStorage.getItem('szvk_auth_token');
+      const user = JSON.parse(localStorage.getItem('szvk_internal_session') || 'null');
+      if (token && user && user.sessionVersion === AUTH_SESSION_VERSION &&
+          typeof user.username === 'string' && user.username.trim() && user.active === true &&
+          ['admin', 'editor', 'user'].includes(user.role)) return user;
+    } catch (error) {}
+    clearAuthSession();
+    return null;
+  }
+
+  function saveAuthSession(user, remember) {
+    const session = {
+      username: user.username, name: user.name, role: user.role, active: true,
+      sessionVersion: AUTH_SESSION_VERSION
+    };
+    clearAuthSession();
+    localStorage.setItem('szvk_internal_session', JSON.stringify(session));
+    const storage = remember ? localStorage : sessionStorage;
+    storage.setItem('szvk_auth_token', 'local_session_' + Date.now());
+    return session;
+  }
+
+  async function fetchLoginAccounts(usersDoc) {
+    if (!usersDoc) throw new Error('Для входу потрібне з’єднання з базою. Перевірте інтернет і оновіть сторінку.');
+    // Cached hashes can still contain a previous password after it was changed.
+    const snapshot = await usersDoc.get({ source: 'server' });
+    if (!snapshot.exists || snapshot.metadata && (snapshot.metadata.fromCache || snapshot.metadata.hasPendingWrites)) {
+      throw new Error('Не вдалося перевірити актуальні дані акаунтів. Спробуйте ще раз онлайн.');
+    }
+    const accounts = snapshot.data();
+    if (!accounts || typeof accounts !== 'object' || Array.isArray(accounts)) {
+      throw new Error('Налаштування акаунтів недоступні. Зверніться до адміністратора.');
+    }
+    return accounts;
+  }
+
   const firebaseConfig = {
     apiKey: "AIzaSyD0HE2baTFHYCvm0d0cI_qNzLf6Ok7WMwA",
     authDomain: "szvk-work-hours-af5ed.firebaseapp.com",
@@ -108,9 +157,7 @@
   }
 
   function logoutAccount() {
-    localStorage.removeItem('szvk_auth_token');
-    sessionStorage.removeItem('szvk_auth_token');
-    localStorage.removeItem('szvk_internal_session');
+    clearAuthSession();
     window.location.replace('index.html');
   }
 
@@ -581,6 +628,11 @@
   }
 
   window.SZVKShared = Object.freeze({
+    authSessionVersion: AUTH_SESSION_VERSION,
+    clearAuthSession,
+    readAuthSession,
+    saveAuthSession,
+    fetchLoginAccounts,
     firebaseConfig,
     escapeHtml,
     formatHistoryTime,

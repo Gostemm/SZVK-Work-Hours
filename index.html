@@ -8,7 +8,7 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg" sizes="any">
   <link rel="apple-touch-icon" href="apple-touch-icon.png" sizes="180x180">
 
-  <script src="shared.js?v=8d1463cb948b"></script>
+  <script src="shared.js?v=72adb4e9f4d9"></script>
 
   <!-- Firebase App & Firestore SDKs (Compat) -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
@@ -2284,7 +2284,7 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-  const requiredSharedMethods = ['mountAccountMenu', 'updateAccount', 'escapeHtml', 'formatHistoryTime', 'initThemeSwitcher', 'updateTask', 'restoreTaskMove', 'debounce', 'setHtmlIfChanged', 'shiftInfo', 'calendarMonthDays', 'taskTimePickerHtml', 'initTaskTimePickers', 'reconcileRepairTasks', 'setRepairCompletion', 'flushRepairCompletions', 'syncRepairTasksToCloud'];
+  const requiredSharedMethods = ['readAuthSession', 'saveAuthSession', 'clearAuthSession', 'fetchLoginAccounts', 'mountAccountMenu', 'updateAccount', 'escapeHtml', 'formatHistoryTime', 'initThemeSwitcher', 'updateTask', 'restoreTaskMove', 'debounce', 'setHtmlIfChanged', 'shiftInfo', 'calendarMonthDays', 'taskTimePickerHtml', 'initTaskTimePickers', 'reconcileRepairTasks', 'setRepairCompletion', 'flushRepairCompletions', 'syncRepairTasksToCloud'];
   if (!window.SZVKShared || requiredSharedMethods.some(name => typeof window.SZVKShared[name] !== 'function')) {
     const message = document.getElementById('loginErrorMessage');
     message.textContent = 'Не вдалося завантажити оновлення сервісу. Оновіть сторінку.';
@@ -2332,12 +2332,9 @@ document.addEventListener("DOMContentLoaded", function () {
   const STORAGE_KEY = "szvk_schedule_local_data";
   const UNIFIED_HISTORY_STORAGE_KEY = "szvk_action_history_unified";
   const USERS_STORAGE_KEY = "szvk_custom_users";
-  const SESSION_USER_KEY = "szvk_internal_session";
-  const AUTH_TOKEN_KEY = "szvk_auth_token";
   const REMEMBER_USER_KEY = "szvk_remembered_username";
 
   const SALT = "szvk_salt_2026_sec_";
-  const DEFAULT_ARTEM_HASH = "5c6385f8d9cca8e62f65700ade1df88d3f35a8ff5c1d63b03bccac9512588e9a";
   const DEFAULT_OPER_HASH = "771110e1ad008a5cdb57e82a3eac5f6e56cc64af6282bfd0972ecbae8fd9e8de";
 
   const DEFAULT_CUSTOM_USERS = {
@@ -2384,26 +2381,9 @@ document.addEventListener("DOMContentLoaded", function () {
     return "legacy_" + hash;
   }
 
-  function getAuthToken() {
-    return localStorage.getItem(AUTH_TOKEN_KEY) || sessionStorage.getItem(AUTH_TOKEN_KEY) || "";
-  }
-
-  function setAuthToken(token, remember) {
-    if (remember) {
-      localStorage.setItem(AUTH_TOKEN_KEY, token);
-      sessionStorage.removeItem(AUTH_TOKEN_KEY);
-    } else {
-      sessionStorage.setItem(AUTH_TOKEN_KEY, token);
-      localStorage.removeItem(AUTH_TOKEN_KEY);
-    }
-  }
-
   function clearAuth() {
     currentUser = null;
-    localStorage.removeItem(AUTH_TOKEN_KEY);
-    sessionStorage.removeItem(AUTH_TOKEN_KEY);
-    localStorage.removeItem(SESSION_USER_KEY);
-    localStorage.removeItem("szvk_remembered_credentials");
+    window.SZVKShared.clearAuthSession();
   }
 
   // Очищення застарілих незашифрованих паролів та залишкових дублікатів акаунта Artem
@@ -2595,30 +2575,13 @@ document.addEventListener("DOMContentLoaded", function () {
       const cleanP = p || "";
       const enteredHash = await hashPassword(cleanP);
       const enteredHashTrimmed = await hashPassword(cleanP.trim());
+      const accounts = await window.SZVKShared.fetchLoginAccounts(isFirebaseReady ? DB_USERS_DOC : null);
       let authenticatedUser = null;
 
-      // 1. Check Artem (Super Admin) - Strictly ONLY the single active cryptographic hash
+      // Only the freshly fetched active password may create a new session.
       if (u.toLowerCase() === "artem") {
-        let activeAdminHash = localStorage.getItem("szvk_admin_pwd_hash") || "";
-        if (isFirebaseReady) {
-          try {
-            const usersSnap = await DB_USERS_DOC.get();
-            if (usersSnap.exists && usersSnap.data() && usersSnap.data().adminPasswordHash) {
-              activeAdminHash = usersSnap.data().adminPasswordHash;
-              localStorage.setItem("szvk_admin_pwd_hash", activeAdminHash);
-            }
-          } catch(e) {
-            console.warn("Firestore admin read notice:", e);
-          }
-        }
-
-        // Only use seed default if no custom password has ever been set
-        if (!activeAdminHash) {
-          activeAdminHash = DEFAULT_ARTEM_HASH;
-        }
-
-        // STRICT CHECK: ONLY THE ACTIVE HASH! Old passwords are completely invalidated!
-        if (enteredHash === activeAdminHash || enteredHashTrimmed === activeAdminHash) {
+        const activeAdminHash = accounts.adminPasswordHash;
+        if (activeAdminHash && (enteredHash === activeAdminHash || enteredHashTrimmed === activeAdminHash)) {
           authenticatedUser = { username: "Artem", name: "Артем", role: "admin", active: true };
         } else {
           // If password for Artem does not match the active hash, FAIL IMMEDIATELY!
@@ -2631,35 +2594,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       // 2. Check Custom Users - Strictly ONLY the single active cryptographic hash per user (excludes Artem)
       if (!authenticatedUser && u.toLowerCase() !== "artem") {
-        let usersMap = null;
-        try {
-          const cached = localStorage.getItem(USERS_STORAGE_KEY);
-          if (cached) usersMap = JSON.parse(cached);
-        } catch(e) {}
-
-        if (isFirebaseReady) {
-          try {
-            const usersSnap = await DB_USERS_DOC.get();
-            if (usersSnap.exists && usersSnap.data()) {
-              if (usersSnap.data().usersList) {
-                usersMap = usersSnap.data().usersList;
-                try {
-                  localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(usersMap));
-                } catch(e) {}
-              }
-            } else if (!usersMap) {
-              // Seed initial users into Firestore once
-              await DB_USERS_DOC.set({ usersList: DEFAULT_CUSTOM_USERS }, { merge: true });
-              usersMap = DEFAULT_CUSTOM_USERS;
-            }
-          } catch(e) {
-            console.warn("Firestore users read notice:", e);
-          }
-        }
-
-        if (!usersMap) {
-          usersMap = DEFAULT_CUSTOM_USERS;
-        }
+        const usersMap = accounts.usersList || {};
 
         const foundKey = Object.keys(usersMap).find(k => (usersMap[k].username || "").trim().toLowerCase() === u.toLowerCase());
         if (foundKey) {
@@ -2687,9 +2622,7 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
       }
 
-      currentUser = authenticatedUser;
-      localStorage.setItem(SESSION_USER_KEY, JSON.stringify(currentUser));
-      setAuthToken("fb_session_" + Date.now(), rememberCheckbox.checked);
+      currentUser = window.SZVKShared.saveAuthSession(authenticatedUser, rememberCheckbox.checked);
 
       if (rememberCheckbox.checked) {
         localStorage.setItem(REMEMBER_USER_KEY, u);
@@ -4978,17 +4911,7 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   });
 
-  try {
-    const rawSaved = localStorage.getItem(SESSION_USER_KEY);
-    const token = getAuthToken();
-    if (rawSaved && token) {
-      currentUser = JSON.parse(rawSaved);
-    } else {
-      currentUser = null;
-    }
-  } catch(e) {
-    currentUser = null;
-  }
+  currentUser = window.SZVKShared.readAuthSession();
 
   applyAccessState();
   document.getElementById("btnGoToToday").click();
@@ -5005,7 +4928,7 @@ document.addEventListener("DOMContentLoaded", function () {
   } catch (e) {}
 
   // Запуск хмарної синхронізації ТІЛЬКИ якщо користувач авторизований
-  if (currentUser && getAuthToken()) {
+  if (currentUser) {
     initRealtimeSync();
   }
 });

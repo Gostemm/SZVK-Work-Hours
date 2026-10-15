@@ -6,8 +6,16 @@ const os = require('node:os');
 const http = require('node:http');
 const { spawn } = require('node:child_process');
 const assert = require('node:assert/strict');
+const vm = require('node:vm');
 const root = path.resolve(__dirname, '..');
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+const authContext = vm.createContext({
+  window: { location: { search: '' }, matchMedia: () => ({ matches: false }) },
+  localStorage: { getItem: () => null },
+  document: { documentElement: { setAttribute() {} } }, URLSearchParams
+});
+vm.runInContext(fs.readFileSync(path.join(root, 'shared.js'), 'utf8'), authContext);
+const sessionVersion = authContext.window.SZVKShared.authSessionVersion;
 
 async function main() {
   const artifacts = fs.mkdtempSync(path.join(os.tmpdir(), 'szvk-browser-check-'));
@@ -83,7 +91,7 @@ async function main() {
       if (!localStorage.getItem('szvk_browser_fixture')) {
         localStorage.setItem('szvk_browser_fixture','1');
         localStorage.setItem('szvk_auth_token','isolated-test-token');
-        localStorage.setItem('szvk_internal_session',JSON.stringify({username:'test',name:'Артем',role:'user'}));
+        localStorage.setItem('szvk_internal_session',JSON.stringify({username:'test',name:'Артем',role:'user',active:true,sessionVersion:${JSON.stringify(sessionVersion)}}));
         localStorage.setItem('szvk_trackers_data',${JSON.stringify(JSON.stringify(trackerFixture))});
         localStorage.setItem('szvk_schedule_local_data',${JSON.stringify(JSON.stringify(scheduleFixture))});
       }
@@ -385,7 +393,7 @@ async function main() {
 
     await navigate('trackers.html');
     await waitFor("!!window.__cloudListeners.trackers && !!document.querySelector('#recentRepairTableBody [data-repair-id]')");
-    await evaluate("localStorage.setItem('szvk_internal_session',JSON.stringify({username:'kostas',name:'Костянтин',role:'user'}));const frame=document.createElement('iframe');frame.id='workHoursPeer';frame.src='index.html';frame.hidden=true;document.body.appendChild(frame)");
+    await evaluate("window.SZVKShared.saveAuthSession({username:'kostas',name:'Костянтин',role:'user'},true);const frame=document.createElement('iframe');frame.id='workHoursPeer';frame.src='index.html';frame.hidden=true;document.body.appendChild(frame)");
     await waitFor("document.querySelector('#workHoursPeer').contentWindow.__cloudListeners?.trackers && document.querySelector('#workHoursPeer').contentDocument.querySelector('#mainAppContainer')?.style.display==='flex'");
     const peer = expression => evaluate("(()=>{const w=document.querySelector('#workHoursPeer').contentWindow;const d=w.document;return (" + expression + ");})()");
     await evaluate("document.querySelector('#btnOpenAddModal').click();document.querySelector('#inputDate').value='01.09.2026';document.querySelector('#inputVehicle').value='CLOUD-TWO-WAY';document.querySelector('#inputCarrierSelect').value='Тестовий перевізник';document.querySelector('#inputCarrierSelect').dispatchEvent(new Event('change'));document.querySelector('[data-issue]').click();document.querySelector('#btnSaveRepairModal').click()");
