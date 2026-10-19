@@ -1284,9 +1284,10 @@
     }
 
     .day-task-counters {
+      --day-counter-gap: 3px;
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 3px;
+      gap: var(--day-counter-gap);
       width: 100%;
       max-width: 140px;
       min-width: 0;
@@ -1314,7 +1315,11 @@
       cursor: pointer;
     }
     .day-task-counter .counter-value { min-width: 0; white-space: normal; overflow-wrap: anywhere; }
-    .day-task-counter:only-child { grid-column: 1 / -1; }
+    .day-task-counter:only-child {
+      grid-column: 1 / -1;
+      justify-self: center;
+      width: calc((100% - var(--day-counter-gap)) / 2);
+    }
 
     /* Active tasks: visually expressive cyber cyan with glow */
     .day-task-counter.active {
@@ -2000,14 +2005,14 @@
       }
     }
     @media (max-width: 768px) {
-      .day-task-counters { gap: 2px; }
+      .day-task-counters { --day-counter-gap: 2px; }
       .day-task-counters .day-task-counter { padding: 2px 1px; gap: 2px; min-height: 20px; border-width: 1px; }
     }
     @media (max-width: 600px) {
       .day-task-counters .counter-icon { display: none; }
     }
     @media (max-width: 380px) {
-      .day-task-counters { gap: 1px; }
+      .day-task-counters { --day-counter-gap: 1px; }
     }
 </style>
 </head>
