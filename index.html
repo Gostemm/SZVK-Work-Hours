@@ -1163,6 +1163,7 @@
     }
 
     .day-card {
+      min-width: 0;
       background: #243248;
       border: 2px solid transparent;
       border-radius: 10px;
@@ -1282,23 +1283,39 @@
       min-height: 24px;
     }
 
+    .day-task-counters {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 3px;
+      width: 100%;
+      max-width: 140px;
+      min-width: 0;
+    }
+
     .day-task-counter {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 5px;
+      gap: 3px;
       font-size: 11px;
       font-weight: 850;
-      padding: 3.5px 8.5px;
+      padding: 3.5px 5px;
       border-radius: 8px;
       line-height: 1.2;
-      max-width: 98%;
+      min-width: 0;
+      min-height: 24px;
+      max-width: 100%;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
 
       letter-spacing: 0.2px;
+      font-variant-numeric: tabular-nums;
+      cursor: pointer;
     }
+    .day-task-counter .counter-value { min-width: 0; white-space: normal; overflow-wrap: anywhere; }
+    .day-task-counter:disabled { cursor: default; opacity: 0.65; }
+    .day-task-counters .day-task-counter:disabled:hover { transform: none; }
 
     /* Active tasks: visually expressive cyber cyan with glow */
     .day-task-counter.active {
@@ -1321,9 +1338,6 @@
 
       transform: scale(1.05);
     }
-
-    .counter-mobile { display: none; }
-    .counter-desktop { display: inline; }
 
     .swap-badge {
       font-size: 8.5px;
@@ -1781,9 +1795,6 @@
         max-width: 100%;
       }
 
-      .counter-desktop { display: none; }
-      .counter-mobile { display: inline; }
-
       .worker-pill {
         padding: 1.5px 5px;
         font-size: 8.5px;
@@ -1988,6 +1999,16 @@
         font-size: 7px;
         padding: 1px 2.5px;
       }
+    }
+    @media (max-width: 768px) {
+      .day-task-counters { gap: 2px; }
+      .day-task-counters .day-task-counter { padding: 2px 1px; gap: 2px; min-height: 20px; border-width: 1px; }
+    }
+    @media (max-width: 600px) {
+      .day-task-counters .counter-icon { display: none; }
+    }
+    @media (max-width: 380px) {
+      .day-task-counters { gap: 1px; }
     }
 </style>
 </head>
@@ -4847,7 +4868,15 @@ document.addEventListener("DOMContentLoaded", function () {
       }
       card.dataset.renderSignature = signature;
       card.className = `day-card ${assignment.worker === "Артем" ? "artem" : "oleksandr"} ${isToday ? "today" : ""} ${isPast ? "past-day" : ""} ${hasActiveTasks ? "has-note" : ""}`;
-      card.onclick = () => openDayModal(activeMonthObj.year, activeMonthObj.month, day);
+      card.onclick = event => {
+        const view = event.target.closest('.day-task-counter')?.dataset.taskView;
+        openDayModal(activeMonthObj.year, activeMonthObj.month, day);
+        const list = document.getElementById('modalDayTasksList');
+        const completed = list.querySelector('.completed-tasks');
+        if (view && completed) completed.open = view === 'done';
+        if (view === 'done' && completed) completed.querySelector('summary').scrollIntoView({ block: 'nearest' });
+        else list.scrollTop = 0;
+      };
       card.title = `${assignment.worker} • ${day} ${MONTH_NAMES[activeMonthObj.month]} ${activeMonthObj.year}${assignment.isEdited ? ' (підміна)' : ''}`;
 
       const workerShort = assignment.worker === "Артем" ? "Артем" : "Олекс";
@@ -4861,27 +4890,15 @@ document.addEventListener("DOMContentLoaded", function () {
       `;
 
       if (tasks.length > 0) {
-        let counterDesktop = "";
-        let counterMobile = "";
-        const isDone = !hasActiveTasks;
-
-        if (isDone) {
-          counterDesktop = `✓ ${tasks.length} ${getTaskWord(tasks.length)}`;
-          counterMobile = `✓ ${tasks.length}`;
-        } else {
-          if (tasks.length === activeTasksCount) {
-            counterDesktop = `📝 ${activeTasksCount} ${getTaskWord(activeTasksCount)}`;
-            counterMobile = `📝 ${activeTasksCount}`;
-          } else {
-            counterDesktop = `📝 ${activeTasksCount} з ${tasks.length}`;
-            counterMobile = `📝 ${activeTasksCount}/${tasks.length}`;
-          }
-        }
-
+        const completedTasksCount = tasks.length - activeTasksCount;
         inner += `
-          <div class="day-task-counter ${isDone ? 'done' : 'active'}" title="${hasActiveTasks ? 'Активних справ: ' + activeTasksCount + ' (всього: ' + tasks.length + ')' : 'Всі ' + tasks.length + ' справ виконано'}">
-            <span class="counter-desktop">${counterDesktop}</span>
-            <span class="counter-mobile">${counterMobile}</span>
+          <div class="day-task-counters" role="group" aria-label="Завдання за день">
+            <button type="button" class="day-task-counter active" data-task-view="active" title="Активні завдання: ${activeTasksCount}" aria-label="Активні завдання: ${activeTasksCount}" ${activeTasksCount ? '' : 'disabled'}>
+              <span class="counter-icon" aria-hidden="true">📝</span><span class="counter-value">${activeTasksCount}</span>
+            </button>
+            <button type="button" class="day-task-counter done" data-task-view="done" title="Виконані завдання: ${completedTasksCount}" aria-label="Виконані завдання: ${completedTasksCount}" ${completedTasksCount ? '' : 'disabled'}>
+              <span class="counter-icon" aria-hidden="true">✓</span><span class="counter-value">${completedTasksCount}</span>
+            </button>
           </div>
         `;
       }

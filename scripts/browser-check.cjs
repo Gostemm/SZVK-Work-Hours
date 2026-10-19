@@ -86,6 +86,10 @@ async function main() {
       {id:2,serial:'TEST-INSTALLED',receivedDate:'13.10.2026',status:'Встановлено',assignedTo:'Тестовий перевізник'}
     ];
     const scheduleFixture = { overrides: {'2026-10-15':'Олександр'}, dayNotes: {'2026-10-14':[{id:'test-task',text:'Перевірити трекер та живлення у тестовому автобусі',author:'Олександр',done:false}]},monthlyDebts:{},monthFocusNotes:{} };
+    scheduleFixture.dayNotes['2026-10-16'] = [
+      { id:'calendar-active',text:'Активна справа для лічильника',done:false },
+      ...Array.from({length:9},(_,index)=>({id:'calendar-done-'+index,text:'Виконана справа '+(index+1),done:true}))
+    ];
     scheduleFixture.dayNotes['2026-10-12'] = [
       { id:'overdue-task', text:'Незавершена справа', author:'Костянтин', done:false, extra:'preserved' },
       { id:'completed-task', text:'Завершена справа', done:true, time:'10:30' }
@@ -259,15 +263,37 @@ async function main() {
     assert.deepEqual(await evaluate("window.dayNotes['2026-10-14'].find(task=>task.id==='overdue-task')"), { id:'overdue-task', text:'Незавершена справа', author:'Костянтин', done:false, extra:'preserved', carriedFrom:'2026-10-12' });
     assert.equal(await evaluate("window.dayNotes['2026-10-12'].length===1 && window.dayNotes['2026-10-12'][0].id==='completed-task'"), true, 'completed tasks stay on the original date');
     assert.equal(await evaluate("document.querySelector('#btnTabHistory').closest('.account-panel')!==null"),true);
+    assert.deepEqual(await evaluate("[...document.querySelectorAll('.day-card[data-date=\"2026-10-16\"] .counter-value')].map(value=>value.textContent)"),['1','9'],'calendar counts active and completed tasks separately');
+    assert.equal(await evaluate("document.querySelector('.day-card[data-date=\"2026-10-12\"] .day-task-counter.active').disabled && document.querySelector('.day-card[data-date=\"2026-10-14\"] .day-task-counter.done').disabled"),true,'empty categories display zero without an empty shortcut');
+    await evaluate("document.querySelector('.day-card[data-date=\"2026-10-16\"] .day-task-counter.done').click()");
+    assert.equal(await evaluate("document.querySelector('#modalDayTasksList .completed-tasks').open"),true,'completed counter opens the completed list');
+    await evaluate("document.querySelector('#modalDayCloseX').click();document.querySelector('.day-card[data-date=\"2026-10-16\"] .day-task-counter.active').click()");
+    assert.equal(await evaluate("document.querySelector('#modalDayTasksList .completed-tasks').open"),false,'active counter opens active notes with completed notes collapsed');
+    assert.equal(await evaluate("document.querySelectorAll('#modalDayTasksList > .task-modal-item').length"),1);
+    await evaluate("document.querySelector('#modalDayCloseX').click()");
+    for (const width of [320,390,420,480,600,768,1280]) {
+      await call('Emulation.setDeviceMetricsOverride',{width,height:900,deviceScaleFactor:1,mobile:width<768});
+      await evaluate("document.querySelector('.day-card[data-date=\"2026-10-16\"]').scrollIntoView({block:'center'})");
+      const counterLayout = await evaluate(`(()=>{const card=document.querySelector('.day-card[data-date="2026-10-16"]');const bounds=card.getBoundingClientRect();const buttons=[...card.querySelectorAll('.day-task-counter')].map(button=>button.getBoundingClientRect().toJSON());return {width:innerWidth,pageWidth:document.documentElement.scrollWidth,card:bounds.toJSON(),buttons,values:[...card.querySelectorAll('.counter-value')].map(value=>({width:value.clientWidth,scrollWidth:value.scrollWidth}))};})()`);
+      if(width===320 || width===1280) {
+        const calendarShot=await call('Page.captureScreenshot',{format:'png'});
+        fs.writeFileSync(path.join(artifacts,width===320?'calendar-status-mobile.png':'calendar-status-desktop.png'),Buffer.from(calendarShot.data,'base64'));
+      }
+      assert.equal(Math.abs(counterLayout.buttons[0].top-counterLayout.buttons[1].top)<1 && counterLayout.buttons[0].right<=counterLayout.buttons[1].left && counterLayout.buttons[0].left>=counterLayout.card.left && counterLayout.buttons[1].right<=counterLayout.card.right && counterLayout.values.every(value=>value.scrollWidth<=value.width) && counterLayout.pageWidth<=counterLayout.width,true,'both counters stay side by side and fit the calendar cell: '+JSON.stringify(counterLayout)+'; screenshots: '+artifacts);
+    }
+    await call('Emulation.setDeviceMetricsOverride',{width:320,height:800,deviceScaleFactor:1,mobile:true});
+    await evaluate("window.scrollTo(0,0)");
     await evaluate("[...document.querySelectorAll('.day-card')].find(card=>card.querySelector('.day-num')?.textContent==='12').click()");
     assert.equal(await evaluate("document.querySelector('#modalDayTasksList .completed-tasks').open"),false,'a completed-only day starts collapsed');
     assert.equal(await evaluate("document.querySelectorAll('#modalDayTasksList > .task-modal-item').length"),0);
     await evaluate("document.querySelector('#modalDayCloseX').click()");
     await evaluate("[...document.querySelectorAll('.day-card')].find(card=>card.querySelector('.day-num')?.textContent==='14').click()");
     await waitFor("!!document.querySelector('.move-task')");
+    const activeCounterBefore = await evaluate("Number(document.querySelector('.day-card[data-date=\"2026-10-14\"] .day-task-counter.active .counter-value').textContent)");
     await evaluate("[...document.querySelectorAll('#modalDayTasksList .task-modal-item')].find(row=>row.textContent.includes('Незавершена справа')).querySelector('.task-modal-checkbox').click()");
     assert.equal(await evaluate("document.querySelector('#modalDayTasksList').lastElementChild.matches('details.completed-tasks:not([open])')"),true,'completed tasks move to a collapsed group at the bottom');
     assert.equal(await evaluate("document.querySelector('#modalDayTasksList .completed-tasks summary').textContent"),'Виконані завдання (1)');
+    assert.deepEqual(await evaluate("[...document.querySelectorAll('.day-card[data-date=\"2026-10-14\"] .counter-value')].map(value=>Number(value.textContent))"),[activeCounterBefore-1,1],'completion updates both calendar counts');
     assert.equal(await evaluate("document.querySelector('#modalDayTasksList .task-modal-item.done').checkVisibility()"),false,'completed task text is hidden while collapsed');
     const completedNotesShot = await call('Page.captureScreenshot',{format:'png'});
     fs.writeFileSync(path.join(artifacts,'completed-notes-mobile.png'),Buffer.from(completedNotesShot.data,'base64'));
@@ -278,6 +304,7 @@ async function main() {
     assert.equal(await evaluate("window.dayNotes['2026-10-14'].some(task=>task.id==='test-task') && window.dayNotes['2026-10-14'].find(task=>task.id==='overdue-task').done && !window.dayNotes['2026-10-14'].some(task=>task.text==='Тест групування')"),true,'deleting from a grouped list removes the correct task');
     await evaluate("document.querySelector('#modalDayTasksList .completed-tasks .task-modal-checkbox').click()");
     assert.equal(await evaluate("document.querySelector('#modalDayTasksList .completed-tasks')===null && !window.dayNotes['2026-10-14'].find(task=>task.id==='overdue-task').done"),true,'reopening restores the active task and removes an empty completed group');
+    assert.deepEqual(await evaluate("[...document.querySelectorAll('.day-card[data-date=\"2026-10-14\"] .counter-value')].map(value=>Number(value.textContent))"),[activeCounterBefore,0],'reopening updates the counts without changing their total');
     assert.ok(await evaluate("document.querySelector('.task-modal-text').getBoundingClientRect().width>=180"),'mobile task text must retain width');
     const shot=await call('Page.captureScreenshot',{format:'png'});
     fs.writeFileSync(path.join(artifacts,'work-hours-mobile.png'),Buffer.from(shot.data,'base64'));
