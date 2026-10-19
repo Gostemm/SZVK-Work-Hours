@@ -5,7 +5,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test tests/service.test.cjs",
+    "test": "node --test tests/service.test.cjs tests/rollover.test.cjs",
     "test:browser": "node scripts/browser-check.cjs",
     "version-assets": "node scripts/version-assets.cjs"
   }

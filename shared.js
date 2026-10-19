@@ -360,6 +360,45 @@
     }
   }
 
+  // Every calendar day has an active shift. Catch up overdue work directly to
+  // the current Kyiv day, keeping completed work on its actual scheduled day.
+  function carryForwardTasks(dayNotes, todayKey = kyivDateKey(), includeRepairs = true) {
+    if (!isValidDateKey(todayKey)) throw new Error('Оберіть коректний активний день.');
+    let changed = false;
+    for (const dateKey of Object.keys(dayNotes).sort()) {
+      if (!isValidDateKey(dateKey) || dateKey >= todayKey || !Array.isArray(dayNotes[dateKey])) continue;
+      const remaining = [];
+      for (const task of dayNotes[dateKey]) {
+        if (!task || task.done || (!includeRepairs && task.repairId != null)) { remaining.push(task); continue; }
+        if (!Array.isArray(dayNotes[todayKey])) dayNotes[todayKey] = [];
+        if (!task.carriedFrom) task.carriedFrom = dateKey;
+        dayNotes[todayKey].push(task);
+        changed = true;
+      }
+      if (remaining.length !== dayNotes[dateKey].length) {
+        if (remaining.length) dayNotes[dateKey] = remaining;
+        else delete dayNotes[dateKey];
+      }
+    }
+    return changed;
+  }
+
+  async function rollOverTasksInCloud(db, trackerDoc, scheduleDoc, todayKey = kyivDateKey()) {
+    if (!isValidDateKey(todayKey)) throw new Error('Оберіть коректний активний день.');
+    return db.runTransaction(async transaction => {
+      const trackerSnapshot = await transaction.get(trackerDoc);
+      const scheduleSnapshot = await transaction.get(scheduleDoc);
+      if (!scheduleSnapshot.exists) return false;
+      const dayNotes = scheduleSnapshot.data().dayNotes || {};
+      const reconciled = trackerSnapshot.exists
+        ? reconcileRepairTasks(dayNotes, trackerSnapshot.data().repairs || [])
+        : false;
+      const carried = carryForwardTasks(dayNotes, todayKey);
+      if (reconciled || carried) transaction.set(scheduleDoc, { dayNotes, updatedAt: Date.now() }, { mergeFields: ['dayNotes', 'updatedAt'] });
+      return reconciled || carried;
+    });
+  }
+
   function setRepairCompletion(repairs, repairId, done, dateKey, user) {
     const repair = repairs.find(item => String(item.id) === String(repairId));
     if (!repair) {
@@ -657,6 +696,8 @@
     repairTaskDateKey,
     reconcileRepairTasks,
     syncLocalRepairTasks,
+    carryForwardTasks,
+    rollOverTasksInCloud,
     setRepairCompletion,
     mergeRepairChanges,
     saveTrackerDataAndNotes,

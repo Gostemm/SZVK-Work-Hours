@@ -86,6 +86,10 @@ async function main() {
       {id:2,serial:'TEST-INSTALLED',receivedDate:'13.10.2026',status:'Встановлено',assignedTo:'Тестовий перевізник'}
     ];
     const scheduleFixture = { overrides: {'2026-10-15':'Олександр'}, dayNotes: {'2026-10-14':[{id:'test-task',text:'Перевірити трекер та живлення у тестовому автобусі',author:'Олександр',done:false}]},monthlyDebts:{},monthFocusNotes:{} };
+    scheduleFixture.dayNotes['2026-10-12'] = [
+      { id:'overdue-task', text:'Незавершена справа', author:'Костянтин', done:false, extra:'preserved' },
+      { id:'completed-task', text:'Завершена справа', done:true, time:'10:30' }
+    ];
     await call('Page.addScriptToEvaluateOnNewDocument', { source: `
       window.Date = class extends Date { constructor(...args) { super(...(args.length ? args : ['2026-10-14T12:00:00+03:00'])); } static now() { return new Date('2026-10-14T12:00:00+03:00').getTime(); } };
       if (!localStorage.getItem('szvk_browser_fixture')) {
@@ -103,11 +107,30 @@ async function main() {
       await call('Page.navigate', { url: url + '/' + page });
       await waitFor("document.readyState==='complete' && !!document.querySelector('#accountMount button')");
     };
+    const checkModalGeometry = async (modalId, controlId) => {
+      for (const [width, height] of [[320,480], [740,320]]) {
+        await call('Emulation.setDeviceMetricsOverride', { width,height,deviceScaleFactor:1,mobile:true });
+        await evaluate("document.documentElement.style.setProperty('--safe-area-bottom','34px')");
+        assert.equal(await evaluate(`(()=>{const box=document.querySelector('#${modalId} > .modal-box').getBoundingClientRect();return box.top>=16 && box.bottom<=innerHeight-49 && box.left>=0 && box.right<=innerWidth;})()`), true, 'dialog fits the visible screen above system navigation');
+        await evaluate(`document.querySelector('#${controlId}').scrollIntoView({block:'end'})`);
+        assert.equal(await evaluate(`(()=>{const button=document.querySelector('#${controlId}').getBoundingClientRect();return button.top>=16 && button.bottom<=innerHeight-49;})()`), true, 'bottom action is reachable on a short screen');
+      }
+      await evaluate("document.documentElement.style.removeProperty('--safe-area-bottom')");
+      await call('Emulation.setDeviceMetricsOverride', { width:320,height:800,deviceScaleFactor:1,mobile:true });
+    };
     await call('Emulation.setDeviceMetricsOverride', { width:320,height:800,deviceScaleFactor:1,mobile:true });
     await navigate('trackers.html');
     await waitFor("typeof window.editRepair==='function'");
     assert.equal(await evaluate("document.querySelector('#tabBtnHistory').closest('.account-panel')!==null"), true);
     assert.equal(await evaluate("document.querySelector('.brand-badge')===null && document.querySelector('#atSearchInput')===null"), true);
+    assert.equal(await evaluate("document.querySelector('#recentRepairTableBody [data-repair-id=\"1\"] td:nth-child(8) .btn-finish-repair').textContent.trim()"), 'Звітувати про завершення ремонту');
+    assert.equal(await evaluate("document.querySelector('#recentRepairTableBody [data-repair-id=\"4\"] .btn-finish-repair')===null"), true, 'completed repairs have no completion action');
+    await evaluate("document.querySelector('#recentRepairTableBody [data-repair-id=\"1\"] .btn-finish-repair').click()");
+    assert.equal(await evaluate("document.querySelector('#repairModalOverlay').classList.contains('active') && !document.querySelector('#repairResultPanel').hidden"), true, 'completion action opens result form directly');
+    assert.equal(await evaluate("document.querySelector('#inputVehicle').value"), 'TEST-001');
+    assert.equal(await evaluate("document.querySelector('#checkboxInvoice').checked"), true);
+    await checkModalGeometry('repairModalOverlay', 'btnSaveRepairModal');
+    await evaluate("document.querySelector('#closeRepairModalBtn').click()");
     assert.deepEqual(await evaluate("[...document.querySelectorAll('#recentRepairTableBody [data-repair-id]')].map(row=>Number(row.dataset.repairId)).sort((a,b)=>a-b)"),[1,2,4]);
     assert.equal(await evaluate("document.querySelectorAll('[data-repair-table] thead').length"),2);
     assert.equal(await evaluate("document.querySelector('#repairArchive').open"),false);
@@ -162,6 +185,7 @@ async function main() {
     data = await evaluate("JSON.parse(localStorage.getItem('szvk_trackers_data'))");
     assert.equal(data.repairs.find(item=>item.id===1).specialist,'Тестовий майстер');
     assert.equal(data.repairs.find(item=>item.id===1).needInvoice,false);
+    assert.equal(await evaluate("document.querySelector('#recentRepairTableBody [data-repair-id=\"1\"] .btn-finish-repair')===null"), true, 'completion removes the action');
     await evaluate(`document.querySelector('#btnOpenAddModal').click();document.querySelector('#inputVehicle').value='TEST-003';document.querySelector('#inputCarrierSelect').value='__custom';document.querySelector('#inputCarrierSelect').dispatchEvent(new Event('change'));document.querySelector('#inputCarrierCustom').value='Новий тестовий перевізник';document.querySelector('#inputCarrierCustom').dispatchEvent(new Event('input'));document.querySelector('[data-issue]').click();document.querySelector('#btnSaveRepairModal').click()`);
     data = await evaluate("JSON.parse(localStorage.getItem('szvk_trackers_data'))");
     assert.equal(data.repairs[0].carrier,'Новий тестовий перевізник');
@@ -213,6 +237,8 @@ async function main() {
     await call('Emulation.setDeviceMetricsOverride', { width:320,height:800,deviceScaleFactor:1,mobile:true });
     await navigate('index.html');
     await waitFor("document.querySelector('#mainAppContainer').style.display==='flex'");
+    assert.deepEqual(await evaluate("window.dayNotes['2026-10-14'].find(task=>task.id==='overdue-task')"), { id:'overdue-task', text:'Незавершена справа', author:'Костянтин', done:false, extra:'preserved', carriedFrom:'2026-10-12' });
+    assert.equal(await evaluate("window.dayNotes['2026-10-12'].length===1 && window.dayNotes['2026-10-12'][0].id==='completed-task'"), true, 'completed tasks stay on the original date');
     assert.equal(await evaluate("document.querySelector('#btnTabHistory').closest('.account-panel')!==null"),true);
     await evaluate("[...document.querySelectorAll('.day-card')].find(card=>card.querySelector('.day-num')?.textContent==='14').click()");
     await waitFor("!!document.querySelector('.move-task')");
@@ -220,6 +246,7 @@ async function main() {
     const shot=await call('Page.captureScreenshot',{format:'png'});
     fs.writeFileSync(path.join(artifacts,'work-hours-mobile.png'),Buffer.from(shot.data,'base64'));
     await evaluate("document.querySelector('.move-task').click()");
+    await checkModalGeometry('taskEditorModal', 'taskEditorSave');
     assert.equal(await evaluate("document.querySelectorAll('#taskCalendarDays button').length"),42);
     assert.equal(await evaluate("document.querySelector('#taskCalendarDays button').dataset.date"),'2026-09-28');
     assert.equal(await evaluate("document.querySelector('#taskCalendarDays [aria-current=\"date\"]').dataset.date"),'2026-10-14');
@@ -289,8 +316,8 @@ async function main() {
     assert.equal(await evaluate("window.dayNotes['2026-10-15'].find(task=>task.repairId!=null).time"), '14:30');
 
     await evaluate("document.querySelector('#modalDayCloseX').click();document.querySelector('#btnToggleCycleTasks').click()");
-    const cycleDay = await evaluate("document.querySelector('.cycle-shift-quick-add').dataset.date");
-    await evaluate("{const form=document.querySelector('.cycle-shift-quick-add');form.querySelector('details').open=true;form.querySelector('[data-task-time=\"10:00\"]').click();form.querySelector('.cycle-quick-input').value='Виклик із блоку змін';form.querySelector('[type=submit]').click();}");
+    const cycleDay = await evaluate("document.querySelector('.cycle-shift-col.is-today .cycle-shift-quick-add').dataset.date");
+    await evaluate("{const form=document.querySelector('.cycle-shift-col.is-today .cycle-shift-quick-add');form.querySelector('details').open=true;form.querySelector('[data-task-time=\"10:00\"]').click();form.querySelector('.cycle-quick-input').value='Виклик із блоку змін';form.querySelector('[type=submit]').click();}");
     assert.equal(await evaluate("window.dayNotes['" + cycleDay + "'].find(task=>task.text==='Виклик із блоку змін').time"), '10:00');
     assert.equal(await evaluate("document.querySelector('.cycle-task-row .task-time-badge')!==null"), true);
     const timedShot=await call('Page.captureScreenshot',{format:'png'});
@@ -427,6 +454,15 @@ async function main() {
     await evaluate("window.__cloudOffline=false;const w=document.querySelector('#workHoursPeer').contentWindow;w.__cloudOffline=false;w.dispatchEvent(new w.Event('online'))");
     await waitFor("window.__cloudData.trackers.repairs.find(repair=>repair.id===" + twoWayId + ").specialist==='Костянтин' && Object.keys(JSON.parse(localStorage.getItem('szvk_pending_repair_completions'))).length===0");
     assert.equal(await evaluate("window.__cloudData.trackers.repairs.find(repair=>repair.id===" + twoWayId + ").repairDate"), '15.10.2026');
+
+    // A page left open across Kyiv midnight carries both local and cloud work.
+    await peer("(w.__nativeDate=w.Date,w.Date=class extends w.__nativeDate{constructor(...args){super(...(args.length?args:['2026-10-17T12:00:00+03:00']));}static now(){return new w.__nativeDate('2026-10-17T12:00:00+03:00').getTime();}},w.dispatchEvent(new w.Event('focus'))) ");
+    await waitFor("window.__cloudData.schedule.dayNotes['2026-10-17']?.some(task=>task.id==='test-task')");
+    assert.equal(await peer("w.dayNotes['2026-10-17'].find(task=>task.id==='test-task').author"), 'Олександр');
+    assert.equal(await peer("w.dayNotes['2026-10-17'].find(task=>task.id==='overdue-task').carriedFrom"), '2026-10-12');
+    assert.equal(await evaluate("window.__cloudData.schedule.dayNotes['2026-10-15'].find(task=>task.repairId===" + twoWayId + ").done"), true, 'completed repair stays on its transferred day');
+    await peer("w.dispatchEvent(new w.Event('focus'))");
+    assert.equal(await peer("Object.values(w.dayNotes).flat().filter(task=>task.id==='test-task').length"), 1, 'repeated activation does not duplicate tasks');
     assert.equal(errors.length,0,JSON.stringify(errors));
     console.log('Browser checks passed: repair tables/search, calendars, warehouse/references, optional time, cloud note creation, simultaneous Tracker Hub and Work Hours, bidirectional completion/reopening, transferred-day and clicking-account attribution, cycle checkbox, offline retry, responsive notes, history.');
     console.log('Screenshots: ' + artifacts);
