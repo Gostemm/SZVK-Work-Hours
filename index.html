@@ -14,7 +14,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 
-  <link rel="stylesheet" href="shared.css?v=b28f54533c84">
+  <link rel="stylesheet" href="shared.css?v=66916a2223c3">
 
   <style>
     :root {
@@ -4075,6 +4075,8 @@ document.addEventListener("DOMContentLoaded", function () {
     const countEl = document.getElementById("modalTasksCount");
     if (!listEl || !countEl) return;
 
+    const completedOpen = listEl.dataset.dateKey === dateKey && Boolean(listEl.querySelector('.completed-tasks')?.open);
+    listEl.dataset.dateKey = dateKey;
     listEl.innerHTML = "";
     const activeTasksCount = tasks.filter(t => !t.done).length;
     countEl.textContent = `${activeTasksCount} активних (з ${tasks.length})`;
@@ -4082,6 +4084,17 @@ document.addEventListener("DOMContentLoaded", function () {
     if (tasks.length === 0) {
       listEl.innerHTML = '<div style="font-size: 12px; color: var(--text-muted); font-style: italic; padding: 6px 0;">Завдань ще немає.</div>';
       return;
+    }
+
+    const completedCount = tasks.length - activeTasksCount;
+    let completedGroup = null;
+    let completedList = null;
+    if (completedCount) {
+      completedGroup = document.createElement('details');
+      completedGroup.className = 'completed-tasks';
+      completedGroup.open = completedOpen;
+      completedGroup.innerHTML = `<summary>Виконані завдання (${completedCount})</summary><div class="completed-tasks-list"></div>`;
+      completedList = completedGroup.querySelector('.completed-tasks-list');
     }
 
     tasks.forEach((task, idx) => {
@@ -4111,8 +4124,7 @@ document.addEventListener("DOMContentLoaded", function () {
           dateKey, taskId: task.id, prevDone: !task.done
         }, { editRef: { module: 'schedule', type: 'task', dateKey, taskId: task.id } });
         saveLocalData();
-        item.classList.toggle('done', task.done);
-        countEl.textContent = tasks.filter(task => !task.done).length + ' активних (з ' + tasks.length + ')';
+        refreshOpenDayTasks();
         renderApp();
       };
 
@@ -4131,8 +4143,9 @@ document.addEventListener("DOMContentLoaded", function () {
         renderApp();
       };
 
-      listEl.appendChild(item);
+      (task.done ? completedList : listEl).appendChild(item);
     });
+    if (completedGroup) listEl.appendChild(completedGroup);
   }
 
   function openDayModal(year, month, day) {
@@ -4369,6 +4382,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const cycleInfo = getCycleInfo(today, currentViewingCycleOffset);
     const signature = JSON.stringify([todayKey, currentViewingCycleOffset, cycleTasksOnlyActive, cycleTasksCollapsed, cycleInfo.scheduledWorker, cycleInfo.shifts.map(shift => [shift.assignment, shift.tasks])]);
     if (renderedCycleSignature === signature) return;
+    const expandedCompletedDates = new Set([...block.querySelectorAll('.completed-tasks[open]')].map(group => group.dataset.date));
     renderedCycleSignature = signature;
 
     // Format date range
@@ -4463,7 +4477,7 @@ document.addEventListener("DOMContentLoaded", function () {
           </div>
         `;
       } else {
-        tasksListHtml = shiftTasks.map((t) => `
+        const taskRowHtml = (t) => `
           <div class="cycle-task-row ${t.done ? 'done' : ''}" data-date="${shift.dateKey}" data-task-id="${escapeHtml(t.id)}">
             <div class="cycle-task-left">
               <input type="checkbox" class="cycle-task-cb" ${t.done ? 'checked' : ''} data-date="${shift.dateKey}" data-task-id="${escapeHtml(t.id)}" title="${t.done ? 'Позначити як невиконане' : 'Позначити як виконане'}">
@@ -4477,7 +4491,15 @@ document.addEventListener("DOMContentLoaded", function () {
               ${t.repairId == null ? `<button type="button" class="task-action-btn cycle-task-del-btn" data-date="${shift.dateKey}" data-task-id="${escapeHtml(t.id)}" title="Видалити завдання" aria-label="Видалити завдання">✕</button>` : ''}
             </div>
           </div>
-        `).join('');
+        `;
+        tasksListHtml = shiftTasks.filter(t => !t.done).map(taskRowHtml).join('');
+        const completedTasks = shiftTasks.filter(t => t.done);
+        if (completedTasks.length) {
+          tasksListHtml += `<details class="completed-tasks" data-date="${shift.dateKey}" ${expandedCompletedDates.has(shift.dateKey) ? 'open' : ''}>
+            <summary>Виконані завдання (${completedTasks.length})</summary>
+            <div class="completed-tasks-list">${completedTasks.map(taskRowHtml).join('')}</div>
+          </details>`;
+        }
       }
 
       const activeBadgeText = shift.activeTasksCount > 0 

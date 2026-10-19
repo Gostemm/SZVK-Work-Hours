@@ -219,6 +219,10 @@ body .toast-container {
 }
 .task-action-btn:hover { color: var(--text); background: var(--card-bg); }
 .task-action-btn.delete-task { color: #f87171; }
+.completed-tasks { flex-shrink: 0; min-width: 0; margin-top: 4px; border-top: 1px solid var(--border); }
+.completed-tasks > summary { padding: 10px 4px; color: var(--text-muted); font-size: 12px; font-weight: 700; cursor: pointer; }
+.completed-tasks > summary:hover { color: var(--text); }
+.completed-tasks-list { display: flex; flex-direction: column; gap: 6px; padding-bottom: 4px; }
 .task-editor-form { display: flex; flex-direction: column; gap: 16px; }
 .task-editor-form label { display: flex; flex-direction: column; gap: 8px; font-size: 13px; font-weight: 700; }
 .task-editor-form input, .task-editor-form textarea {

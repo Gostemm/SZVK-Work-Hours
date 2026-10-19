@@ -259,8 +259,25 @@ async function main() {
     assert.deepEqual(await evaluate("window.dayNotes['2026-10-14'].find(task=>task.id==='overdue-task')"), { id:'overdue-task', text:'Незавершена справа', author:'Костянтин', done:false, extra:'preserved', carriedFrom:'2026-10-12' });
     assert.equal(await evaluate("window.dayNotes['2026-10-12'].length===1 && window.dayNotes['2026-10-12'][0].id==='completed-task'"), true, 'completed tasks stay on the original date');
     assert.equal(await evaluate("document.querySelector('#btnTabHistory').closest('.account-panel')!==null"),true);
+    await evaluate("[...document.querySelectorAll('.day-card')].find(card=>card.querySelector('.day-num')?.textContent==='12').click()");
+    assert.equal(await evaluate("document.querySelector('#modalDayTasksList .completed-tasks').open"),false,'a completed-only day starts collapsed');
+    assert.equal(await evaluate("document.querySelectorAll('#modalDayTasksList > .task-modal-item').length"),0);
+    await evaluate("document.querySelector('#modalDayCloseX').click()");
     await evaluate("[...document.querySelectorAll('.day-card')].find(card=>card.querySelector('.day-num')?.textContent==='14').click()");
     await waitFor("!!document.querySelector('.move-task')");
+    await evaluate("[...document.querySelectorAll('#modalDayTasksList .task-modal-item')].find(row=>row.textContent.includes('Незавершена справа')).querySelector('.task-modal-checkbox').click()");
+    assert.equal(await evaluate("document.querySelector('#modalDayTasksList').lastElementChild.matches('details.completed-tasks:not([open])')"),true,'completed tasks move to a collapsed group at the bottom');
+    assert.equal(await evaluate("document.querySelector('#modalDayTasksList .completed-tasks summary').textContent"),'Виконані завдання (1)');
+    assert.equal(await evaluate("document.querySelector('#modalDayTasksList .task-modal-item.done').checkVisibility()"),false,'completed task text is hidden while collapsed');
+    const completedNotesShot = await call('Page.captureScreenshot',{format:'png'});
+    fs.writeFileSync(path.join(artifacts,'completed-notes-mobile.png'),Buffer.from(completedNotesShot.data,'base64'));
+    await evaluate("document.querySelector('#modalNewTaskInput').value='Тест групування';document.querySelector('#modalAddNewTaskBtn').click();[...document.querySelectorAll('#modalDayTasksList .task-modal-item')].find(row=>row.textContent.includes('Тест групування')).querySelector('.task-modal-checkbox').click()");
+    assert.equal(await evaluate("document.querySelector('#modalDayTasksList .completed-tasks summary').textContent"),'Виконані завдання (2)');
+    await evaluate("document.querySelector('#modalDayTasksList .completed-tasks summary').click();[...document.querySelectorAll('#modalDayTasksList .task-modal-item')].find(row=>row.textContent.includes('Тест групування')).querySelector('.delete-task').click()");
+    assert.equal(await evaluate("document.querySelector('#modalDayTasksList .completed-tasks').open"),true,'expanded completed group stays open after an update');
+    assert.equal(await evaluate("window.dayNotes['2026-10-14'].some(task=>task.id==='test-task') && window.dayNotes['2026-10-14'].find(task=>task.id==='overdue-task').done && !window.dayNotes['2026-10-14'].some(task=>task.text==='Тест групування')"),true,'deleting from a grouped list removes the correct task');
+    await evaluate("document.querySelector('#modalDayTasksList .completed-tasks .task-modal-checkbox').click()");
+    assert.equal(await evaluate("document.querySelector('#modalDayTasksList .completed-tasks')===null && !window.dayNotes['2026-10-14'].find(task=>task.id==='overdue-task').done"),true,'reopening restores the active task and removes an empty completed group');
     assert.ok(await evaluate("document.querySelector('.task-modal-text').getBoundingClientRect().width>=180"),'mobile task text must retain width');
     const shot=await call('Page.captureScreenshot',{format:'png'});
     fs.writeFileSync(path.join(artifacts,'work-hours-mobile.png'),Buffer.from(shot.data,'base64'));
@@ -326,6 +343,7 @@ async function main() {
     assert.equal(await evaluate("Object.values(window.dayNotes).flat().filter(task=>task.repairId===" + linkedRepairId + ").length"), 1);
     await evaluate("[...document.querySelectorAll('.day-card')].find(card=>card.querySelector('.day-num')?.textContent==='15').click()");
     assert.equal(await evaluate("document.querySelector('.task-repair-link').closest('.task-modal-item').querySelector('.task-modal-checkbox').checked"), true);
+    assert.equal(await evaluate("document.querySelector('.task-repair-link').closest('.completed-tasks').open"),false,'completed repair notes are collapsed too');
     assert.equal(await evaluate("document.querySelector('.task-repair-link').closest('.task-modal-item').querySelector('.task-time-badge').textContent"), '14:30');
     assert.equal(await evaluate("document.documentElement.scrollWidth<=window.innerWidth"), true);
 
@@ -339,6 +357,13 @@ async function main() {
     await evaluate("{const form=document.querySelector('.cycle-shift-col.is-today .cycle-shift-quick-add');form.querySelector('details').open=true;form.querySelector('[data-task-time=\"10:00\"]').click();form.querySelector('.cycle-quick-input').value='Виклик із блоку змін';form.querySelector('[type=submit]').click();}");
     assert.equal(await evaluate("window.dayNotes['" + cycleDay + "'].find(task=>task.text==='Виклик із блоку змін').time"), '10:00');
     assert.equal(await evaluate("document.querySelector('.cycle-task-row .task-time-badge')!==null"), true);
+    await evaluate("[...document.querySelectorAll('.cycle-shift-col.is-today .cycle-task-row')].find(row=>row.textContent.includes('Виклик із блоку змін')).querySelector('.cycle-task-cb').click()");
+    assert.equal(await evaluate("document.querySelector('.cycle-shift-col.is-today .cycle-shift-tasks-list').lastElementChild.matches('details.completed-tasks:not([open])')"),true,'cycle tasks use the same collapsed completed group');
+    await evaluate("document.querySelector('#btnCycleFilterActive').click()");
+    assert.equal(await evaluate("document.querySelector('#cycleTasksBlock .completed-tasks')===null"),true,'active-only filtering still hides completed tasks');
+    await evaluate("document.querySelector('#btnCycleFilterActive').click();document.querySelector('.cycle-shift-col.is-today .completed-tasks summary').click();[...document.querySelectorAll('.cycle-shift-col.is-today .completed-tasks .cycle-task-row')].find(row=>row.textContent.includes('Виклик із блоку змін')).querySelector('.cycle-task-cb').click()");
+    assert.equal(await evaluate("document.querySelector('.cycle-shift-col.is-today .completed-tasks')===null"),true,'cycle reopening removes the empty group');
+    assert.equal(await evaluate("window.dayNotes['" + cycleDay + "'].find(task=>task.text==='Виклик із блоку змін').time"),'10:00','completion and reopening preserve optional time');
     const timedShot=await call('Page.captureScreenshot',{format:'png'});
     fs.writeFileSync(path.join(artifacts,'timed-tasks-mobile.png'),Buffer.from(timedShot.data,'base64'));
 
