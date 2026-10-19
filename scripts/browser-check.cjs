@@ -123,7 +123,14 @@ async function main() {
     await waitFor("typeof window.editRepair==='function'");
     assert.equal(await evaluate("document.querySelector('#tabBtnHistory').closest('.account-panel')!==null"), true);
     assert.equal(await evaluate("document.querySelector('.brand-badge')===null && document.querySelector('#atSearchInput')===null"), true);
-    assert.equal(await evaluate("document.querySelector('#recentRepairTableBody [data-repair-id=\"1\"] td:nth-child(8) .btn-finish-repair').textContent.trim()"), 'Звітувати про завершення ремонту');
+    assert.equal(await evaluate("document.querySelector('#recentRepairTableBody [data-repair-id=\"1\"] td[colspan=\"3\"] .btn-finish-repair').textContent.trim()"), 'Звітувати про завершення ремонту');
+    assert.equal(await evaluate(`(()=>{
+      const row=document.querySelector('#recentRepairTableBody [data-repair-id="1"]');
+      const cell=row.querySelector('.repair-result-cell').getBoundingClientRect();
+      const button=row.querySelector('.btn-finish-repair').getBoundingClientRect();
+      const headings=row.closest('table').tHead.rows[0].cells;
+      return Math.abs(cell.left-headings[5].getBoundingClientRect().left)<2 && Math.abs(cell.right-headings[7].getBoundingClientRect().right)<2 && button.width>=cell.width-25 && button.height>=52;
+    })()`), true, 'prominent completion button spans date, specialist and solution columns');
     assert.equal(await evaluate("document.querySelector('#recentRepairTableBody [data-repair-id=\"4\"] .btn-finish-repair')===null"), true, 'completed repairs have no completion action');
     await evaluate("document.querySelector('#recentRepairTableBody [data-repair-id=\"1\"] .btn-finish-repair').click()");
     assert.equal(await evaluate("document.querySelector('#repairModalOverlay').classList.contains('active') && !document.querySelector('#repairResultPanel').hidden"), true, 'completion action opens result form directly');
@@ -454,6 +461,31 @@ async function main() {
     await evaluate("window.__cloudOffline=false;const w=document.querySelector('#workHoursPeer').contentWindow;w.__cloudOffline=false;w.dispatchEvent(new w.Event('online'))");
     await waitFor("window.__cloudData.trackers.repairs.find(repair=>repair.id===" + twoWayId + ").specialist==='Костянтин' && Object.keys(JSON.parse(localStorage.getItem('szvk_pending_repair_completions'))).length===0");
     assert.equal(await evaluate("window.__cloudData.trackers.repairs.find(repair=>repair.id===" + twoWayId + ").repairDate"), '15.10.2026');
+
+    // Click the actual trash hit target; all data is isolated to this browser profile.
+    const deleteIds = [900001, '900002', `legacy-'"<003>`];
+    await evaluate(`{const data=structuredClone(window.__cloudData.trackers);${JSON.stringify(deleteIds)}.forEach((id,index)=>data.repairs.push({id,date:'14.10.2026',vehicle:'DELETE-'+index,carrier:'Тестовий перевізник',issue:'Тест видалення',workHoursTask:{dateKey:'2026-10-14',author:'Артем'}}));window.__emitCloud('trackers',data);document.querySelector('#globalSearchInput').value='DELETE-';document.querySelector('#globalSearchInput').dispatchEvent(new Event('input'));window.confirm=()=>{throw new Error('Repair deletion must use the in-page dialog');};}`);
+    await waitFor("document.querySelectorAll('#recentRepairTableBody [data-repair-id]').length===3");
+    const clickTrash = async id => {
+      const position = await evaluate(`(()=>{const row=[...document.querySelectorAll('#recentRepairTableBody [data-repair-id]')].find(row=>row.dataset.repairId===${JSON.stringify(String(id))});const button=row.querySelector('[data-repair-action="delete"]');button.scrollIntoView({block:'center',inline:'end'});const rect=button.getBoundingClientRect();const x=rect.left+rect.width/2,y=rect.top+rect.height/2;const hit=document.elementFromPoint(x,y);return {x,y,clickable:hit===button || button.contains(hit)};})()`);
+      assert.equal(position.clickable,true,'trash button is visible and receives pointer clicks');
+      await call('Input.dispatchMouseEvent',{type:'mousePressed',x:position.x,y:position.y,button:'left',clickCount:1});
+      await call('Input.dispatchMouseEvent',{type:'mouseReleased',x:position.x,y:position.y,button:'left',clickCount:1});
+      await waitFor("document.querySelector('#deleteRepairModal').classList.contains('active')");
+    };
+    await clickTrash(deleteIds[0]);
+    await evaluate("document.querySelector('#cancelDeleteRepair').click()");
+    assert.equal(await evaluate("window.__cloudData.trackers.repairs.some(repair=>repair.id===900001)"),true,'cancel keeps the repair');
+    await clickTrash(deleteIds[0]);
+    await evaluate("document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))");
+    assert.equal(await evaluate("document.querySelector('#deleteRepairModal').classList.contains('active')"),false,'Escape cancels deletion');
+    for (const id of deleteIds) {
+      await clickTrash(id);
+      await evaluate("document.querySelector('#confirmDeleteRepair').click()");
+      await waitFor(`!window.__cloudData.trackers.repairs.some(repair=>String(repair.id)===${JSON.stringify(String(id))})`);
+      await waitFor(`!Object.values(window.__cloudData.schedule.dayNotes).flat().some(task=>String(task.repairId)===${JSON.stringify(String(id))})`);
+      assert.equal(await evaluate(`JSON.parse(localStorage.getItem('szvk_action_history_unified')).some(entry=>entry.type==='repair_delete' && String(entry.restoreData?.repair?.id)===${JSON.stringify(String(id))})`),true,'deletion preserves the record in undo history');
+    }
 
     // A page left open across Kyiv midnight carries both local and cloud work.
     await peer("(w.__nativeDate=w.Date,w.Date=class extends w.__nativeDate{constructor(...args){super(...(args.length?args:['2026-10-17T12:00:00+03:00']));}static now(){return new w.__nativeDate('2026-10-17T12:00:00+03:00').getTime();}},w.dispatchEvent(new w.Event('focus'))) ");
