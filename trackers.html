@@ -507,39 +507,37 @@
     }
 
     .btn-finish-repair {
-      background: #f59e0b;
-      color: #1c1917;
-      border: 1px solid #fbbf24;
+      background: rgba(245, 158, 11, 0.22);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.6);
       font-size: 15px;
       font-weight: 900;
       padding: 12px 16px;
       min-height: 52px;
-      border-radius: 8px;
+      border-radius: 5px;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 4px;
-      margin-top: 12px;
+      gap: 8px;
+      margin-top: 0;
       width: 100%;
       line-height: 1.35;
+      letter-spacing: 0.2px;
 
       white-space: normal;
     }
     .btn-finish-repair:hover {
-      background: #fbbf24;
-      color: #1c1917;
+      background: rgba(245, 158, 11, 0.32);
 
       transform: translateY(-1px);
     }
 
-    .repair-result-summary {
-      display: grid;
-      grid-template-columns: minmax(115px, 1fr) minmax(95px, 0.83fr) minmax(150px, 1.3fr);
-      align-items: center;
-      gap: 20px;
+    .btn-finish-repair::before {
+      content: '● ⏳';
+      color: #f59e0b;
+      white-space: nowrap;
     }
-    .repair-result-summary > div { min-width: 0; }
 
     .vehicle-pill,
     .serial-box {
@@ -748,8 +746,8 @@
     [data-theme="light"] .repair-table tr.row-pending:hover { background: #fde68a !important; }
     [data-theme="light"] .badge-pending-pulsing { background: #fef3c7; color: #92400e !important; border: 1.5px solid #f59e0b; font-weight: 900; }
     [data-theme="light"] .pulsing-amber-dot { background: #d97706;  }
-    [data-theme="light"] .btn-finish-repair { background: #f59e0b; color: #1c1917; border: 1.5px solid #d97706; font-weight: 900; }
-    [data-theme="light"] .btn-finish-repair:hover { background: #fbbf24; color: #1c1917; }
+    [data-theme="light"] .btn-finish-repair { background: #fef3c7; color: #92400e; border: 1.5px solid #f59e0b; font-weight: 900; }
+    [data-theme="light"] .btn-finish-repair:hover { background: #fde68a; color: #92400e; }
 
     [data-theme="light"] .cell-date { font-weight: 800; color: #0f172a !important; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 13px; white-space: nowrap; }
     [data-theme="light"] .repair-date-label { color: #0f172a !important; font-weight: 800; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 13px; }
@@ -3500,17 +3498,6 @@
             </td>
             ${isPending ? `
               <td colspan="3" class="repair-result-cell">
-                <div class="repair-result-summary">
-                  <div>
-                  <span class="badge-pending-pulsing">
-                    <span class="pulsing-amber-dot"></span> ⏳ В РОБОТІ
-                  </span>
-                  </div>
-                  <div>${getTechBadgeHtml(item.specialist)}</div>
-                  <div class="solution-text" title="${escapeHtml(item.solution)}">
-                    ${item.solution ? escapeHtml(item.solution) : '<span class="solution-pending-label">Очікує виконання...</span>'}
-                  </div>
-                </div>
                 <button type="button" class="btn-finish-repair" data-repair-action="finish" title="Звітувати про завершення ремонту авто ${escapeHtml(item.vehicle || item.id)}">
                   Звітувати про завершення ремонту
                 </button>

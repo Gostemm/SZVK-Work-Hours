@@ -215,6 +215,8 @@ test('pending repairs place the completion control across all three result colum
   const pending = context.buildRepairRow(repair);
   assert.match(pending, /<td colspan="3" class="repair-result-cell">[\s\S]*data-repair-action="finish"[\s\S]*<\/td>/);
   assert.match(pending, /Звітувати про завершення ремонту/);
+  const resultCell = pending.match(/<td colspan="3" class="repair-result-cell">([\s\S]*?)<\/td>/)[1];
+  assert.match(resultCell, /^\s*<button\b[^>]*data-repair-action="finish"[^>]*>\s*Звітувати про завершення ремонту\s*<\/button>\s*$/);
   assert.equal((pending.match(/<td(?:\s|>)/g) || []).length, 8);
   assert.match(pending, /data-repair-id="repair-&#39;7&quot;&lt;x&gt;"/);
   assert.doesNotMatch(pending, /\bonclick=/);

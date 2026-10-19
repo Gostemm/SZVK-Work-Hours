@@ -124,6 +124,7 @@ async function main() {
     assert.equal(await evaluate("document.querySelector('#tabBtnHistory').closest('.account-panel')!==null"), true);
     assert.equal(await evaluate("document.querySelector('.brand-badge')===null && document.querySelector('#atSearchInput')===null"), true);
     assert.equal(await evaluate("document.querySelector('#recentRepairTableBody [data-repair-id=\"1\"] td[colspan=\"3\"] .btn-finish-repair').textContent.trim()"), 'Звітувати про завершення ремонту');
+    assert.equal(await evaluate("document.querySelector('#recentRepairTableBody [data-repair-id=\"1\"] .repair-result-cell').children.length"), 1, 'pending result columns contain only the report button');
     assert.equal(await evaluate(`(()=>{
       const row=document.querySelector('#recentRepairTableBody [data-repair-id="1"]');
       const cell=row.querySelector('.repair-result-cell').getBoundingClientRect();
@@ -132,6 +133,17 @@ async function main() {
       return Math.abs(cell.left-headings[5].getBoundingClientRect().left)<2 && Math.abs(cell.right-headings[7].getBoundingClientRect().right)<2 && button.width>=cell.width-25 && button.height>=52;
     })()`), true, 'prominent completion button spans date, specialist and solution columns');
     assert.equal(await evaluate("document.querySelector('#recentRepairTableBody [data-repair-id=\"4\"] .btn-finish-repair')===null"), true, 'completed repairs have no completion action');
+    await call('Emulation.setDeviceMetricsOverride', { width:1280,height:900,deviceScaleFactor:1,mobile:false });
+    await evaluate("document.querySelector('#recentRepairTableBody [data-repair-id=\"1\"] .btn-finish-repair').scrollIntoView({block:'center',inline:'center'})");
+    const reportTheme = await evaluate("document.documentElement.getAttribute('data-theme')");
+    for (const theme of ['dark','light']) {
+      await evaluate(`document.documentElement.setAttribute('data-theme',${JSON.stringify(theme)})`);
+      const reportShot = await call('Page.captureScreenshot',{format:'png'});
+      fs.writeFileSync(path.join(artifacts,`repair-report-${theme}.png`),Buffer.from(reportShot.data,'base64'));
+    }
+    await evaluate(`document.documentElement.setAttribute('data-theme',${JSON.stringify(reportTheme)})`);
+    await call('Emulation.setDeviceMetricsOverride', { width:320,height:800,deviceScaleFactor:1,mobile:true });
+    await evaluate("document.querySelector('#recentRepairTableBody').closest('.table-container').scrollLeft=0;window.scrollTo(0,0)");
     await evaluate("document.querySelector('#recentRepairTableBody [data-repair-id=\"1\"] .btn-finish-repair').click()");
     assert.equal(await evaluate("document.querySelector('#repairModalOverlay').classList.contains('active') && !document.querySelector('#repairResultPanel').hidden"), true, 'completion action opens result form directly');
     assert.equal(await evaluate("document.querySelector('#inputVehicle').value"), 'TEST-001');
