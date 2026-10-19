@@ -1314,8 +1314,7 @@
       cursor: pointer;
     }
     .day-task-counter .counter-value { min-width: 0; white-space: normal; overflow-wrap: anywhere; }
-    .day-task-counter:disabled { cursor: default; opacity: 0.65; }
-    .day-task-counters .day-task-counter:disabled:hover { transform: none; }
+    .day-task-counter:only-child { grid-column: 1 / -1; }
 
     /* Active tasks: visually expressive cyber cyan with glow */
     .day-task-counter.active {
@@ -4893,12 +4892,12 @@ document.addEventListener("DOMContentLoaded", function () {
         const completedTasksCount = tasks.length - activeTasksCount;
         inner += `
           <div class="day-task-counters" role="group" aria-label="Завдання за день">
-            <button type="button" class="day-task-counter active" data-task-view="active" title="Активні завдання: ${activeTasksCount}" aria-label="Активні завдання: ${activeTasksCount}" ${activeTasksCount ? '' : 'disabled'}>
+            ${activeTasksCount ? `<button type="button" class="day-task-counter active" data-task-view="active" title="Активні завдання: ${activeTasksCount}" aria-label="Активні завдання: ${activeTasksCount}">
               <span class="counter-icon" aria-hidden="true">📝</span><span class="counter-value">${activeTasksCount}</span>
-            </button>
-            <button type="button" class="day-task-counter done" data-task-view="done" title="Виконані завдання: ${completedTasksCount}" aria-label="Виконані завдання: ${completedTasksCount}" ${completedTasksCount ? '' : 'disabled'}>
+            </button>` : ''}
+            ${completedTasksCount ? `<button type="button" class="day-task-counter done" data-task-view="done" title="Виконані завдання: ${completedTasksCount}" aria-label="Виконані завдання: ${completedTasksCount}">
               <span class="counter-icon" aria-hidden="true">✓</span><span class="counter-value">${completedTasksCount}</span>
-            </button>
+            </button>` : ''}
           </div>
         `;
       }
