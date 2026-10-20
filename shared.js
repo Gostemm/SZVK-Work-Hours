@@ -99,6 +99,19 @@
     return true;
   }
 
+  const viewAnimations = new WeakMap();
+  function animateViewChange(element) {
+    if (!element) return;
+    const previous = viewAnimations.get(element);
+    if (previous) previous.cancel();
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || typeof element.animate !== 'function') return;
+    const animation = element.animate([
+      { opacity: 0, transform: 'translateY(4px)' },
+      { opacity: 1, transform: 'translateY(0)' }
+    ], { duration: 180, easing: 'cubic-bezier(0.2, 0.7, 0.3, 1)' });
+    viewAnimations.set(element, animation);
+  }
+
   const rowCache = new WeakMap();
   // Reuse unchanged rows and their controls; parse only new or changed records.
   function reconcileRows(container, items, buildHtml) {
@@ -179,7 +192,7 @@
           ${options.backup
             ? '<button type="button" class="btn" id="btnOpenExportModal">💾 Бекап / Експорт</button>'
             : '<a class="btn" href="trackers.html?backup=1">💾 Бекап трекерів</a>'}
-          ${options.admin ? '<button type="button" class="btn" id="btnOpenAdminPanel" style="display:none">Керування користувачами</button><button type="button" class="btn" id="btnOpenResetModal" style="display:none">Скинути підміни</button>' : ''}
+          ${options.admin ? '<button type="button" class="btn" id="btnOpenAdminPanel" style="display:none">Керування користувачами</button>' : ''}
           <button type="button" class="btn account-logout" id="btnLogoutBtn">Вийти з акаунта</button>
         </div>
       </details>`;
@@ -711,6 +724,7 @@
     formatHistoryTime,
     debounce,
     setHtmlIfChanged,
+    animateViewChange,
     reconcileRows,
     updateAccount,
     mountAccountMenu,

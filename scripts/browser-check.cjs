@@ -260,6 +260,24 @@ async function main() {
     await call('Emulation.setDeviceMetricsOverride', { width:320,height:800,deviceScaleFactor:1,mobile:true });
     await navigate('index.html');
     await waitFor("document.querySelector('#mainAppContainer').style.display==='flex'");
+    assert.equal(await evaluate("!document.querySelector('#btnToggleCycleTasks, #cycleTasksBlock, #btnOpenResetModal, #resetPeriodModal, .month-daily-badge')"),true,'retired controls and monthly task badges are removed');
+    assert.equal(await evaluate("document.querySelector('#monthTabsContainer .active').textContent"),'Жовтень (31)','month labels retain the number of days');
+    await call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'no-preference'}]});
+    assert.deepEqual(await evaluate(`(()=>{
+      const tabs=document.querySelector('#monthTabsContainer').children;
+      tabs[0].click();
+      const view=document.querySelector('#mainCalendarView');
+      const animation=view.getAnimations()[0];
+      tabs[0].click();
+      const steady=view.getAnimations()[0]===animation;
+      tabs[1].click();
+      return {animated:!!animation,steady,replaced:view.getAnimations()[0]!==animation};
+    })()`),{animated:true,steady:true,replaced:true},'navigation animates once and ordinary rerenders keep the same animation');
+    await call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
+    assert.equal(await evaluate("document.querySelector('#monthTabsContainer').children[0].click();document.querySelector('#mainCalendarView').getAnimations().length"),0,'reduced motion cancels and skips view animations');
+    assert.equal(await evaluate("getComputedStyle(document.querySelector('#btnGoToToday')).transitionDuration"),'0s','reduced motion disables button transitions');
+    await evaluate("document.querySelector('#monthTabsContainer').children[1].click()");
+    await call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'no-preference'}]});
     assert.deepEqual(await evaluate("window.dayNotes['2026-10-14'].find(task=>task.id==='overdue-task')"), { id:'overdue-task', text:'Незавершена справа', author:'Костянтин', done:false, extra:'preserved', carriedFrom:'2026-10-12' });
     assert.equal(await evaluate("window.dayNotes['2026-10-12'].length===1 && window.dayNotes['2026-10-12'][0].id==='completed-task'"), true, 'completed tasks stay on the original date');
     assert.equal(await evaluate("document.querySelector('#btnTabHistory').closest('.account-panel')!==null"),true);
@@ -380,20 +398,7 @@ async function main() {
     assert.equal(await evaluate("document.querySelector('.task-repair-link').closest('.task-modal-item').querySelector('.task-modal-checkbox').checked"), false);
     assert.equal(await evaluate("window.dayNotes['2026-10-15'].find(task=>task.repairId!=null).time"), '14:30');
 
-    await evaluate("document.querySelector('#modalDayCloseX').click();document.querySelector('#btnToggleCycleTasks').click()");
-    const cycleDay = await evaluate("document.querySelector('.cycle-shift-col.is-today .cycle-shift-quick-add').dataset.date");
-    await evaluate("{const form=document.querySelector('.cycle-shift-col.is-today .cycle-shift-quick-add');form.querySelector('details').open=true;form.querySelector('[data-task-time=\"10:00\"]').click();form.querySelector('.cycle-quick-input').value='Виклик із блоку змін';form.querySelector('[type=submit]').click();}");
-    assert.equal(await evaluate("window.dayNotes['" + cycleDay + "'].find(task=>task.text==='Виклик із блоку змін').time"), '10:00');
-    assert.equal(await evaluate("document.querySelector('.cycle-task-row .task-time-badge')!==null"), true);
-    await evaluate("[...document.querySelectorAll('.cycle-shift-col.is-today .cycle-task-row')].find(row=>row.textContent.includes('Виклик із блоку змін')).querySelector('.cycle-task-cb').click()");
-    assert.equal(await evaluate("document.querySelector('.cycle-shift-col.is-today .cycle-shift-tasks-list').lastElementChild.matches('details.completed-tasks:not([open])')"),true,'cycle tasks use the same collapsed completed group');
-    await evaluate("document.querySelector('#btnCycleFilterActive').click()");
-    assert.equal(await evaluate("document.querySelector('#cycleTasksBlock .completed-tasks')===null"),true,'active-only filtering still hides completed tasks');
-    await evaluate("document.querySelector('#btnCycleFilterActive').click();document.querySelector('.cycle-shift-col.is-today .completed-tasks summary').click();[...document.querySelectorAll('.cycle-shift-col.is-today .completed-tasks .cycle-task-row')].find(row=>row.textContent.includes('Виклик із блоку змін')).querySelector('.cycle-task-cb').click()");
-    assert.equal(await evaluate("document.querySelector('.cycle-shift-col.is-today .completed-tasks')===null"),true,'cycle reopening removes the empty group');
-    assert.equal(await evaluate("window.dayNotes['" + cycleDay + "'].find(task=>task.text==='Виклик із блоку змін').time"),'10:00','completion and reopening preserve optional time');
-    const timedShot=await call('Page.captureScreenshot',{format:'png'});
-    fs.writeFileSync(path.join(artifacts,'timed-tasks-mobile.png'),Buffer.from(timedShot.data,'base64'));
+    await evaluate("document.querySelector('#modalDayCloseX').click()");
 
     // Use controlled realtime snapshots to check cloud arrival order and fresh devices.
     await call('Page.addScriptToEvaluateOnNewDocument', { source: `
@@ -515,10 +520,10 @@ async function main() {
     await evaluate("window.finishRepair(" + twoWayId + ");document.querySelector('#inputRepairDate').value='16.10.2026';document.querySelector('#inputSolution').value='Відновлено GSM';document.querySelector('#btnSaveRepairModal').click()");
     await waitFor("document.querySelector('#workHoursPeer').contentWindow.dayNotes['2026-10-15']?.find(task=>task.repairId===" + twoWayId + ")?.done===true");
     assert.equal(await evaluate("window.__cloudData.trackers.repairs.find(repair=>repair.id===" + twoWayId + ").repairDate"), '16.10.2026');
-    await peer("(d.querySelector('#modalDayCloseX').click(),d.querySelector('#btnToggleCycleTasks').click(),d.querySelector('.cycle-task-cb[data-task-id=\"repair-" + twoWayId + "\"]').click())");
+    await peer("d.querySelector('a[href=\"trackers.html?editRepair=" + twoWayId + "\"]').closest('.task-modal-item').querySelector('.task-modal-checkbox').click()");
     await waitFor("window.__cloudData.trackers.repairs.find(repair=>repair.id===" + twoWayId + ").repairDate===''");
     await evaluate("window.__cloudOffline=true;document.querySelector('#workHoursPeer').contentWindow.__cloudOffline=true");
-    await peer("d.querySelector('.cycle-task-cb[data-task-id=\"repair-" + twoWayId + "\"]').click()");
+    await peer("d.querySelector('a[href=\"trackers.html?editRepair=" + twoWayId + "\"]').closest('.task-modal-item').querySelector('.task-modal-checkbox').click()");
     assert.equal(await peer("w.dayNotes['2026-10-15'].find(task=>task.repairId===" + twoWayId + ").done"), true);
     assert.equal(await evaluate("Object.keys(JSON.parse(localStorage.getItem('szvk_pending_repair_completions'))).length"), 1);
     await peer("w.__emitCloud('trackers',w.__cloudData.trackers,true)");
@@ -561,7 +566,7 @@ async function main() {
     await peer("w.dispatchEvent(new w.Event('focus'))");
     assert.equal(await peer("Object.values(w.dayNotes).flat().filter(task=>task.id==='test-task').length"), 1, 'repeated activation does not duplicate tasks');
     assert.equal(errors.length,0,JSON.stringify(errors));
-    console.log('Browser checks passed: repair tables/search, calendars, warehouse/references, optional time, cloud note creation, simultaneous Tracker Hub and Work Hours, bidirectional completion/reopening, transferred-day and clicking-account attribution, cycle checkbox, offline retry, responsive notes, history.');
+    console.log('Browser checks passed: simplified navigation, view animations and reduced motion, repair tables/search, calendars, warehouse/references, optional time, cloud note creation, simultaneous Tracker Hub and Work Hours, bidirectional completion/reopening, transferred-day and clicking-account attribution, offline retry, responsive notes, history.');
     console.log('Screenshots: ' + artifacts);
   } finally {
     if (socket) socket.close();

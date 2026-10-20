@@ -8,7 +8,7 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg" sizes="any">
   <link rel="apple-touch-icon" href="apple-touch-icon.png" sizes="180x180">
 
-  <script src="shared.js?v=a812919e648f"></script>
+  <script src="shared.js?v=56d081729d4e"></script>
   <script>
     // Auth guard
     (function() {
@@ -23,7 +23,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 
-  <link rel="stylesheet" href="shared.css?v=0d37090ba78d">
+  <link rel="stylesheet" href="shared.css?v=8614bdbbddac">
 
   <style>
     :root {
@@ -4670,6 +4670,7 @@
   // Event Listeners
   // Tab Switching
   tabBtnJournal.addEventListener('click', () => {
+    const viewChanged = activeTab !== 'journal';
     activeTab = 'journal';
     tabBtnJournal.className = 'main-tab-btn active';
     tabBtnInventory.className = 'main-tab-btn inventory-tab';
@@ -4680,9 +4681,11 @@
     viewAtCommands.style.display = 'none';
     viewHistory.style.display = 'none';
     renderRepairs();
+    if (viewChanged) window.SZVKShared.animateViewChange(viewJournal);
   });
 
   tabBtnInventory.addEventListener('click', () => {
+    const viewChanged = activeTab !== 'inventory';
     activeTab = 'inventory';
     tabBtnJournal.className = 'main-tab-btn';
     tabBtnInventory.className = 'main-tab-btn inventory-tab active';
@@ -4693,9 +4696,11 @@
     viewAtCommands.style.display = 'none';
     viewHistory.style.display = 'none';
     renderInventory();
+    if (viewChanged) window.SZVKShared.animateViewChange(viewInventory);
   });
 
   tabBtnAtCommands.addEventListener('click', () => {
+    const viewChanged = activeTab !== 'at';
     activeTab = 'at';
     tabBtnJournal.className = 'main-tab-btn';
     tabBtnInventory.className = 'main-tab-btn inventory-tab';
@@ -4706,9 +4711,11 @@
     viewAtCommands.style.display = 'flex';
     viewHistory.style.display = 'none';
     renderAtCommands();
+    if (viewChanged) window.SZVKShared.animateViewChange(viewAtCommands);
   });
 
   tabBtnHistory.addEventListener('click', () => {
+    const viewChanged = activeTab !== 'history';
     activeTab = 'history';
     tabBtnJournal.className = 'main-tab-btn';
     tabBtnInventory.className = 'main-tab-btn inventory-tab';
@@ -4719,6 +4726,7 @@
     viewAtCommands.style.display = 'none';
     viewHistory.style.display = 'flex';
     renderHistory();
+    if (viewChanged) window.SZVKShared.animateViewChange(viewHistory);
   });
 
   // The weekly, search and archive tables share date sorting.
