@@ -149,6 +149,11 @@
             <span class="useful-link-copy"><strong>Перенесення терміналів</strong><span>Telegram-бот</span></span>
             <span class="useful-link-arrow" aria-hidden="true">↗</span>
           </a>
+          <a class="useful-link" href="https://navisoft.com.ua" target="_blank" rel="noopener noreferrer" aria-label="Navisoft (відкриється в новій вкладці)">
+            <img class="useful-link-logo" src="assets/navisoft.png" width="56" height="56" alt="" decoding="async">
+            <span class="useful-link-copy"><strong>Navisoft</strong><span>navisoft.com.ua</span></span>
+            <span class="useful-link-arrow" aria-hidden="true">↗</span>
+          </a>
         </div>`;
     }
     themeSwitcher.before(menu);
