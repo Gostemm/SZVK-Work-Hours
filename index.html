@@ -8,13 +8,13 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg" sizes="any">
   <link rel="apple-touch-icon" href="apple-touch-icon.png" sizes="180x180">
 
-  <script src="shared.js?v=b4714023f7f7"></script>
+  <script src="shared.js?v=4f4a9a0ec77e"></script>
 
   <!-- Firebase App & Firestore SDKs (Compat) -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 
-  <link rel="stylesheet" href="shared.css?v=ed7dc221eddd">
+  <link rel="stylesheet" href="shared.css?v=f604feb29ce6">
 
   <style>
     :root {
@@ -1772,6 +1772,7 @@
 <script>
 document.addEventListener("DOMContentLoaded", function () {
   const requiredSharedMethods = ['readAuthSession', 'saveAuthSession', 'clearAuthSession', 'fetchLoginAccounts', 'mountAccountMenu', 'updateAccount', 'escapeHtml', 'formatHistoryTime', 'initThemeSwitcher', 'updateTask', 'restoreTaskMove', 'debounce', 'setHtmlIfChanged', 'shiftInfo', 'calendarMonthDays', 'taskTimePickerHtml', 'initTaskTimePickers', 'reconcileRepairTasks', 'setRepairCompletion', 'flushRepairCompletions', 'syncRepairTasksToCloud', 'carryForwardTasks', 'rollOverTasksInCloud'];
+  requiredSharedMethods.push('openModal', 'closeModal', 'transitionViews');
   if (!window.SZVKShared || requiredSharedMethods.some(name => typeof window.SZVKShared[name] !== 'function')) {
     const message = document.getElementById('loginErrorMessage');
     message.textContent = 'Не вдалося завантажити оновлення сервісу. Оновіть сторінку.';
@@ -2245,11 +2246,11 @@ document.addEventListener("DOMContentLoaded", function () {
       } catch(e) {}
     }
     renderAdminUsersList();
-    adminUsersModal.classList.add("active");
+    window.SZVKShared.openModal(adminUsersModal);
   };
 
   document.getElementById("adminUsersCloseX").onclick = function() {
-    adminUsersModal.classList.remove("active");
+    window.SZVKShared.closeModal(adminUsersModal);
   };
 
   const btnForcePush = document.getElementById("btnForcePushUsers");
@@ -3384,13 +3385,13 @@ document.addEventListener("DOMContentLoaded", function () {
     taskCalendarSignature = '';
     updateTaskShiftPreview();
     document.getElementById('taskEditorError').hidden = true;
-    document.getElementById('taskEditorModal').classList.add('active');
+    window.SZVKShared.openModal(document.getElementById('taskEditorModal'));
     if (mode === 'move') document.querySelector('#taskCalendarDays [aria-pressed="true"]').focus();
     else document.getElementById('taskEditorText').focus();
   }
 
   function closeTaskEditor() {
-    document.getElementById('taskEditorModal').classList.remove('active');
+    window.SZVKShared.closeModal(document.getElementById('taskEditorModal'));
     activeTaskEdit = null;
     if (taskEditorReturnFocus && taskEditorReturnFocus.isConnected) taskEditorReturnFocus.focus();
   }
@@ -3509,7 +3510,7 @@ document.addEventListener("DOMContentLoaded", function () {
     if (event.target === event.currentTarget) closeTaskEditor();
   });
   document.addEventListener('keydown', event => {
-    if (event.key === 'Escape' && activeTaskEdit) closeTaskEditor();
+    if (event.key === 'Escape' && activeTaskEdit) { event.preventDefault(); closeTaskEditor(); }
   });
   document.getElementById('taskEditorForm').addEventListener('submit', event => {
     event.preventDefault();
@@ -3640,11 +3641,11 @@ document.addEventListener("DOMContentLoaded", function () {
     const picker = document.querySelector('#modalNewTaskTimeMount .task-time-picker');
     window.SZVKShared.setTaskTimePicker(picker);
     picker.open = false;
-    document.getElementById("dayActionModal").classList.add("active");
+    window.SZVKShared.openModal(document.getElementById("dayActionModal"));
   }
 
   document.getElementById("modalDayCloseX").onclick = () => {
-    document.getElementById("dayActionModal").classList.remove("active");
+    window.SZVKShared.closeModal(document.getElementById("dayActionModal"));
   };
 
   document.getElementById("modalSwapWorkerBtn").onclick = () => {
@@ -3745,11 +3746,11 @@ document.addEventListener("DOMContentLoaded", function () {
       list.innerHTML = `<div style="text-align: center; color: var(--text-muted); font-size: 13px; padding: 20px 0;">🎉 Активних завдань немає!</div>`;
     }
 
-    modal.classList.add("active");
+    window.SZVKShared.openModal(modal);
   }
 
   window.openSpecificDayFromOverview = (y, m, d) => {
-    document.getElementById("seasonOverviewModal").classList.remove("active");
+    window.SZVKShared.closeModal(document.getElementById("seasonOverviewModal"));
     const season = getSeasonDetails(currentSeasonIndex);
     const mIdx = season.months.findIndex(item => item.year === y && item.month === m);
     if (mIdx !== -1) selectedMonthRelative = mIdx;
@@ -3759,7 +3760,7 @@ document.addEventListener("DOMContentLoaded", function () {
   };
 
   window.switchMonthAndTab = (mIdx, tabName) => {
-    document.getElementById("seasonOverviewModal").classList.remove("active");
+    window.SZVKShared.closeModal(document.getElementById("seasonOverviewModal"));
     selectedMonthRelative = mIdx;
     activeTab = tabName;
     renderApp();
@@ -3767,7 +3768,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   document.getElementById("seasonTaskBadge").onclick = openSeasonOverviewModal;
   document.getElementById("seasonOverviewCloseX").onclick = () => {
-    document.getElementById("seasonOverviewModal").classList.remove("active");
+    window.SZVKShared.closeModal(document.getElementById("seasonOverviewModal"));
   };
 
   function renderApp() {
@@ -4019,15 +4020,22 @@ document.addEventListener("DOMContentLoaded", function () {
     renderApp();
   };
 
-  [
+  const scheduleDialogs = [
     document.getElementById("dayActionModal"),
     document.getElementById("taskEditorModal"),
     document.getElementById("seasonOverviewModal"),
     document.getElementById("adminUsersModal")
-  ].forEach(modal => {
+  ];
+  scheduleDialogs.forEach(modal => {
     modal.addEventListener("click", (e) => {
-      if (e.target === modal) modal.classList.remove("active");
+      if (e.target === modal) window.SZVKShared.closeModal(modal);
     });
+  });
+
+  document.addEventListener('keydown', event => {
+    if (event.key !== 'Escape' || event.defaultPrevented) return;
+    const modal = scheduleDialogs.filter(dialog => dialog.classList.contains('active')).at(-1);
+    if (modal) { event.preventDefault(); window.SZVKShared.closeModal(modal); }
   });
 
   currentUser = window.SZVKShared.readAuthSession();

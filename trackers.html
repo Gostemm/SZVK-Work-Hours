@@ -8,7 +8,7 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg" sizes="any">
   <link rel="apple-touch-icon" href="apple-touch-icon.png" sizes="180x180">
 
-  <script src="shared.js?v=b4714023f7f7"></script>
+  <script src="shared.js?v=4f4a9a0ec77e"></script>
   <script>
     // Auth guard
     (function() {
@@ -23,7 +23,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 
-  <link rel="stylesheet" href="shared.css?v=ed7dc221eddd">
+  <link rel="stylesheet" href="shared.css?v=f604feb29ce6">
 
   <style>
     :root {
@@ -3773,12 +3773,12 @@
         input.required = true;
       }
     }
-    referenceModal.classList.add('active');
+    window.SZVKShared.openModal(referenceModal);
     document.getElementById(kind === 'commands' ? 'referenceCommandSelect' : 'firmwareBlack').focus();
   }
 
   function closeReferenceEditor() {
-    referenceModal.classList.remove('active');
+    window.SZVKShared.closeModal(referenceModal);
     if (referenceReturnFocus && referenceReturnFocus.isConnected) referenceReturnFocus.focus();
   }
 
@@ -3788,7 +3788,9 @@
   document.getElementById('referenceEditorClose').onclick = closeReferenceEditor;
   document.getElementById('referenceEditorCancel').onclick = closeReferenceEditor;
   referenceModal.addEventListener('click', event => { if (event.target === referenceModal) closeReferenceEditor(); });
-  document.addEventListener('keydown', event => { if (event.key === 'Escape' && referenceModal.classList.contains('active')) closeReferenceEditor(); });
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && referenceModal.classList.contains('active')) { event.preventDefault(); closeReferenceEditor(); }
+  });
   document.getElementById('referenceEditorForm').addEventListener('submit', event => {
     event.preventDefault();
     if (referenceEditorVersion !== referenceVersion()) {
@@ -4488,7 +4490,7 @@
     document.getElementById('checkboxInvoice').checked = isInvoice;
 
     repairModalTitle.innerHTML = `<span>✏️ Редагувати заявку #${escapeHtml(item.id)} (Авто ${escapeHtml(item.vehicle)})</span>`;
-    repairModalOverlay.classList.add('active');
+    window.SZVKShared.openModal(repairModalOverlay);
   };
 
   // Quick Finish in-progress repair
@@ -4514,7 +4516,7 @@
     document.getElementById('checkboxInvoice').checked = isInvoice;
 
     repairModalTitle.innerHTML = `<span>⚡ Завершити ремонт авто #${escapeHtml(item.vehicle || item.id)}</span>`;
-    repairModalOverlay.classList.add('active');
+    window.SZVKShared.openModal(repairModalOverlay);
 
     setTimeout(() => {
       document.getElementById('inputSolution').focus();
@@ -4540,7 +4542,7 @@
     document.getElementById('checkboxInvoice').checked = false;
 
     repairModalTitle.innerHTML = `<span>📋 Новий запис на основі #${escapeHtml(item.id)}</span>`;
-    repairModalOverlay.classList.add('active');
+    window.SZVKShared.openModal(repairModalOverlay);
   };
 
   const deleteRepairModal = document.getElementById('deleteRepairModal');
@@ -4548,7 +4550,7 @@
   let deleteRepairReturnFocus = null;
 
   function closeDeleteRepairModal() {
-    deleteRepairModal.classList.remove('active');
+    window.SZVKShared.closeModal(deleteRepairModal);
     pendingDeleteRepairId = null;
     if (deleteRepairReturnFocus && deleteRepairReturnFocus.isConnected) deleteRepairReturnFocus.focus();
     deleteRepairReturnFocus = null;
@@ -4560,7 +4562,7 @@
     pendingDeleteRepairId = String(toDelete.id);
     deleteRepairReturnFocus = document.activeElement;
     document.getElementById('deleteRepairMessage').textContent = `Видалити запис ремонту авто #${toDelete.vehicle || toDelete.id}${toDelete.carrier ? ' (' + toDelete.carrier + ')' : ''}?`;
-    deleteRepairModal.classList.add('active');
+    window.SZVKShared.openModal(deleteRepairModal);
     document.getElementById('cancelDeleteRepair').focus();
   };
 
@@ -4665,7 +4667,7 @@
     document.getElementById('checkboxInvoice').checked = true;
 
     repairModalTitle.innerHTML = `<span>🔄 Встановлення нового трекера ${newSerial}</span>`;
-    repairModalOverlay.classList.add('active');
+    window.SZVKShared.openModal(repairModalOverlay);
   };
 
   window.selectTrackerInModal = function(serial) {
@@ -4812,7 +4814,7 @@
     document.getElementById('inputDate').value = getTodayString();
     document.getElementById('inputRepairDate').value = '';
     repairModalTitle.innerHTML = '<span>➕ Новий запис ремонту трекера</span>';
-    repairModalOverlay.classList.add('active');
+    window.SZVKShared.openModal(repairModalOverlay);
   });
 
   repairForm.addEventListener('invalid', event => {
@@ -4821,7 +4823,7 @@
   }, true);
 
   function closeRepairModal() {
-    repairModalOverlay.classList.remove('active');
+    window.SZVKShared.closeModal(repairModalOverlay);
     document.querySelectorAll('.calendar-popover').forEach(p => p.classList.remove('active'));
   }
   closeRepairModalBtn.addEventListener('click', closeRepairModal);
@@ -4927,11 +4929,11 @@
     inventoryForm.reset();
     populateInventoryCarrierSelect('invCarrierSelect', 'invInputAssigned');
     document.getElementById('invInputDate').value = getTodayString();
-    inventoryModalOverlay.classList.add('active');
+    window.SZVKShared.openModal(inventoryModalOverlay);
   });
 
   function closeInvModal() {
-    inventoryModalOverlay.classList.remove('active');
+    window.SZVKShared.closeModal(inventoryModalOverlay);
   }
   closeInventoryModalBtn.addEventListener('click', closeInvModal);
   btnCancelInvModal.addEventListener('click', closeInvModal);
@@ -5036,11 +5038,11 @@
     genStartSerial.value = '';
     genCount.value = '';
     updateBulkPreview();
-    bulkInventoryModalOverlay.classList.add('active');
+    window.SZVKShared.openModal(bulkInventoryModalOverlay);
   }
 
   function closeBulkInvModal() {
-    bulkInventoryModalOverlay.classList.remove('active');
+    window.SZVKShared.closeModal(bulkInventoryModalOverlay);
     document.querySelectorAll('.calendar-popover').forEach(p => p.classList.remove('active'));
   }
 
@@ -5168,13 +5170,26 @@
 
   // Export / Backup Modal
   btnOpenExportModal.addEventListener('click', () => {
-    exportModalOverlay.classList.add('active');
+    window.SZVKShared.openModal(exportModalOverlay);
   });
   function closeExportModal() {
-    exportModalOverlay.classList.remove('active');
+    window.SZVKShared.closeModal(exportModalOverlay);
   }
   closeExportModalBtn.addEventListener('click', closeExportModal);
   btnCloseExportModal.addEventListener('click', closeExportModal);
+
+  const standardDialogs = new Map([
+    [repairModalOverlay, closeRepairModal], [inventoryModalOverlay, closeInvModal],
+    [bulkInventoryModalOverlay, closeBulkInvModal], [exportModalOverlay, closeExportModal]
+  ]);
+  standardDialogs.forEach((dismiss, modal) => {
+    modal.addEventListener('click', event => { if (event.target === modal) dismiss(); });
+  });
+  document.addEventListener('keydown', event => {
+    if (event.key !== 'Escape' || event.defaultPrevented) return;
+    const entry = [...standardDialogs].filter(([modal]) => modal.classList.contains('active')).at(-1);
+    if (entry) { event.preventDefault(); entry[1](); }
+  });
 
   // Download JSON
   btnDownloadJson.addEventListener('click', () => {

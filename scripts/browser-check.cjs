@@ -74,6 +74,34 @@ async function main() {
       await evaluate("Promise.allSettled(document.getAnimations().map(animation=>animation.finished))");
       return call('Page.captureScreenshot',{format:'png'});
     };
+    const clickPointer = async selector => {
+      const position = await evaluate(`(()=>{const button=document.querySelector(${JSON.stringify(selector)});button.scrollIntoView({block:'nearest'});const rect=button.getBoundingClientRect();return {x:rect.left+rect.width/2,y:rect.top+rect.height/2};})()`);
+      await call('Input.dispatchMouseEvent',{type:'mousePressed',...position,button:'left',clickCount:1});
+      await call('Input.dispatchMouseEvent',{type:'mouseReleased',...position,button:'left',clickCount:1});
+    };
+    const pressEscape = async () => {
+      await call('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});
+      await call('Input.dispatchKeyEvent',{type:'keyUp',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});
+    };
+    const clickBackdrop = async () => {
+      await call('Input.dispatchMouseEvent',{type:'mousePressed',x:2,y:2,button:'left',clickCount:1});
+      await call('Input.dispatchMouseEvent',{type:'mouseReleased',x:2,y:2,button:'left',clickCount:1});
+    };
+    const assertAnimatedDismissal = async (openExpression, modalId, dismiss, artifact) => {
+      const target=JSON.stringify('#'+modalId);
+      await evaluate(openExpression);
+      await evaluate(`Promise.allSettled(document.querySelector(${target}).getAnimations({subtree:true}).map(animation=>animation.finished))`);
+      await dismiss();
+      // Sample real elapsed frames: an animation object alone cannot prove a visible exit.
+      await evaluate("new Promise(resolve=>{const start=performance.now();const frame=now=>now-start>=90?resolve():requestAnimationFrame(frame);requestAnimationFrame(frame);})");
+      assert.deepEqual(await evaluate(`(()=>{const modal=document.querySelector(${target});const style=getComputedStyle(modal);const box=getComputedStyle(modal.querySelector('.modal-box'));return {closed:!modal.classList.contains('active'),visible:style.display==='flex',fading:Number(style.opacity)>0 && Number(style.opacity)<1,moving:parseFloat(box.scale)<1,inert:modal.inert};})()`),{closed:true,visible:true,fading:true,moving:true,inert:true},modalId+' visibly fades and shrinks after actual user dismissal');
+      if(artifact) {
+        const shot=await call('Page.captureScreenshot',{format:'png'});
+        fs.writeFileSync(path.join(artifacts,artifact),Buffer.from(shot.data,'base64'));
+      }
+      await evaluate(`Promise.allSettled(document.querySelector(${target}).getAnimations({subtree:true}).map(animation=>animation.finished))`);
+      assert.equal(await evaluate(`(()=>{const modal=document.querySelector(${target});return getComputedStyle(modal).display==='none' && !modal.classList.contains('is-closing') && modal.style.display==='';})()`),true,modalId+' hides only after its closing animation and restores its display style');
+    };
     await call('Page.enable');
     await call('Runtime.enable');
     await call('Network.enable');
@@ -156,10 +184,17 @@ async function main() {
     await evaluate("document.querySelector('#userProfileMenu').open=false");
     assert.equal(await evaluate("getComputedStyle(document.querySelector('.account-panel')).pointerEvents"),'none','a closing menu stops accepting clicks immediately');
     await call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
+    await evaluate("new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))");
     assert.equal(await evaluate("document.querySelector('#repairRequestTab').click();document.querySelector('#repairRequestPanel').getAnimations().length + document.querySelector('#repairModalOverlay .modal-box').getAnimations().length"),0,'reduced motion disables form and dialog animations');
     assert.equal(await evaluate("getComputedStyle(document.querySelector('.module-entry')).animationName"),'none','reduced motion disables document entrance animations');
     await evaluate("document.querySelector('#closeRepairModalBtn').click()");
+    assert.equal(await evaluate("getComputedStyle(document.querySelector('#repairModalOverlay')).display"),'none','reduced motion closes dialogs immediately');
     await call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'no-preference'}]});
+    for(const dismiss of [()=>clickPointer('#closeRepairModalBtn'),()=>clickPointer('#btnCancelRepairModal'),clickBackdrop,pressEscape]) {
+      await assertAnimatedDismissal('window.editRepair(1)','repairModalOverlay',dismiss);
+    }
+    await assertAnimatedDismissal("document.querySelector('#btnOpenAddInventoryModal').click()",'inventoryModalOverlay',()=>clickPointer('#btnCancelInvModal'));
+    await assertAnimatedDismissal('window.deleteRepair(1)','deleteRepairModal',()=>clickPointer('#cancelDeleteRepair'));
     assert.equal(await evaluate("document.querySelector('#tabBtnHistory').closest('.account-panel')!==null"), true);
     assert.equal(await evaluate("document.querySelector('.brand-badge')===null && document.querySelector('#atSearchInput')===null"), true);
     assert.equal(await evaluate("document.querySelector('#recentRepairTableBody [data-repair-id=\"1\"] td[colspan=\"3\"] .btn-finish-repair').textContent.trim()"), 'Звітувати про завершення ремонту');
@@ -330,20 +365,13 @@ async function main() {
       animation.finish();return smooth;
     })()`),true,'calendar height interpolates between months with different week counts');
     await evaluate("document.querySelector('#monthTabsContainer').children[1].click();Promise.allSettled(document.getAnimations().map(animation=>animation.finished))");
-    await evaluate("document.querySelector('#seasonTaskBadge').click()");
-    await evaluate("Promise.allSettled(document.querySelector('#seasonOverviewModal').getAnimations({subtree:true}).map(animation=>animation.finished))");
-    assert.deepEqual(await evaluate(`(()=>{
-      document.querySelector('#seasonOverviewCloseX').click();
-      const modal=document.querySelector('#seasonOverviewModal');
-      const opacity=modal.getAnimations().find(animation=>animation.transitionProperty==='opacity');
-      if(opacity) {opacity.pause();opacity.currentTime=120;}
-      const midway=Number(getComputedStyle(modal).opacity);
-      const result={closed:!modal.classList.contains('active'),stillVisible:getComputedStyle(modal).display==='flex',fading:midway>0 && midway<1};
-      if(opacity) opacity.finish();
-      return result;
-    })()`),{closed:true,stillVisible:true,fading:true},'overview remains visible while fading out after close');
-    await evaluate("Promise.allSettled(document.querySelector('#seasonOverviewModal').getAnimations({subtree:true}).map(animation=>animation.finished))");
-    assert.equal(await evaluate("getComputedStyle(document.querySelector('#seasonOverviewModal')).display"),'none','overview is hidden after its closing animation');
+    await assertAnimatedDismissal("document.querySelector('#seasonTaskBadge').click()",'seasonOverviewModal',()=>clickPointer('#seasonOverviewCloseX'),'overview-closing-midway.png');
+    await assertAnimatedDismissal("document.querySelector('#seasonTaskBadge').click()",'seasonOverviewModal',clickBackdrop);
+    await assertAnimatedDismissal("document.querySelector('#seasonTaskBadge').click()",'seasonOverviewModal',pressEscape);
+    await evaluate("document.querySelector('#seasonTaskBadge').click();document.querySelector('#seasonOverviewCloseX').click();document.querySelector('#seasonTaskBadge').click();Promise.allSettled(document.querySelector('#seasonOverviewModal').getAnimations({subtree:true}).map(animation=>animation.finished))");
+    assert.equal(await evaluate("document.querySelector('#seasonOverviewModal').classList.contains('active') && !document.querySelector('#seasonOverviewModal').inert && getComputedStyle(document.querySelector('#seasonOverviewModal')).opacity==='1'"),true,'reopening a closing dialog cancels its exit and keeps the latest open state');
+    await clickPointer('#seasonOverviewCloseX');
+    await evaluate("Promise.allSettled(document.getAnimations().map(animation=>animation.finished))");
     await call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
     assert.equal(await evaluate("document.querySelector('#monthTabsContainer').children[0].click();document.querySelector('#mainCalendarView').getAnimations().length"),0,'reduced motion cancels and skips view animations');
     assert.equal(await evaluate("getComputedStyle(document.querySelector('#btnGoToToday')).transitionDuration"),'0s','reduced motion disables button transitions');

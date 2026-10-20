@@ -99,6 +99,67 @@
     return true;
   }
 
+  const modalAnimations = new WeakMap();
+  const activeModalAnimations = new Set();
+  const modalMotionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
+  modalMotionPreference.addEventListener?.('change', event => {
+    if (event.matches) [...activeModalAnimations].forEach(state => state.cleanup());
+  });
+  function animateModal(modal, opening) {
+    if (!modal) return;
+    const running = modalAnimations.get(modal);
+    if (running && running.opening === opening) return running.finished;
+    const visible = modal.classList.contains('active') || !!running;
+    if (!running && visible === opening) return;
+    const motion = typeof modal.animate === 'function' && !modalMotionPreference.matches;
+    const box = motion ? modal.querySelector('.modal-box') : null;
+    const startOpacity = visible && motion ? window.getComputedStyle(modal).opacity : '0';
+    const boxStyle = visible && box ? window.getComputedStyle(box) : null;
+    const startScale = boxStyle && boxStyle.scale !== 'none' ? boxStyle.scale : '1';
+    const startTranslate = boxStyle && boxStyle.translate !== 'none' ? boxStyle.translate : '0 0';
+    if (running) running.cleanup();
+    if (opening) modal.classList.add('active');
+    else modal.classList.remove('active');
+    modal.inert = !opening;
+    if (!motion || !box || (!opening && !visible)) return;
+
+    // Keep the actual dialog rendered until its exit finishes, in every browser.
+    const originalDisplay = modal.style.display;
+    modal.style.display = 'flex';
+    if (!opening) modal.classList.add('is-closing');
+    const timing = {
+      duration: opening ? 240 : 260,
+      easing: opening ? 'cubic-bezier(0.2, 0.65, 0.3, 1)' : 'cubic-bezier(0.4, 0, 1, 1)',
+      fill: 'both'
+    };
+    const fade = modal.animate([{ opacity: startOpacity }, { opacity: opening ? 1 : 0 }], timing);
+    const movement = box.animate([
+      { scale: visible ? startScale : '0.99', translate: startTranslate },
+      { scale: opening ? '1' : '0.98', translate: opening ? '0 0' : '0 8px' }
+    ], timing);
+    const state = {
+      opening,
+      cleanup() {
+        activeModalAnimations.delete(state);
+        fade.cancel();
+        movement.cancel();
+        if (modalAnimations.get(modal) === state) {
+          modalAnimations.delete(modal);
+          modal.classList.remove('is-closing');
+          modal.style.display = originalDisplay;
+        }
+      }
+    };
+    modalAnimations.set(modal, state);
+    activeModalAnimations.add(state);
+    const finish = () => { if (modalAnimations.get(modal) === state) state.cleanup(); };
+    state.finished = fade.finished.then(finish, finish);
+    return state.finished;
+  }
+
+  function openModal(modal) { return animateModal(modal, true); }
+  function closeModal(modal) { return animateModal(modal, false); }
+
   const viewTransitions = new WeakMap();
   function transitionViews(previousView, nextView, update) {
     const host = nextView.parentElement;
@@ -772,6 +833,8 @@
     formatHistoryTime,
     debounce,
     setHtmlIfChanged,
+    openModal,
+    closeModal,
     transitionViews,
     reconcileRows,
     updateAccount,

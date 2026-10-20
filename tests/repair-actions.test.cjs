@@ -45,7 +45,10 @@ function deletionFixture(repairs) {
   const trigger = document.getElementById('trashTrigger');
   trigger.focus();
   const context = vm.createContext({
-    window: {}, document, appData,
+    window: { SZVKShared: {
+      openModal: modal => modal.classList.add('active'),
+      closeModal: modal => modal.classList.remove('active')
+    } }, document, appData,
     confirm: () => { throw new Error('Repair deletion must work without native browser dialogs'); },
     logAction: entry => calls.history.push(entry),
     saveLocalData: () => calls.save++,
