@@ -175,7 +175,10 @@
   }
 
   function initAccountMenu() {
-    const menu = document.getElementById('userProfileMenu');
+    [document.getElementById('userProfileMenu'), ...document.querySelectorAll('.useful-links')].forEach(initHeaderMenu);
+  }
+
+  function initHeaderMenu(menu) {
     if (!menu) return;
     document.addEventListener('click', event => {
       if (!menu.contains(event.target)) menu.open = false;
