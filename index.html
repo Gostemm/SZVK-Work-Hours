@@ -8,13 +8,13 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg" sizes="any">
   <link rel="apple-touch-icon" href="apple-touch-icon.png" sizes="180x180">
 
-  <script src="shared.js?v=161416ecc20d"></script>
+  <script src="shared.js?v=b4714023f7f7"></script>
 
   <!-- Firebase App & Firestore SDKs (Compat) -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 
-  <link rel="stylesheet" href="shared.css?v=2d7c17071b11">
+  <link rel="stylesheet" href="shared.css?v=ed7dc221eddd">
 
   <style>
     :root {
@@ -1903,7 +1903,6 @@ document.addEventListener("DOMContentLoaded", function () {
   let renderedCalendarMonth = '';
   let renderedTabsSeason = '';
   let renderedViewKey = '';
-  let renderedMonthIndex = 0;
   const calendarCards = new Map();
   const scheduleHistorySearch = window.SZVKShared.debounce(renderHistoryView);
 
@@ -3772,6 +3771,15 @@ document.addEventListener("DOMContentLoaded", function () {
   };
 
   function renderApp() {
+    const viewKey = activeTab === 'history' ? 'history' : 'calendar:' + currentSeasonIndex + ':' + selectedMonthRelative;
+    if (renderedViewKey && renderedViewKey !== viewKey) {
+      const previousView = document.getElementById(renderedViewKey === 'history' ? 'historyView' : 'mainCalendarView');
+      const nextView = document.getElementById(activeTab === 'history' ? 'historyView' : 'mainCalendarView');
+      renderedViewKey = viewKey;
+      window.SZVKShared.transitionViews(previousView, nextView, renderApp);
+      return;
+    }
+    renderedViewKey = viewKey;
     if (activeTaskEdit) {
       refreshTaskEditorSource();
       updateTaskShiftPreview();
@@ -3811,15 +3819,6 @@ document.addEventListener("DOMContentLoaded", function () {
       renderCalendar(season, todayKey);
     }
 
-    // Animate navigation only; realtime updates keep the current view steady.
-    const viewKey = activeTab === 'history' ? 'history' : 'calendar:' + currentSeasonIndex + ':' + selectedMonthRelative;
-    const monthIndex = currentSeasonIndex * 3 + selectedMonthRelative;
-    if (renderedViewKey && renderedViewKey !== viewKey) {
-      const direction = activeTab === 'calendar' && renderedViewKey.startsWith('calendar:') ? monthIndex - renderedMonthIndex : 0;
-      window.SZVKShared.animateViewChange(activeTab === 'history' ? historyView : calView, direction);
-    }
-    renderedViewKey = viewKey;
-    renderedMonthIndex = monthIndex;
   }
 
   function renderCalendar(season, todayKey) {

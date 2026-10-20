@@ -70,6 +70,10 @@ async function main() {
       for (let i = 0; i < 100; i++) { if (await evaluate(expression)) return; await sleep(50); }
       throw new Error('Timed out: ' + expression);
     };
+    const captureScreenshot = async () => {
+      await evaluate("Promise.allSettled(document.getAnimations().map(animation=>animation.finished))");
+      return call('Page.captureScreenshot',{format:'png'});
+    };
     await call('Page.enable');
     await call('Runtime.enable');
     await call('Network.enable');
@@ -127,23 +131,30 @@ async function main() {
     await waitFor("typeof window.editRepair==='function'");
     await call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'no-preference'}]});
     assert.equal(await evaluate("getComputedStyle(document.querySelector('.module-entry')).animationName"),'szvk-module-open','Tracker Hub animates on document navigation too');
+    assert.deepEqual(await evaluate(`(()=>{
+      document.querySelector('#tabBtnInventory').click();document.querySelector('#tabBtnAtCommands').click();document.querySelector('#tabBtnJournal').click();
+      return {latest:document.querySelector('#viewJournal').style.display==='flex',single:document.querySelectorAll('.module-entry > .view-transition-outgoing').length===1,horizontal:new DOMMatrixReadOnly(getComputedStyle(document.querySelector('#viewJournal')).transform).m41};
+    })()`),{latest:true,single:true,horizontal:0},'rapid Tracker Hub navigation crossfades to the latest tab without sideways motion');
+    await evaluate("Promise.allSettled(document.getAnimations().map(animation=>animation.finished))");
     await evaluate("window.editRepair(1)");
-    assert.equal(await evaluate("document.querySelector('#repairModalOverlay .modal-box').getAnimations().some(animation=>animation.effect.getTiming().duration<=200)"),true,'dialogs open with a brief animation');
+    assert.equal(await evaluate("document.querySelector('#repairModalOverlay .modal-box').getAnimations().some(animation=>animation.effect.getTiming().duration<=300)"),true,'dialogs open smoothly');
     assert.deepEqual(await evaluate(`(()=>{
       document.querySelector('#repairResultTab').click();
       const panel=document.querySelector('#repairResultPanel');
       const animation=panel.getAnimations()[0];
       document.querySelector('#repairResultTab').click();
       const steady=panel.getAnimations()[0]===animation;
-      if(animation) { animation.pause();animation.currentTime=60; }
+      if(animation) { animation.pause();animation.currentTime=120; }
       const opacity=Number(getComputedStyle(panel).opacity);
       const shift=new DOMMatrixReadOnly(getComputedStyle(panel).transform).m41;
-      const perceptible=opacity>0 && opacity<0.9 && shift>3;
+      const previous=panel.parentElement.querySelector('.view-transition-outgoing');
+      const perceptible=opacity>0 && opacity<0.9 && shift===0 && !!previous && previous.inert;
       if(animation) animation.finish();
-      return {visible:!panel.hidden,brief:!!animation && animation.effect.getTiming().duration<=200,steady,perceptible};
-    })()`),{visible:true,brief:true,steady:true,perceptible:true},'form tabs visibly fade and move during the transition without delaying interaction');
+      return {visible:!panel.hidden,brief:!!animation && animation.effect.getTiming().duration<=300,steady,perceptible};
+    })()`),{visible:true,brief:true,steady:true,perceptible:true},'form tabs crossfade while preserving the outgoing content and keeping controls usable');
     assert.equal(await evaluate("document.querySelector('#userProfileMenu').open=true;getComputedStyle(document.querySelector('.account-panel')).animationName"),'szvk-menu-open','account menus animate when opened');
     await evaluate("document.querySelector('#userProfileMenu').open=false");
+    assert.equal(await evaluate("getComputedStyle(document.querySelector('.account-panel')).pointerEvents"),'none','a closing menu stops accepting clicks immediately');
     await call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
     assert.equal(await evaluate("document.querySelector('#repairRequestTab').click();document.querySelector('#repairRequestPanel').getAnimations().length + document.querySelector('#repairModalOverlay .modal-box').getAnimations().length"),0,'reduced motion disables form and dialog animations');
     assert.equal(await evaluate("getComputedStyle(document.querySelector('.module-entry')).animationName"),'none','reduced motion disables document entrance animations');
@@ -166,7 +177,7 @@ async function main() {
     const reportTheme = await evaluate("document.documentElement.getAttribute('data-theme')");
     for (const theme of ['dark','light']) {
       await evaluate(`document.documentElement.setAttribute('data-theme',${JSON.stringify(theme)})`);
-      const reportShot = await call('Page.captureScreenshot',{format:'png'});
+      const reportShot = await captureScreenshot();
       fs.writeFileSync(path.join(artifacts,`repair-report-${theme}.png`),Buffer.from(reportShot.data,'base64'));
     }
     await evaluate(`document.documentElement.setAttribute('data-theme',${JSON.stringify(reportTheme)})`);
@@ -182,7 +193,7 @@ async function main() {
     assert.equal(await evaluate("document.querySelectorAll('[data-repair-table] thead').length"),2);
     assert.equal(await evaluate("document.querySelector('#repairArchive').open"),false);
     assert.equal(await evaluate("document.querySelector('#repairTableBody').children.length"),0,'full table stays unmounted while collapsed');
-    const weeklyShot = await call('Page.captureScreenshot',{format:'png'});
+    const weeklyShot = await captureScreenshot();
     fs.writeFileSync(path.join(artifacts,'weekly-repairs-mobile.png'),Buffer.from(weeklyShot.data,'base64'));
     await evaluate("document.querySelector('#repairArchive').open=true");
     await waitFor("document.querySelector('#repairTableBody').children.length===50");
@@ -240,7 +251,7 @@ async function main() {
     assert.equal(await evaluate("document.querySelector('#invCountInstalled')===null && document.querySelector('#invCountTotal')===null"),true);
     assert.equal(await evaluate("document.querySelector('#invCountOffice').textContent"),'1 шт');
     await evaluate("document.querySelector('#btnOpenAddInventoryModal').click()");
-    const inventoryShot = await call('Page.captureScreenshot',{format:'png'});
+    const inventoryShot = await captureScreenshot();
     fs.writeFileSync(path.join(artifacts,'inventory-carrier-mobile.png'),Buffer.from(inventoryShot.data,'base64'));
     await evaluate("document.querySelector('#invInputSerial').value='TEST-SINGLE';document.querySelector('#invCarrierSelect').value='Тестовий перевізник';document.querySelector('#invCarrierSelect').dispatchEvent(new Event('change'));document.querySelector('#inventoryForm').requestSubmit()");
     data = await evaluate("JSON.parse(localStorage.getItem('szvk_trackers_data'))");
@@ -276,7 +287,7 @@ async function main() {
       assert.ok(await evaluate("document.querySelector('#inputNotes').getBoundingClientRect().width>=200"),'visible notes field width');
       assert.equal(await evaluate("document.documentElement.scrollWidth<=window.innerWidth"),true,'no page overflow');
       if (width===320) {
-        const shot=await call('Page.captureScreenshot',{format:'png'});
+        const shot=await captureScreenshot();
         fs.writeFileSync(path.join(artifacts,'tracker-mobile.png'),Buffer.from(shot.data,'base64'));
       }
       await evaluate("document.querySelector('#closeRepairModalBtn').click()");
@@ -298,6 +309,41 @@ async function main() {
       tabs[1].click();
       return {animated:!!animation,steady,replaced:view.getAnimations()[0]!==animation};
     })()`),{animated:true,steady:true,replaced:true},'navigation animates once and ordinary rerenders keep the same animation');
+    assert.deepEqual(await evaluate(`(()=>{
+      const tabs=document.querySelector('#monthTabsContainer').children;
+      tabs[2].click();tabs[0].click();tabs[1].click();
+      const snapshots=document.querySelectorAll('#mainAppContainer > .view-transition-outgoing');
+      return {latest:document.querySelector('#currentMonthTitle').textContent.includes('Жовтень'),single:snapshots.length===1,safe:snapshots[0].inert && !snapshots[0].querySelector('[id], [name]'),horizontal:new DOMMatrixReadOnly(getComputedStyle(document.querySelector('#mainCalendarView')).transform).m41};
+    })()`),{latest:true,single:true,safe:true,horizontal:0},'rapid month changes keep only the latest transition without horizontal jumps or duplicate controls');
+    await evaluate("Promise.allSettled(document.getAnimations().map(animation=>animation.finished))");
+    assert.equal(await evaluate("document.querySelectorAll('.view-transition-outgoing').length"),0,'outgoing views are removed after transitions finish');
+    assert.equal(await evaluate(`(()=>{
+      document.querySelector('#monthTabsContainer').children[2].click();
+      const host=document.querySelector('#mainAppContainer');
+      const animation=host.getAnimations().find(animation=>animation.effect.getKeyframes().some(frame=>frame.height));
+      if(!animation) return false;
+      const frames=animation.effect.getKeyframes();
+      animation.pause();animation.currentTime=140;
+      const height=host.getBoundingClientRect().height;
+      const start=parseFloat(frames[0].height),end=parseFloat(frames[frames.length-1].height);
+      const smooth=height>Math.min(start,end)+1 && height<Math.max(start,end)-1;
+      animation.finish();return smooth;
+    })()`),true,'calendar height interpolates between months with different week counts');
+    await evaluate("document.querySelector('#monthTabsContainer').children[1].click();Promise.allSettled(document.getAnimations().map(animation=>animation.finished))");
+    await evaluate("document.querySelector('#seasonTaskBadge').click()");
+    await evaluate("Promise.allSettled(document.querySelector('#seasonOverviewModal').getAnimations({subtree:true}).map(animation=>animation.finished))");
+    assert.deepEqual(await evaluate(`(()=>{
+      document.querySelector('#seasonOverviewCloseX').click();
+      const modal=document.querySelector('#seasonOverviewModal');
+      const opacity=modal.getAnimations().find(animation=>animation.transitionProperty==='opacity');
+      if(opacity) {opacity.pause();opacity.currentTime=120;}
+      const midway=Number(getComputedStyle(modal).opacity);
+      const result={closed:!modal.classList.contains('active'),stillVisible:getComputedStyle(modal).display==='flex',fading:midway>0 && midway<1};
+      if(opacity) opacity.finish();
+      return result;
+    })()`),{closed:true,stillVisible:true,fading:true},'overview remains visible while fading out after close');
+    await evaluate("Promise.allSettled(document.querySelector('#seasonOverviewModal').getAnimations({subtree:true}).map(animation=>animation.finished))");
+    assert.equal(await evaluate("getComputedStyle(document.querySelector('#seasonOverviewModal')).display"),'none','overview is hidden after its closing animation');
     await call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
     assert.equal(await evaluate("document.querySelector('#monthTabsContainer').children[0].click();document.querySelector('#mainCalendarView').getAnimations().length"),0,'reduced motion cancels and skips view animations');
     assert.equal(await evaluate("getComputedStyle(document.querySelector('#btnGoToToday')).transitionDuration"),'0s','reduced motion disables button transitions');
@@ -320,7 +366,7 @@ async function main() {
       const counterLayout = await evaluate(`(()=>{const card=document.querySelector('.day-card[data-date="2026-10-16"]');const bounds=card.getBoundingClientRect();const buttons=[...card.querySelectorAll('.day-task-counter')].map(button=>button.getBoundingClientRect().toJSON());return {width:innerWidth,pageWidth:document.documentElement.scrollWidth,card:bounds.toJSON(),buttons,values:[...card.querySelectorAll('.counter-value')].map(value=>({width:value.clientWidth,scrollWidth:value.scrollWidth}))};})()`);
       assert.equal(await evaluate(`(()=>{const reference=document.querySelector('.day-card[data-date="2026-10-16"] .day-task-counter').getBoundingClientRect();return ['2026-10-12','2026-10-14'].every(date=>{const group=document.querySelector('.day-card[data-date="'+date+'"] .day-task-counters');const bounds=group.getBoundingClientRect();const button=group.firstElementChild.getBoundingClientRect();return group.children.length===1 && Math.abs(button.width-reference.width)<1 && Math.abs(button.height-reference.height)<1 && Math.abs((button.left+button.right)-(bounds.left+bounds.right))<1;});})()`),true,'single active and completed counters match paired counters in size and stay centered');
       if(width===320 || width===1280) {
-        const calendarShot=await call('Page.captureScreenshot',{format:'png'});
+        const calendarShot=await captureScreenshot();
         fs.writeFileSync(path.join(artifacts,width===320?'calendar-status-mobile.png':'calendar-status-desktop.png'),Buffer.from(calendarShot.data,'base64'));
       }
       assert.equal(Math.abs(counterLayout.buttons[0].top-counterLayout.buttons[1].top)<1 && counterLayout.buttons[0].right<=counterLayout.buttons[1].left && counterLayout.buttons[0].left>=counterLayout.card.left && counterLayout.buttons[1].right<=counterLayout.card.right && counterLayout.values.every(value=>value.scrollWidth<=value.width) && counterLayout.pageWidth<=counterLayout.width,true,'both counters stay side by side and fit the calendar cell: '+JSON.stringify(counterLayout)+'; screenshots: '+artifacts);
@@ -339,7 +385,7 @@ async function main() {
     assert.equal(await evaluate("document.querySelector('#modalDayTasksList .completed-tasks summary').textContent"),'Виконані завдання (1)');
     assert.deepEqual(await evaluate("[...document.querySelectorAll('.day-card[data-date=\"2026-10-14\"] .counter-value')].map(value=>Number(value.textContent))"),[activeCounterBefore-1,1],'completion updates both calendar counts');
     assert.equal(await evaluate("document.querySelector('#modalDayTasksList .task-modal-item.done').checkVisibility()"),false,'completed task text is hidden while collapsed');
-    const completedNotesShot = await call('Page.captureScreenshot',{format:'png'});
+    const completedNotesShot = await captureScreenshot();
     fs.writeFileSync(path.join(artifacts,'completed-notes-mobile.png'),Buffer.from(completedNotesShot.data,'base64'));
     await evaluate("document.querySelector('#modalNewTaskInput').value='Тест групування';document.querySelector('#modalAddNewTaskBtn').click();[...document.querySelectorAll('#modalDayTasksList .task-modal-item')].find(row=>row.textContent.includes('Тест групування')).querySelector('.task-modal-checkbox').click()");
     assert.equal(await evaluate("document.querySelector('#modalDayTasksList .completed-tasks summary').textContent"),'Виконані завдання (2)');
@@ -350,7 +396,7 @@ async function main() {
     assert.equal(await evaluate("document.querySelector('#modalDayTasksList .completed-tasks')===null && !window.dayNotes['2026-10-14'].find(task=>task.id==='overdue-task').done"),true,'reopening restores the active task and removes an empty completed group');
     assert.deepEqual(await evaluate("[...document.querySelectorAll('.day-card[data-date=\"2026-10-14\"] .counter-value')].map(value=>Number(value.textContent))"),[activeCounterBefore],'reopening hides the completed counter once its count reaches zero');
     assert.ok(await evaluate("document.querySelector('.task-modal-text').getBoundingClientRect().width>=180"),'mobile task text must retain width');
-    const shot=await call('Page.captureScreenshot',{format:'png'});
+    const shot=await captureScreenshot();
     fs.writeFileSync(path.join(artifacts,'work-hours-mobile.png'),Buffer.from(shot.data,'base64'));
     await evaluate("document.querySelector('.move-task').click()");
     await checkModalGeometry('taskEditorModal', 'taskEditorSave');
@@ -372,7 +418,7 @@ async function main() {
     assert.equal(await evaluate("document.querySelector('#taskCalendarDays [aria-pressed=\"true\"]').dataset.date"),'2026-10-15');
     assert.equal(await evaluate("[...document.querySelectorAll('#taskCalendarDays button')].every(button=>button.scrollWidth<=button.clientWidth)"),true,'calendar text must fit on mobile');
     assert.equal(await evaluate("getComputedStyle(document.querySelector('.task-modal-text')).fontWeight"),'650');
-    const shiftShot=await call('Page.captureScreenshot',{format:'png'});
+    const shiftShot=await captureScreenshot();
     fs.writeFileSync(path.join(artifacts,'shift-transfer-mobile.png'),Buffer.from(shiftShot.data,'base64'));
     await evaluate("document.querySelector('#taskEditorSave').click()");
     const schedule = await evaluate("JSON.parse(localStorage.getItem('szvk_schedule_local_data'))");

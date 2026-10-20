@@ -99,18 +99,65 @@
     return true;
   }
 
-  const viewAnimations = new WeakMap();
-  function animateViewChange(element, direction = 0) {
-    if (!element) return;
-    const previous = viewAnimations.get(element);
-    if (previous) previous.cancel();
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || typeof element.animate !== 'function') return;
-    const offset = direction ? `translateX(${Math.sign(direction) * 16}px)` : 'translateY(12px)';
-    const animation = element.animate([
-      { opacity: 0, transform: offset },
-      { opacity: 1, transform: 'translate(0, 0)' }
-    ], { duration: 200, easing: 'cubic-bezier(0.2, 0.65, 0.3, 1)' });
-    viewAnimations.set(element, animation);
+  const viewTransitions = new WeakMap();
+  function transitionViews(previousView, nextView, update) {
+    const host = nextView.parentElement;
+    const running = viewTransitions.get(host);
+    const startHeight = host.getBoundingClientRect().height;
+    const previousBounds = previousView && previousView.getBoundingClientRect();
+    const hostBounds = host.getBoundingClientRect();
+    const animate = previousBounds && previousBounds.height > 0 &&
+      !window.matchMedia('(prefers-reduced-motion: reduce)').matches && typeof nextView.animate === 'function';
+    const snapshot = animate ? previousView.cloneNode(true) : null;
+    if (running) running.cleanup();
+
+    // The application state and controls update immediately, including during rapid navigation.
+    update();
+    if (!snapshot) return;
+    const endHeight = host.getBoundingClientRect().height;
+    snapshot.removeAttribute('id');
+    snapshot.querySelectorAll('[id], [name], [autofocus]').forEach(element => {
+      element.removeAttribute('id');
+      element.removeAttribute('name');
+      element.removeAttribute('autofocus');
+    });
+    // A visual copy inside a form must never participate in submission or validation.
+    snapshot.querySelectorAll('input, select, textarea, button, fieldset').forEach(control => {
+      control.disabled = true;
+      control.removeAttribute('required');
+    });
+    snapshot.inert = true;
+    snapshot.setAttribute('aria-hidden', 'true');
+    snapshot.classList.add('view-transition-outgoing');
+    Object.assign(snapshot.style, {
+      position: 'absolute', top: (previousBounds.top - hostBounds.top + host.scrollTop) + 'px',
+      left: (previousBounds.left - hostBounds.left + host.scrollLeft) + 'px',
+      width: previousBounds.width + 'px', height: previousBounds.height + 'px',
+      margin: '0', pointerEvents: 'none', zIndex: '5'
+    });
+    host.classList.add('view-transition-host');
+    host.appendChild(snapshot);
+
+    const timing = { duration: 280, easing: 'cubic-bezier(0.4, 0, 0.2, 1)' };
+    const incoming = nextView.animate([{ opacity: 0 }, { opacity: 1 }], timing);
+    const outgoing = snapshot.animate([{ opacity: 1 }, { opacity: 0 }], { ...timing, duration: 220, fill: 'forwards' });
+    const animations = [incoming, outgoing];
+    if (Math.abs(startHeight - endHeight) > 1) {
+      animations.push(host.animate([{ height: startHeight + 'px' }, { height: endHeight + 'px' }], timing));
+    }
+    const state = {
+      cleanup() {
+        snapshot.remove();
+        animations.forEach(animation => animation.cancel());
+        if (viewTransitions.get(host) === state) {
+          viewTransitions.delete(host);
+          host.classList.remove('view-transition-host');
+        }
+      }
+    };
+    viewTransitions.set(host, state);
+    const finish = () => { if (viewTransitions.get(host) === state) state.cleanup(); };
+    incoming.finished.then(finish, finish);
   }
 
   const rowCache = new WeakMap();
@@ -725,7 +772,7 @@
     formatHistoryTime,
     debounce,
     setHtmlIfChanged,
-    animateViewChange,
+    transitionViews,
     reconcileRows,
     updateAccount,
     mountAccountMenu,
