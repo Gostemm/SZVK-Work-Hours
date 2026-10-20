@@ -100,15 +100,16 @@
   }
 
   const viewAnimations = new WeakMap();
-  function animateViewChange(element) {
+  function animateViewChange(element, direction = 0) {
     if (!element) return;
     const previous = viewAnimations.get(element);
     if (previous) previous.cancel();
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || typeof element.animate !== 'function') return;
+    const offset = direction ? `translateX(${Math.sign(direction) * 6}px)` : 'translateY(4px)';
     const animation = element.animate([
-      { opacity: 0, transform: 'translateY(4px)' },
-      { opacity: 1, transform: 'translateY(0)' }
-    ], { duration: 180, easing: 'cubic-bezier(0.2, 0.7, 0.3, 1)' });
+      { opacity: 0.55, transform: offset },
+      { opacity: 1, transform: 'translate(0, 0)' }
+    ], { duration: 160, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' });
     viewAnimations.set(element, animation);
   }
 

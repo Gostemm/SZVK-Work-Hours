@@ -125,6 +125,20 @@ async function main() {
     await call('Emulation.setDeviceMetricsOverride', { width:320,height:800,deviceScaleFactor:1,mobile:true });
     await navigate('trackers.html');
     await waitFor("typeof window.editRepair==='function'");
+    await call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'no-preference'}]});
+    await evaluate("window.editRepair(1)");
+    assert.equal(await evaluate("document.querySelector('#repairModalOverlay .modal-box').getAnimations().some(animation=>animation.effect.getTiming().duration<=200)"),true,'dialogs open with a brief animation');
+    assert.deepEqual(await evaluate(`(()=>{
+      document.querySelector('#repairResultTab').click();
+      const panel=document.querySelector('#repairResultPanel');
+      const animation=panel.getAnimations()[0];
+      document.querySelector('#repairResultTab').click();
+      return {visible:!panel.hidden,brief:!!animation && animation.effect.getTiming().duration<=200,steady:panel.getAnimations()[0]===animation};
+    })()`),{visible:true,brief:true,steady:true},'form tabs appear immediately with a brief animation that does not restart on repeated clicks');
+    await call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
+    assert.equal(await evaluate("document.querySelector('#repairRequestTab').click();document.querySelector('#repairRequestPanel').getAnimations().length + document.querySelector('#repairModalOverlay .modal-box').getAnimations().length"),0,'reduced motion disables form and dialog animations');
+    await evaluate("document.querySelector('#closeRepairModalBtn').click()");
+    await call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'no-preference'}]});
     assert.equal(await evaluate("document.querySelector('#tabBtnHistory').closest('.account-panel')!==null"), true);
     assert.equal(await evaluate("document.querySelector('.brand-badge')===null && document.querySelector('#atSearchInput')===null"), true);
     assert.equal(await evaluate("document.querySelector('#recentRepairTableBody [data-repair-id=\"1\"] td[colspan=\"3\"] .btn-finish-repair').textContent.trim()"), 'Звітувати про завершення ремонту');

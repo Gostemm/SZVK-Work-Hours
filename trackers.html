@@ -8,7 +8,7 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg" sizes="any">
   <link rel="apple-touch-icon" href="apple-touch-icon.png" sizes="180x180">
 
-  <script src="shared.js?v=56d081729d4e"></script>
+  <script src="shared.js?v=e2581408d01f"></script>
   <script>
     // Auth guard
     (function() {
@@ -23,7 +23,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 
-  <link rel="stylesheet" href="shared.css?v=8614bdbbddac">
+  <link rel="stylesheet" href="shared.css?v=5376820e5cc3">
 
   <style>
     :root {
@@ -3252,8 +3252,12 @@
 
   function setRepairStep(step) {
     const result = step === 'result';
-    document.getElementById('repairRequestPanel').hidden = result;
-    document.getElementById('repairResultPanel').hidden = !result;
+    const requestPanel = document.getElementById('repairRequestPanel');
+    const resultPanel = document.getElementById('repairResultPanel');
+    const nextPanel = result ? resultPanel : requestPanel;
+    const stepChanged = nextPanel.hidden;
+    requestPanel.hidden = result;
+    resultPanel.hidden = !result;
     document.querySelectorAll('.repair-step-tab').forEach(button => {
       const selected = button.dataset.step === step;
       button.setAttribute('aria-selected', String(selected));
@@ -3263,6 +3267,9 @@
     document.getElementById('btnRepairNext').hidden = result;
     document.getElementById('btnSaveRepairModal').textContent = result ? '💾 Зберегти результат' : '💾 Зберегти звернення';
     document.querySelectorAll('.calendar-popover').forEach(popover => popover.classList.remove('active'));
+    if (stepChanged && repairModalOverlay.classList.contains('active')) {
+      window.SZVKShared.animateViewChange(nextPanel, result ? 1 : -1);
+    }
   }
 
   function populateInventoryCarrierSelect(selectId, inputId) {
@@ -4669,8 +4676,14 @@
 
   // Event Listeners
   // Tab Switching
+  const tabOrder = ['journal', 'inventory', 'at', 'history'];
+  function animateTabNavigation(view, previousTab) {
+    if (activeTab === previousTab) return;
+    window.SZVKShared.animateViewChange(view, tabOrder.indexOf(activeTab) - tabOrder.indexOf(previousTab));
+  }
+
   tabBtnJournal.addEventListener('click', () => {
-    const viewChanged = activeTab !== 'journal';
+    const previousTab = activeTab;
     activeTab = 'journal';
     tabBtnJournal.className = 'main-tab-btn active';
     tabBtnInventory.className = 'main-tab-btn inventory-tab';
@@ -4681,11 +4694,11 @@
     viewAtCommands.style.display = 'none';
     viewHistory.style.display = 'none';
     renderRepairs();
-    if (viewChanged) window.SZVKShared.animateViewChange(viewJournal);
+    animateTabNavigation(viewJournal, previousTab);
   });
 
   tabBtnInventory.addEventListener('click', () => {
-    const viewChanged = activeTab !== 'inventory';
+    const previousTab = activeTab;
     activeTab = 'inventory';
     tabBtnJournal.className = 'main-tab-btn';
     tabBtnInventory.className = 'main-tab-btn inventory-tab active';
@@ -4696,11 +4709,11 @@
     viewAtCommands.style.display = 'none';
     viewHistory.style.display = 'none';
     renderInventory();
-    if (viewChanged) window.SZVKShared.animateViewChange(viewInventory);
+    animateTabNavigation(viewInventory, previousTab);
   });
 
   tabBtnAtCommands.addEventListener('click', () => {
-    const viewChanged = activeTab !== 'at';
+    const previousTab = activeTab;
     activeTab = 'at';
     tabBtnJournal.className = 'main-tab-btn';
     tabBtnInventory.className = 'main-tab-btn inventory-tab';
@@ -4711,11 +4724,11 @@
     viewAtCommands.style.display = 'flex';
     viewHistory.style.display = 'none';
     renderAtCommands();
-    if (viewChanged) window.SZVKShared.animateViewChange(viewAtCommands);
+    animateTabNavigation(viewAtCommands, previousTab);
   });
 
   tabBtnHistory.addEventListener('click', () => {
-    const viewChanged = activeTab !== 'history';
+    const previousTab = activeTab;
     activeTab = 'history';
     tabBtnJournal.className = 'main-tab-btn';
     tabBtnInventory.className = 'main-tab-btn inventory-tab';
@@ -4726,7 +4739,7 @@
     viewAtCommands.style.display = 'none';
     viewHistory.style.display = 'flex';
     renderHistory();
-    if (viewChanged) window.SZVKShared.animateViewChange(viewHistory);
+    animateTabNavigation(viewHistory, previousTab);
   });
 
   // The weekly, search and archive tables share date sorting.
