@@ -643,20 +643,24 @@ body .toast-container {
 .module-switch > a, .useful-links > summary { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 9px 12px; color: var(--text-muted); border-radius: 7px; font-size: 12px; font-weight: 700; text-decoration: none; white-space: nowrap; }
 .module-switch > a:hover, .useful-links > summary:hover { color: var(--text); background: var(--card-bg); }
 .module-switch > a[aria-current="page"] { background: var(--accent); color: #fff; }
-.useful-links > summary { list-style: none; cursor: pointer; }
+.useful-links { position: relative; flex-shrink: 0; }
+.useful-links > summary { padding: 7px 8px; border: 1px solid var(--border); list-style: none; cursor: pointer; }
 .useful-links > summary::-webkit-details-marker { display: none; }
 .useful-links > summary::after { content: '▾'; font-size: 10px; }
 .useful-links[open] > summary { background: var(--card-bg); color: var(--text); }
 .useful-links[open] > summary::after { content: '▴'; }
+@media (max-width: 420px) {
+  .useful-links > summary { gap: 4px; padding-inline: 6px; font-size: 11px; }
+}
 .useful-links-panel {
   position: absolute;
   top: calc(100% + 8px);
-  right: 0;
+  left: 0;
   z-index: 100;
   display: grid;
   gap: 8px;
   width: 360px;
-  max-width: 100%;
+  max-width: calc(100vw - 48px);
   padding: 10px;
   border: 1px solid var(--border);
   border-radius: 12px;
