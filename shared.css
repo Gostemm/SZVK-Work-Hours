@@ -806,13 +806,36 @@ html[data-theme="dark"] :is(.form-label, .reported-by-sub, .repair-form-hint, .a
 }
 
 @keyframes szvk-dialog-open {
-  from { opacity: 0.55; scale: 0.99; }
+  from { opacity: 0; scale: 0.97; }
   to { opacity: 1; scale: 1; }
 }
 
+@keyframes szvk-module-open {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes szvk-menu-open {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 @media (prefers-reduced-motion: no-preference) {
+  /* Opacity keeps fixed dialogs positioned against the viewport during page entry. */
+  .module-entry {
+    animation: szvk-module-open 200ms cubic-bezier(0.2, 0.65, 0.3, 1);
+  }
+
   .modal-overlay.active > .modal-box {
-    animation: szvk-dialog-open 160ms cubic-bezier(0.16, 1, 0.3, 1);
+    animation: szvk-dialog-open 200ms cubic-bezier(0.2, 0.65, 0.3, 1);
+  }
+
+  .account-menu[open] > .account-panel,
+  .useful-links[open] > .useful-links-panel,
+  .repair-archive[open] > .repair-archive-content,
+  .completed-tasks[open] > .completed-tasks-list,
+  .form-section[open] > .form-grid {
+    animation: szvk-menu-open 180ms cubic-bezier(0.2, 0.65, 0.3, 1);
   }
 }
 

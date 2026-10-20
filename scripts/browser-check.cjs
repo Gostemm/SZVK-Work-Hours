@@ -126,6 +126,7 @@ async function main() {
     await navigate('trackers.html');
     await waitFor("typeof window.editRepair==='function'");
     await call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'no-preference'}]});
+    assert.equal(await evaluate("getComputedStyle(document.querySelector('.module-entry')).animationName"),'szvk-module-open','Tracker Hub animates on document navigation too');
     await evaluate("window.editRepair(1)");
     assert.equal(await evaluate("document.querySelector('#repairModalOverlay .modal-box').getAnimations().some(animation=>animation.effect.getTiming().duration<=200)"),true,'dialogs open with a brief animation');
     assert.deepEqual(await evaluate(`(()=>{
@@ -133,10 +134,19 @@ async function main() {
       const panel=document.querySelector('#repairResultPanel');
       const animation=panel.getAnimations()[0];
       document.querySelector('#repairResultTab').click();
-      return {visible:!panel.hidden,brief:!!animation && animation.effect.getTiming().duration<=200,steady:panel.getAnimations()[0]===animation};
-    })()`),{visible:true,brief:true,steady:true},'form tabs appear immediately with a brief animation that does not restart on repeated clicks');
+      const steady=panel.getAnimations()[0]===animation;
+      if(animation) { animation.pause();animation.currentTime=60; }
+      const opacity=Number(getComputedStyle(panel).opacity);
+      const shift=new DOMMatrixReadOnly(getComputedStyle(panel).transform).m41;
+      const perceptible=opacity>0 && opacity<0.9 && shift>3;
+      if(animation) animation.finish();
+      return {visible:!panel.hidden,brief:!!animation && animation.effect.getTiming().duration<=200,steady,perceptible};
+    })()`),{visible:true,brief:true,steady:true,perceptible:true},'form tabs visibly fade and move during the transition without delaying interaction');
+    assert.equal(await evaluate("document.querySelector('#userProfileMenu').open=true;getComputedStyle(document.querySelector('.account-panel')).animationName"),'szvk-menu-open','account menus animate when opened');
+    await evaluate("document.querySelector('#userProfileMenu').open=false");
     await call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
     assert.equal(await evaluate("document.querySelector('#repairRequestTab').click();document.querySelector('#repairRequestPanel').getAnimations().length + document.querySelector('#repairModalOverlay .modal-box').getAnimations().length"),0,'reduced motion disables form and dialog animations');
+    assert.equal(await evaluate("getComputedStyle(document.querySelector('.module-entry')).animationName"),'none','reduced motion disables document entrance animations');
     await evaluate("document.querySelector('#closeRepairModalBtn').click()");
     await call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'no-preference'}]});
     assert.equal(await evaluate("document.querySelector('#tabBtnHistory').closest('.account-panel')!==null"), true);
@@ -277,6 +287,7 @@ async function main() {
     assert.equal(await evaluate("!document.querySelector('#btnToggleCycleTasks, #cycleTasksBlock, #btnOpenResetModal, #resetPeriodModal, .month-daily-badge')"),true,'retired controls and monthly task badges are removed');
     assert.equal(await evaluate("document.querySelector('#monthTabsContainer .active').textContent"),'Жовтень (31)','month labels retain the number of days');
     await call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'no-preference'}]});
+    assert.equal(await evaluate("getComputedStyle(document.querySelector('#mainAppContainer')).animationName"),'szvk-module-open','Work Hours animates on document navigation too');
     assert.deepEqual(await evaluate(`(()=>{
       const tabs=document.querySelector('#monthTabsContainer').children;
       tabs[0].click();

@@ -105,11 +105,11 @@
     const previous = viewAnimations.get(element);
     if (previous) previous.cancel();
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || typeof element.animate !== 'function') return;
-    const offset = direction ? `translateX(${Math.sign(direction) * 6}px)` : 'translateY(4px)';
+    const offset = direction ? `translateX(${Math.sign(direction) * 16}px)` : 'translateY(12px)';
     const animation = element.animate([
-      { opacity: 0.55, transform: offset },
+      { opacity: 0, transform: offset },
       { opacity: 1, transform: 'translate(0, 0)' }
-    ], { duration: 160, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' });
+    ], { duration: 200, easing: 'cubic-bezier(0.2, 0.65, 0.3, 1)' });
     viewAnimations.set(element, animation);
   }
 
