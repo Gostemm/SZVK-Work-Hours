@@ -129,6 +129,31 @@
     for (const key of entries.keys()) if (!keys.has(key)) entries.delete(key);
   }
 
+  function mountUsefulLinks() {
+    const themeSwitcher = document.getElementById('themeSwitchGroup');
+    if (!themeSwitcher) return;
+    let menu = document.querySelector('.useful-links');
+    if (!menu) {
+      menu = document.createElement('details');
+      menu.className = 'useful-links';
+      menu.innerHTML = `
+        <summary><span aria-hidden="true">🔗</span> Корисні посилання</summary>
+        <div class="useful-links-panel" role="group" aria-label="Корисні сервіси">
+          <a class="useful-link" href="http://192.168.88.13:6613/" target="_blank" rel="noopener noreferrer" aria-label="CardChecker (відкриється в новій вкладці)">
+            <img class="useful-link-logo" src="assets/cardchecker.svg" width="56" height="56" alt="" decoding="async">
+            <span class="useful-link-copy"><strong>CardChecker</strong><span>Файна карта · Тернопіль</span></span>
+            <span class="useful-link-arrow" aria-hidden="true">↗</span>
+          </a>
+          <a class="useful-link" href="https://t.me/Terminal_SZVK_bot" target="_blank" rel="noopener noreferrer" aria-label="Перенесення терміналів (відкриється в новій вкладці)">
+            <img class="useful-link-logo" src="assets/terminal-transfer.jpg" width="56" height="56" alt="" decoding="async">
+            <span class="useful-link-copy"><strong>Перенесення терміналів</strong><span>Telegram-бот</span></span>
+            <span class="useful-link-arrow" aria-hidden="true">↗</span>
+          </a>
+        </div>`;
+    }
+    themeSwitcher.before(menu);
+  }
+
   function mountAccountMenu(options = {}) {
     const mount = document.getElementById('accountMount');
     if (!mount) return;
@@ -153,6 +178,7 @@
           <button type="button" class="btn account-logout" id="btnLogoutBtn">Вийти з акаунта</button>
         </div>
       </details>`;
+    mountUsefulLinks();
     initAccountMenu();
   }
 

@@ -8,7 +8,7 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg" sizes="any">
   <link rel="apple-touch-icon" href="apple-touch-icon.png" sizes="180x180">
 
-  <script src="shared.js?v=9a077eab25c9"></script>
+  <script src="shared.js?v=1dc7892b215b"></script>
 
   <!-- Firebase App & Firestore SDKs (Compat) -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
@@ -493,7 +493,7 @@
       color: #1d4ed8;
       border-color: #bfdbfe;
     }
-    [data-theme="light"] a[href="trackers.html"] {
+    [data-theme="light"] a[href^="trackers.html"] {
       background: #ede9fe !important;
       color: #6d28d9 !important;
       border-color: #c4b5fd !important;
@@ -2052,26 +2052,10 @@
     </div>
     <nav class="module-switch" aria-label="Перемикання розділів">
       <a href="index.html" aria-current="page">⏱️ Work Hours</a>
-      <a href="trackers.html" title="Перейти до Tracker Hub">🛰️ Tracker Hub <span aria-hidden="true">↗</span></a>
+      <a href="trackers.html?v=useful-links-2" title="Перейти до Tracker Hub">🛰️ Tracker Hub <span aria-hidden="true">↗</span></a>
     </nav>
 
     <div class="user-profile-widget">
-      <details class="useful-links">
-        <summary><span aria-hidden="true">🔗</span> Корисні посилання</summary>
-        <div class="useful-links-panel" role="group" aria-label="Корисні сервіси">
-          <a class="useful-link" href="http://192.168.88.13:6613/" target="_blank" rel="noopener noreferrer" aria-label="CardChecker (відкриється в новій вкладці)">
-            <img class="useful-link-logo" src="assets/cardchecker.svg" width="56" height="56" alt="" decoding="async">
-            <span class="useful-link-copy"><strong>CardChecker</strong><span>Файна карта · Тернопіль</span></span>
-            <span class="useful-link-arrow" aria-hidden="true">↗</span>
-          </a>
-          <a class="useful-link" href="https://t.me/Terminal_SZVK_bot" target="_blank" rel="noopener noreferrer" aria-label="Перенесення терміналів (відкриється в новій вкладці)">
-            <img class="useful-link-logo" src="assets/terminal-transfer.jpg" width="56" height="56" alt="" decoding="async">
-            <span class="useful-link-copy"><strong>Перенесення терміналів</strong><span>Telegram-бот</span></span>
-            <span class="useful-link-arrow" aria-hidden="true">↗</span>
-          </a>
-        </div>
-      </details>
-
       <!-- Theme Switcher Segmented Control -->
       <div class="theme-switch-group" id="themeSwitchGroup" title="Тема оформлення: Темна / Світла / Системна">
         <button type="button" class="theme-btn active" data-theme-val="dark" title="Темна тема" aria-label="Темна тема">🌙</button>
