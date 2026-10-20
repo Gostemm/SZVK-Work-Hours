@@ -8,7 +8,7 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg" sizes="any">
   <link rel="apple-touch-icon" href="apple-touch-icon.png" sizes="180x180">
 
-  <script src="shared.js?v=4f4a9a0ec77e"></script>
+  <script src="shared.js?v=32b98e05a896"></script>
   <script>
     // Auth guard
     (function() {
@@ -23,7 +23,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 
-  <link rel="stylesheet" href="shared.css?v=f604feb29ce6">
+  <link rel="stylesheet" href="shared.css?v=f264a07d3051">
 
   <style>
     :root {
@@ -1922,6 +1922,7 @@
   </template>
 
   <!-- VIEW 1: REPAIRS JOURNAL -->
+  <div class="tracker-view-stage" id="trackerViewStage">
   <div class="view-card" id="viewJournal">
     <div class="card-header-row">
       <div class="card-title">
@@ -2140,6 +2141,7 @@
     </div>
 
     <div class="history-list" id="historyListContainerTrackers"></div>
+  </div>
   </div>
 
 </div>
@@ -4685,6 +4687,7 @@
   const trackerViews = { journal: viewJournal, inventory: viewInventory, at: viewAtCommands, history: viewHistory };
   const trackerRenderers = { journal: renderRepairs, inventory: renderInventory, at: renderAtCommands, history: renderHistory };
   function switchTrackerTab(tab) {
+    if (activeTab === tab) { trackerRenderers[tab](); return; }
     const previousView = trackerViews[activeTab];
     const update = () => {
       activeTab = tab;
@@ -4695,8 +4698,7 @@
       Object.entries(trackerViews).forEach(([name, view]) => { view.style.display = name === tab ? 'flex' : 'none'; });
       trackerRenderers[tab]();
     };
-    if (activeTab !== tab) window.SZVKShared.transitionViews(previousView, trackerViews[tab], update);
-    else update();
+    window.SZVKShared.transitionViews(previousView, trackerViews[tab], update, { retainPrevious: true });
   }
   tabBtnJournal.addEventListener('click', () => switchTrackerTab('journal'));
   tabBtnInventory.addEventListener('click', () => switchTrackerTab('inventory'));

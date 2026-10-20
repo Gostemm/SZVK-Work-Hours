@@ -161,9 +161,44 @@ async function main() {
     assert.equal(await evaluate("getComputedStyle(document.querySelector('.module-entry')).animationName"),'szvk-module-open','Tracker Hub animates on document navigation too');
     assert.deepEqual(await evaluate(`(()=>{
       document.querySelector('#tabBtnInventory').click();document.querySelector('#tabBtnAtCommands').click();document.querySelector('#tabBtnJournal').click();
-      return {latest:document.querySelector('#viewJournal').style.display==='flex',single:document.querySelectorAll('.module-entry > .view-transition-outgoing').length===1,horizontal:new DOMMatrixReadOnly(getComputedStyle(document.querySelector('#viewJournal')).transform).m41};
+      return {latest:document.querySelector('#viewJournal').style.display==='flex',single:document.querySelectorAll('#trackerViewStage > .view-transition-outgoing').length===1,horizontal:new DOMMatrixReadOnly(getComputedStyle(document.querySelector('#viewJournal')).transform).m41};
     })()`),{latest:true,single:true,horizontal:0},'rapid Tracker Hub navigation crossfades to the latest tab without sideways motion');
     await evaluate("Promise.allSettled(document.getAnimations().map(animation=>animation.finished))");
+    assert.deepEqual(await evaluate(`(async()=>{
+      const stage=document.querySelector('#trackerViewStage');
+      const journal=document.querySelector('#viewJournal');
+      const row=journal.querySelector('[data-repair-id="1"]');
+      document.querySelector('#tabBtnInventory').click();
+      const retained=stage.querySelector('.view-transition-outgoing')===journal && journal.inert;
+      const animation=document.querySelector('#viewInventory').getAnimations()[0];
+      document.querySelector('#tabBtnInventory').click();
+      const steady=journal.style.display==='flex' && document.querySelector('#viewInventory').getAnimations()[0]===animation;
+      const isolated=!document.querySelector('#userProfileMenu').closest('.view-transition-host');
+      await Promise.allSettled(document.getAnimations().map(animation=>animation.finished));
+      document.querySelector('#tabBtnJournal').click();
+      await Promise.allSettled(document.getAnimations().map(animation=>animation.finished));
+      return {retained,steady,isolated,restored:!journal.inert && journal.style.position==='' && journal.querySelector('[data-repair-id="1"]')===row,clean:!stage.querySelector('.view-transition-outgoing') && document.querySelector('#viewInventory').style.display==='none'};
+    })()`),{retained:true,steady:true,isolated:true,restored:true,clean:true},'Tracker Hub reuses its table, ignores repeated tab clicks, leaves the header outside transitions, and restores views after switching back');
+    for(const [width,height] of [[320,800],[1280,900]]) {
+      await call('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<768});
+      await clickPointer('#userProfileMenu > summary');
+      await evaluate("new Promise(resolve=>setTimeout(resolve,60))");
+      assert.deepEqual(await evaluate("(()=>{const menu=document.querySelector('#userProfileMenu');const panel=menu.querySelector('.account-panel');return {open:menu.open,single:panel.getAnimations().length===1,independent:getComputedStyle(menu,'::details-content').opacity==='1',visible:Number(getComputedStyle(panel).opacity)>0 && Number(getComputedStyle(panel).opacity)<1};})()"),{open:true,single:true,independent:true,visible:true},'profile uses one visible animation instead of competing native and CSS animations');
+      await clickPointer('#userProfileMenu > summary');
+      await evaluate("new Promise(resolve=>setTimeout(resolve,50))");
+      await clickPointer('#userProfileMenu > summary');
+      await evaluate("Promise.allSettled(document.querySelector('.account-panel').getAnimations().map(animation=>animation.finished))");
+      assert.equal(await evaluate("document.querySelector('#userProfileMenu').open && !document.querySelector('.account-panel').inert && getComputedStyle(document.querySelector('.account-panel')).opacity==='1'"),true,'reopening a closing profile ends fully open');
+      await clickPointer('#userProfileMenu > summary');
+      assert.equal(await evaluate("getComputedStyle(document.querySelector('.account-panel')).pointerEvents"),'none','a closing menu stops accepting clicks immediately');
+      await evaluate("Promise.allSettled(document.querySelector('.account-panel').getAnimations().map(animation=>animation.finished))");
+      assert.equal(await evaluate("document.querySelector('#userProfileMenu').open"),false,'profile closes after its animation without reopening itself');
+      await clickPointer('#userProfileMenu > summary');
+      await pressEscape();
+      await evaluate("Promise.allSettled(document.querySelector('.account-panel').getAnimations().map(animation=>animation.finished))");
+      assert.equal(await evaluate("!document.querySelector('#userProfileMenu').open && document.activeElement===document.querySelector('#userProfileMenu > summary')"),true,'Escape closes the profile and returns focus to its summary');
+    }
+    await call('Emulation.setDeviceMetricsOverride',{width:320,height:800,deviceScaleFactor:1,mobile:true});
     await evaluate("window.editRepair(1)");
     assert.equal(await evaluate("document.querySelector('#repairModalOverlay .modal-box').getAnimations().some(animation=>animation.effect.getTiming().duration<=300)"),true,'dialogs open smoothly');
     assert.deepEqual(await evaluate(`(()=>{
@@ -180,9 +215,6 @@ async function main() {
       if(animation) animation.finish();
       return {visible:!panel.hidden,brief:!!animation && animation.effect.getTiming().duration<=300,steady,perceptible};
     })()`),{visible:true,brief:true,steady:true,perceptible:true},'form tabs crossfade while preserving the outgoing content and keeping controls usable');
-    assert.equal(await evaluate("document.querySelector('#userProfileMenu').open=true;getComputedStyle(document.querySelector('.account-panel')).animationName"),'szvk-menu-open','account menus animate when opened');
-    await evaluate("document.querySelector('#userProfileMenu').open=false");
-    assert.equal(await evaluate("getComputedStyle(document.querySelector('.account-panel')).pointerEvents"),'none','a closing menu stops accepting clicks immediately');
     await call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
     await evaluate("new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))");
     assert.equal(await evaluate("document.querySelector('#repairRequestTab').click();document.querySelector('#repairRequestPanel').getAnimations().length + document.querySelector('#repairModalOverlay .modal-box').getAnimations().length"),0,'reduced motion disables form and dialog animations');
@@ -313,6 +345,7 @@ async function main() {
     assert.equal(await evaluate("document.querySelector('[data-copy-command]').dataset.copyCommand"),editedCommand);
     assert.equal(await evaluate("document.querySelector('#atCommandsGrid').textContent.includes('AT+EDITED')"),true);
     await evaluate("document.querySelector('#userProfileMenu').open=true;document.querySelector('#tabBtnHistory').click()");
+    await waitFor("!document.querySelector('#userProfileMenu').open");
     assert.equal(await evaluate("document.querySelector('#viewHistory').style.display==='flex' && !document.querySelector('#userProfileMenu').open"),true);
     for (const width of [320,390,768,1440]) {
       await call('Emulation.setDeviceMetricsOverride', { width,height:900,deviceScaleFactor:1,mobile:width<768 });
@@ -455,6 +488,7 @@ async function main() {
     assert.equal(schedule.dayNotes['2026-10-15'][0].author,'Олександр');
     assert.equal(schedule.dayNotes['2026-10-15'][0].done,false);
     await evaluate("document.querySelector('#taskEditorModal').classList.remove('active');document.querySelector('#modalDayCloseX').click();document.querySelector('#userProfileMenu').open=true;document.querySelector('#btnTabHistory').click()");
+    await waitFor("!document.querySelector('#userProfileMenu').open");
     assert.equal(await evaluate("document.querySelector('#historyView').style.display==='block' && !document.querySelector('#userProfileMenu').open"),true);
 
     await navigate('index.html');

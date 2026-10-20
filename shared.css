@@ -96,6 +96,8 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+html { scrollbar-gutter: stable; }
+
 html, body {
   overflow-x: hidden;
   width: 100%;
@@ -821,31 +823,22 @@ html[data-theme="dark"] :is(.form-label, .reported-by-sub, .repair-form-hint, .a
     animation: szvk-module-open 200ms cubic-bezier(0.2, 0.65, 0.3, 1);
   }
 
-  .account-menu[open] > .account-panel,
-  .useful-links[open] > .useful-links-panel,
   .repair-archive[open] > .repair-archive-content,
   .completed-tasks[open] > .completed-tasks-list,
   .form-section[open] > .form-grid {
     animation: szvk-menu-open 180ms cubic-bezier(0.2, 0.65, 0.3, 1);
   }
 
-  @supports selector(details::details-content) {
-    .account-menu::details-content,
-    .useful-links::details-content {
-      opacity: 0;
-      transition: opacity 200ms ease-in-out, content-visibility 200ms allow-discrete;
-    }
-
-    .account-menu[open]::details-content,
-    .useful-links[open]::details-content { opacity: 1; }
-  }
 }
 
+.tracker-view-stage { position: relative; min-width: 0; contain: layout; }
+.tracker-view-stage.view-transition-host > .view-card { will-change: opacity; }
 .view-transition-host { position: relative; overflow: clip; }
 .view-transition-outgoing { user-select: none; overflow: hidden; }
 .modal-overlay.is-closing { pointer-events: none; }
 .account-menu:not([open]) > .account-panel,
-.useful-links:not([open]) > .useful-links-panel { pointer-events: none; }
+.useful-links:not([open]) > .useful-links-panel,
+.header-menu-closing > :is(.account-panel, .useful-links-panel) { pointer-events: none; }
 
 @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
   :where(button, a.btn, .module-switch > a, .account-summary, .useful-links > summary):not(:disabled):not([aria-disabled="true"]):hover:not(:active) {

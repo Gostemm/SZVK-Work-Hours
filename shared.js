@@ -161,7 +161,7 @@
   function closeModal(modal) { return animateModal(modal, false); }
 
   const viewTransitions = new WeakMap();
-  function transitionViews(previousView, nextView, update) {
+  function transitionViews(previousView, nextView, update, { retainPrevious = false } = {}) {
     const host = nextView.parentElement;
     const running = viewTransitions.get(host);
     const startHeight = host.getBoundingClientRect().height;
@@ -169,24 +169,31 @@
     const hostBounds = host.getBoundingClientRect();
     const animate = previousBounds && previousBounds.height > 0 &&
       !window.matchMedia('(prefers-reduced-motion: reduce)').matches && typeof nextView.animate === 'function';
-    const snapshot = animate ? previousView.cloneNode(true) : null;
+    const retained = retainPrevious && previousView !== nextView;
+    const snapshot = animate ? (retained ? previousView : previousView.cloneNode(true)) : null;
+    const previousDisplay = animate ? window.getComputedStyle(previousView).display : '';
     if (running) running.cleanup();
 
     // The application state and controls update immediately, including during rapid navigation.
     update();
     if (!snapshot) return;
     const endHeight = host.getBoundingClientRect().height;
-    snapshot.removeAttribute('id');
-    snapshot.querySelectorAll('[id], [name], [autofocus]').forEach(element => {
-      element.removeAttribute('id');
-      element.removeAttribute('name');
-      element.removeAttribute('autofocus');
-    });
-    // A visual copy inside a form must never participate in submission or validation.
-    snapshot.querySelectorAll('input, select, textarea, button, fieldset').forEach(control => {
-      control.disabled = true;
-      control.removeAttribute('required');
-    });
+    const originalStyle = snapshot.getAttribute('style');
+    const originalInert = snapshot.inert;
+    const originalAriaHidden = snapshot.getAttribute('aria-hidden');
+    if (!retained) {
+      snapshot.removeAttribute('id');
+      snapshot.querySelectorAll('[id], [name], [autofocus]').forEach(element => {
+        element.removeAttribute('id');
+        element.removeAttribute('name');
+        element.removeAttribute('autofocus');
+      });
+      // A visual copy inside a form must never participate in submission or validation.
+      snapshot.querySelectorAll('input, select, textarea, button, fieldset').forEach(control => {
+        control.disabled = true;
+        control.removeAttribute('required');
+      });
+    }
     snapshot.inert = true;
     snapshot.setAttribute('aria-hidden', 'true');
     snapshot.classList.add('view-transition-outgoing');
@@ -196,20 +203,32 @@
       width: previousBounds.width + 'px', height: previousBounds.height + 'px',
       margin: '0', pointerEvents: 'none', zIndex: '5'
     });
+    if (retained) snapshot.style.display = previousDisplay;
     host.classList.add('view-transition-host');
-    host.appendChild(snapshot);
+    if (!retained) host.appendChild(snapshot);
 
     const timing = { duration: 280, easing: 'cubic-bezier(0.4, 0, 0.2, 1)' };
-    const incoming = nextView.animate([{ opacity: 0 }, { opacity: 1 }], timing);
+    const incoming = nextView.animate([{ opacity: retained ? 0.001 : 0 }, { opacity: 1 }], timing);
     const outgoing = snapshot.animate([{ opacity: 1 }, { opacity: 0 }], { ...timing, duration: 220, fill: 'forwards' });
     const animations = [incoming, outgoing];
     if (Math.abs(startHeight - endHeight) > 1) {
       animations.push(host.animate([{ height: startHeight + 'px' }, { height: endHeight + 'px' }], timing));
     }
+    let prepareFrame = null;
+    let prepareTimer = null;
     const state = {
       cleanup() {
-        snapshot.remove();
+        if (prepareFrame !== null) window.cancelAnimationFrame(prepareFrame);
+        if (prepareTimer !== null) window.clearTimeout(prepareTimer);
         animations.forEach(animation => animation.cancel());
+        if (retained) {
+          if (originalStyle === null) snapshot.removeAttribute('style');
+          else snapshot.setAttribute('style', originalStyle);
+          snapshot.inert = originalInert;
+          if (originalAriaHidden === null) snapshot.removeAttribute('aria-hidden');
+          else snapshot.setAttribute('aria-hidden', originalAriaHidden);
+          snapshot.classList.remove('view-transition-outgoing');
+        } else snapshot.remove();
         if (viewTransitions.get(host) === state) {
           viewTransitions.delete(host);
           host.classList.remove('view-transition-host');
@@ -219,6 +238,19 @@
     viewTransitions.set(host, state);
     const finish = () => { if (viewTransitions.get(host) === state) state.cleanup(); };
     incoming.finished.then(finish, finish);
+    if (retained) {
+      // Prepare and paint a large destination while the previous view still covers it.
+      animations.forEach(animation => animation.pause());
+      const play = () => {
+        if (viewTransitions.get(host) !== state) return;
+        if (prepareFrame !== null) window.cancelAnimationFrame(prepareFrame);
+        if (prepareTimer !== null) window.clearTimeout(prepareTimer);
+        prepareFrame = prepareTimer = null;
+        animations.forEach(animation => animation.play());
+      };
+      prepareFrame = window.requestAnimationFrame(() => { prepareFrame = window.requestAnimationFrame(play); });
+      prepareTimer = window.setTimeout(play, 100);
+    }
   }
 
   const rowCache = new WeakMap();
@@ -331,19 +363,81 @@
     [document.getElementById('userProfileMenu'), ...document.querySelectorAll('.useful-links')].forEach(initHeaderMenu);
   }
 
+  const headerMenus = new WeakSet();
   function initHeaderMenu(menu) {
-    if (!menu) return;
+    if (!menu || headerMenus.has(menu)) return;
+    headerMenus.add(menu);
+    const summary = menu.querySelector('summary');
+    const panel = menu.querySelector('.account-panel, .useful-links-panel');
+    let targetOpen = menu.open;
+    let animation = null;
+    summary.setAttribute('aria-expanded', String(targetOpen));
+    panel.inert = !targetOpen;
+    const setOpen = opening => {
+      if (targetOpen === opening && ((!animation && menu.open === opening) || animation)) return;
+      const visible = menu.open;
+      const style = visible ? window.getComputedStyle(panel) : null;
+      const opacity = style ? style.opacity : '0';
+      const translate = style && style.translate !== 'none' ? style.translate : '0 -4px';
+      if (animation) { animation.cancel(); animation = null; }
+      targetOpen = opening;
+      summary.setAttribute('aria-expanded', String(opening));
+      panel.inert = !opening;
+      menu.classList.toggle('header-menu-closing', !opening);
+      if (modalMotionPreference.matches || typeof panel.animate !== 'function') {
+        menu.open = opening;
+        menu.classList.remove('header-menu-closing');
+        return;
+      }
+      // Keep native details open throughout the exit; one animation owns the panel.
+      menu.open = true;
+      const current = panel.animate([
+        { opacity, translate },
+        { opacity: opening ? 1 : 0, translate: opening ? '0 0' : '0 -4px' }
+      ], { duration: 200, easing: 'cubic-bezier(0.4, 0, 0.2, 1)', fill: 'both' });
+      animation = current;
+      current.finished.then(() => {
+        if (animation !== current) return;
+        menu.open = targetOpen;
+        menu.classList.remove('header-menu-closing');
+        animation = null;
+        current.cancel();
+      }, () => {});
+    };
+    summary.addEventListener('click', event => {
+      event.preventDefault();
+      setOpen(animation ? !targetOpen : !menu.open);
+    });
+    menu.addEventListener('toggle', () => {
+      if (!menu.open && animation) { animation.cancel(); animation = null; }
+      if (!animation) {
+        targetOpen = menu.open;
+        panel.inert = !targetOpen;
+        summary.setAttribute('aria-expanded', String(targetOpen));
+        menu.classList.remove('header-menu-closing');
+      }
+    });
+    modalMotionPreference.addEventListener?.('change', event => {
+      if (!event.matches || !animation) return;
+      const current = animation;
+      animation = null;
+      current.cancel();
+      menu.open = targetOpen;
+      panel.inert = !targetOpen;
+      menu.classList.remove('header-menu-closing');
+    });
     document.addEventListener('click', event => {
-      if (!menu.contains(event.target)) menu.open = false;
+      if (!menu.contains(event.target)) setOpen(false);
     });
     document.addEventListener('keydown', event => {
-      if (event.key === 'Escape' && menu.open) {
-        menu.open = false;
-        menu.querySelector('summary').focus();
+      if (event.key === 'Escape' && menu.open && targetOpen) {
+        event.preventDefault();
+        setOpen(false);
+        summary.focus();
       }
     });
     menu.querySelectorAll('button, a').forEach(element => {
-      element.addEventListener('click', () => { menu.open = false; });
+      element.addEventListener('click', () => setOpen(false));
     });
   }
 
