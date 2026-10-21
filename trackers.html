@@ -2243,8 +2243,8 @@
             </div>
           </div>
           <div class="form-group form-col-2">
-            <label class="form-label" for="inputIssue">Опис проблеми (до 200 символів)</label>
-            <textarea class="form-textarea" id="inputIssue" maxlength="200" placeholder="Оберіть типову проблему та додайте деталі…" required></textarea>
+            <label class="form-label" for="inputIssue">Опис проблеми</label>
+            <textarea class="form-textarea" id="inputIssue" placeholder="Оберіть типову проблему та додайте деталі…" required></textarea>
             <div class="quick-templates-wrap" id="issueQuickChoices" aria-label="Типові проблеми з історії ремонтів">
               <button type="button" class="quick-tmpl-btn" data-issue="Немає GPRS / GSM" title="223 згадки в історії 2022–2025">📶 Немає GPRS / GSM</button>
               <button type="button" class="quick-tmpl-btn" data-issue="Немає GPS" title="128 згадок проблем GPS в історії 2022–2025">🛰️ Немає GPS</button>
@@ -2289,8 +2289,8 @@
             </div>
           </div>
           <div class="form-group form-col-2">
-            <label class="form-label" for="inputNotes">Додаткові нотатки (до 200 символів)</label>
-            <textarea class="form-textarea" id="inputNotes" maxlength="200" placeholder="Розташування трекера, номер SIM-картки, деталі ремонту…"></textarea>
+            <label class="form-label" for="inputNotes">Додаткові нотатки</label>
+            <textarea class="form-textarea" id="inputNotes" placeholder="Розташування трекера, номер SIM-картки, деталі ремонту…"></textarea>
             <label class="invoice-switch" for="checkboxInvoice">
               <input type="checkbox" id="checkboxInvoice" role="switch">
               <span>Потрібно виставити рахунок</span>
@@ -2747,13 +2747,8 @@
   // Quick templates for form
   window.addIssueTemplate = function(text) {
     const input = document.getElementById('inputIssue');
-    const value = input.value ? input.value + ', ' + text : text;
-    if (value.length > input.maxLength) {
-      alert('Опис проблеми має містити не більше 200 символів. Скоротіть текст, щоб додати типову проблему.');
-      input.focus();
-      return;
-    }
-    input.value = value;
+    if (input.value) input.value += ', ' + text;
+    else input.value = text;
   };
 
   window.addSolutionTemplate = function(text) {
@@ -4840,15 +4835,6 @@
   // Submit Repair Form
   repairForm.addEventListener('submit', (e) => {
     e.preventDefault();
-    for (const id of ['inputIssue', 'inputNotes']) {
-      const field = document.getElementById(id);
-      if (field.value.length > field.maxLength) {
-        setRepairStep(id === 'inputIssue' ? 'request' : 'result');
-        alert(id === 'inputIssue' ? 'Опис проблеми має містити не більше 200 символів.' : 'Додаткові нотатки мають містити не більше 200 символів.');
-        field.focus();
-        return;
-      }
-    }
     const editId = document.getElementById('editRecordId').value;
     const date = document.getElementById('inputDate').value.trim();
     const carrier = document.getElementById('inputCarrier').value.trim();
