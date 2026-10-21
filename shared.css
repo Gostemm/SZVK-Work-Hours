@@ -812,6 +812,90 @@ html[data-theme="dark"] :is(.form-label, .reported-by-sub, .repair-form-hint, .a
   to { opacity: 1; }
 }
 
+/* One shared loading screen bridges the two full-document applications. */
+.module-transition {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  display: grid;
+  place-items: center;
+  background: var(--bg);
+  color: var(--text);
+  touch-action: none;
+  outline: none;
+  animation: szvk-module-cover 140ms ease-out both;
+  transition: opacity 200ms ease;
+}
+
+.module-transition-content { display: grid; justify-items: center; gap: 22px; }
+.module-transition-mark {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 112px;
+  height: 112px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.12), transparent 72%);
+}
+.module-transition-orbit {
+  position: absolute;
+  inset: 0;
+  border: 1px solid var(--border);
+  border-top-color: var(--accent);
+  border-right-color: var(--accent);
+  border-radius: 50%;
+  animation: szvk-module-orbit 1400ms linear infinite;
+}
+.module-transition-icon {
+  position: absolute;
+  font-size: 58px;
+  line-height: 1;
+  filter: none;
+}
+.module-transition-mark .module-transition-from {
+  animation: szvk-module-icon-out 520ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+.module-transition-mark .module-transition-to {
+  animation: szvk-module-icon-in 520ms cubic-bezier(0.2, 0.7, 0.25, 1) both;
+}
+.module-transition-label { display: grid; text-align: center; font-size: 15px; font-weight: 700; letter-spacing: 0.02em; }
+.module-transition-label > span { grid-area: 1 / 1; }
+.module-transition-label .module-transition-from { animation: szvk-module-label-out 520ms ease both; }
+.module-transition-label .module-transition-to { animation: szvk-module-label-in 520ms ease both; }
+.module-transition-progress { width: 96px; height: 3px; overflow: hidden; border-radius: 3px; background: var(--border); }
+.module-transition-progress > span {
+  display: block;
+  width: 40%;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  animation: szvk-module-progress 1100ms ease-in-out infinite;
+}
+.module-transition--arriving { animation: none; }
+.module-transition--arriving .module-transition-from { display: none; }
+.module-transition--arriving .module-transition-to { animation: none; }
+.module-transition--ready { opacity: 0; }
+
+@keyframes szvk-module-cover { from { opacity: 0; } to { opacity: 1; } }
+@keyframes szvk-module-icon-out {
+  0%, 18% { opacity: 1; transform: scale(1) rotate(0deg); filter: blur(0); }
+  68%, 100% { opacity: 0; transform: scale(0.55) rotate(calc(-1 * var(--module-turn))); filter: blur(6px); }
+}
+@keyframes szvk-module-icon-in {
+  0%, 28% { opacity: 0; transform: scale(0.55) rotate(var(--module-turn)); filter: blur(6px); }
+  85% { opacity: 1; transform: scale(1.06) rotate(0deg); filter: blur(0); }
+  100% { opacity: 1; transform: scale(1) rotate(0deg); filter: blur(0); }
+}
+@keyframes szvk-module-label-out { 0%, 18% { opacity: 1; } 58%, 100% { opacity: 0; } }
+@keyframes szvk-module-label-in { 0%, 42% { opacity: 0; } 100% { opacity: 1; } }
+@keyframes szvk-module-orbit { to { transform: rotate(360deg); } }
+@keyframes szvk-module-progress { from { transform: translateX(-100%); } to { transform: translateX(350%); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .module-transition, .module-transition * { animation: none !important; transition: none !important; }
+  .module-transition .module-transition-from { display: none; }
+}
+
 @keyframes szvk-menu-open {
   from { opacity: 0; transform: translateY(-8px); }
   to { opacity: 1; transform: translateY(0); }

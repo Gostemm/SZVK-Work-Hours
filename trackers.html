@@ -8,7 +8,7 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg" sizes="any">
   <link rel="apple-touch-icon" href="apple-touch-icon.png" sizes="180x180">
 
-  <script src="shared.js?v=32b98e05a896"></script>
+  <script src="shared.js?v=d078f1ffc3aa"></script>
   <script>
     // Auth guard
     (function() {
@@ -19,11 +19,7 @@
     })();
   </script>
 
-  <!-- Firebase App & Firestore SDKs (Compat) -->
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
-
-  <link rel="stylesheet" href="shared.css?v=f264a07d3051">
+  <link rel="stylesheet" href="shared.css?v=03ac1b6b4d21">
 
   <style>
     :root {
@@ -1847,6 +1843,11 @@
 </style>
 </head>
 <body>
+<script>window.SZVKShared?.initModuleTransition?.();</script>
+
+<!-- Paint the module transition before loading the Firebase SDKs. -->
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 
 <div class="container module-entry">
 
@@ -4229,7 +4230,7 @@
     }
 
     // 3. Schedule items: navigate to index.html
-    window.location.href = 'index.html?tab=history';
+    window.SZVKShared.navigateModule('index.html?tab=history');
   }
 
   function renderHistory() {

@@ -20,11 +20,23 @@ const sessionVersion = authContext.window.SZVKShared.authSessionVersion;
 async function main() {
   const artifacts = fs.mkdtempSync(path.join(os.tmpdir(), 'szvk-browser-check-'));
   const browserPath = process.env.SZVK_BROWSER_PATH || 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+  let holdModuleLoad = false;
+  let releaseModuleLoad = null;
   const server = http.createServer((req, res) => {
     const filename = new URL(req.url, 'http://localhost').pathname.slice(1) || 'index.html';
+    if (filename === 'module-transition-hold.js') {
+      releaseModuleLoad = () => { res.setHeader('Content-Type', 'text/javascript'); res.end('/* Test resumes page loading. */'); };
+      return;
+    }
     if (!['index.html','trackers.html','shared.js','shared.css','tracker_data.js'].includes(filename)) { res.writeHead(404).end(); return; }
     res.setHeader('Content-Type', filename.endsWith('.css') ? 'text/css; charset=utf-8' : filename.endsWith('.js') ? 'text/javascript; charset=utf-8' : 'text/html; charset=utf-8');
-    res.end(fs.readFileSync(path.join(root, filename)));
+    let content = fs.readFileSync(path.join(root, filename));
+    if (holdModuleLoad && filename.endsWith('.html')) {
+      holdModuleLoad = false;
+      releaseModuleLoad = null;
+      content = content.toString('utf8').replace('https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js', '/module-transition-hold.js');
+    }
+    res.end(content);
   });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const url = `http://127.0.0.1:${server.address().port}`;
@@ -154,6 +166,65 @@ async function main() {
       await evaluate("document.documentElement.style.removeProperty('--safe-area-bottom')");
       await call('Emulation.setDeviceMetricsOverride', { width:320,height:800,deviceScaleFactor:1,mobile:true });
     };
+    await call('Emulation.setDeviceMetricsOverride', { width:320,height:800,deviceScaleFactor:1,mobile:true });
+    await call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'no-preference'}]});
+    await navigate('index.html');
+    assert.equal(await evaluate("!!document.querySelector('.module-transition')"), false, 'direct visits do not show a module loader');
+    holdModuleLoad = true;
+    assert.deepEqual(await evaluate(`(()=>{
+      const link=document.querySelector('.module-switch a[href^="trackers.html"]');
+      link.href='trackers.html?tab=inventory#transition-test';link.click();link.click();
+      const overlay=document.querySelector('.module-transition');
+      const from=overlay.querySelector('.module-transition-mark .module-transition-from');
+      const to=overlay.querySelector('.module-transition-mark .module-transition-to');
+      from.getAnimations()[0].currentTime=260;to.getAnimations()[0].currentTime=260;
+      return {single:document.querySelectorAll('.module-transition').length===1,from:from.textContent,to:to.textContent,
+        morphing:Number(getComputedStyle(from).opacity)>0 && Number(getComputedStyle(from).opacity)<1 && Number(getComputedStyle(to).opacity)>0 && Number(getComputedStyle(to).opacity)<1};
+    })()`),{single:true,from:'⏱️',to:'🛰️',morphing:true},'switching applications visibly crossfades the real emoji and ignores double clicks');
+    await waitFor("location.pathname==='/trackers.html' && !!document.querySelector('.module-transition--arriving')");
+    assert.ok(releaseModuleLoad, 'destination reached the deliberately blocked SDK');
+    assert.deepEqual(await evaluate(`(()=>{
+      const overlay=document.querySelector('.module-transition');const rect=overlay.getBoundingClientRect();
+      return {loading:document.readyState==='loading',icon:overlay.querySelector('.module-transition-mark .module-transition-to').textContent,
+        opaque:getComputedStyle(overlay).opacity==='1',covers:rect.left===0 && rect.top===0 && rect.width===innerWidth && rect.height===innerHeight,
+        cleared:sessionStorage.getItem('szvk_module_transition')===null};
+    })()`),{loading:true,icon:'🛰️',opaque:true,covers:true,cleared:true},'the incoming loader covers the viewport before external scripts and application markup finish loading');
+    const transitionShot=await call('Page.captureScreenshot',{format:'png'});
+    fs.writeFileSync(path.join(artifacts,'module-transition-mobile.png'),Buffer.from(transitionShot.data,'base64'));
+    releaseModuleLoad();
+    await waitFor("document.readyState==='complete' && !document.querySelector('.module-transition') && !!document.querySelector('#accountMount button')");
+    assert.equal(await evaluate("document.querySelector('#viewInventory').style.display"),'flex','the transition preserves query parameters and the selected destination tab');
+    assert.equal(await evaluate("location.hash"),'#transition-test');
+
+    await call('Emulation.setDeviceMetricsOverride', { width:1280,height:900,deviceScaleFactor:1,mobile:false });
+    await evaluate("localStorage.setItem('szvk_ui_theme','light');document.documentElement.setAttribute('data-theme','light')");
+    holdModuleLoad = true;
+    assert.deepEqual(await evaluate(`(()=>{
+      document.querySelector('.module-switch a[href="index.html"]').click();
+      const overlay=document.querySelector('.module-transition');
+      return {from:overlay.querySelector('.module-transition-mark .module-transition-from').textContent,
+        to:overlay.querySelector('.module-transition-mark .module-transition-to').textContent,background:getComputedStyle(overlay).backgroundColor};
+    })()`),{from:'🛰️',to:'⏱️',background:'rgb(248, 250, 252)'},'the reverse transition swaps the icons and follows the light theme');
+    await waitFor("location.pathname==='/index.html' && !!document.querySelector('.module-transition--arriving')");
+    assert.ok(releaseModuleLoad);
+    const reverseShot=await call('Page.captureScreenshot',{format:'png'});
+    fs.writeFileSync(path.join(artifacts,'module-transition-light.png'),Buffer.from(reverseShot.data,'base64'));
+    releaseModuleLoad();
+    await waitFor("document.readyState==='complete' && !document.querySelector('.module-transition') && !!document.querySelector('#accountMount button')");
+
+    const navigationHistory=await call('Page.getNavigationHistory');
+    await call('Page.navigateToHistoryEntry',{entryId:navigationHistory.entries[navigationHistory.currentIndex-1].id});
+    await waitFor("location.pathname==='/trackers.html' && document.readyState==='complete' && !document.querySelector('.module-transition')");
+    assert.equal(await evaluate("document.querySelector('#tabBtnJournal').click();document.querySelector('#viewJournal').style.display"),'flex','browser Back restores an interactive page without a stuck loader');
+    await call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
+    assert.deepEqual(await evaluate(`(()=>{
+      window.SZVKShared.navigateModule('index.html?tab=history');
+      const overlay=document.querySelector('.module-transition');
+      return {animated:overlay.getAnimations({subtree:true}).length,sourceHidden:getComputedStyle(overlay.querySelector('.module-transition-from')).display==='none'};
+    })()`),{animated:0,sourceHidden:true},'reduced motion navigates without animated movement or the morph delay');
+    await waitFor("location.pathname==='/index.html' && document.readyState==='complete' && !document.querySelector('.module-transition')");
+    assert.equal(await evaluate("document.querySelector('#historyView').style.display"),'block','programmatic navigation keeps the history deep link');
+    await evaluate("localStorage.setItem('szvk_ui_theme','dark')");
     await call('Emulation.setDeviceMetricsOverride', { width:320,height:800,deviceScaleFactor:1,mobile:true });
     await navigate('trackers.html');
     await waitFor("typeof window.editRepair==='function'");

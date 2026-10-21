@@ -8,13 +8,9 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg" sizes="any">
   <link rel="apple-touch-icon" href="apple-touch-icon.png" sizes="180x180">
 
-  <script src="shared.js?v=32b98e05a896"></script>
+  <script src="shared.js?v=d078f1ffc3aa"></script>
 
-  <!-- Firebase App & Firestore SDKs (Compat) -->
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
-
-  <link rel="stylesheet" href="shared.css?v=f264a07d3051">
+  <link rel="stylesheet" href="shared.css?v=03ac1b6b4d21">
 
   <style>
     :root {
@@ -1508,6 +1504,11 @@
 </style>
 </head>
 <body>
+<script>window.SZVKShared?.initModuleTransition?.();</script>
+
+<!-- Paint the module transition before loading the Firebase SDKs. -->
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 
 <!-- ЕКРАН ВХОДУ -->
 <div class="auth-gate-screen" id="authGateScreen">
@@ -2984,16 +2985,16 @@ document.addEventListener("DOMContentLoaded", function () {
     if (entry.tab === "repairs" || (entry.type && entry.type.startsWith("repair_"))) {
       const repId = (entry.editRef && entry.editRef.id) || (entry.restoreData && (entry.restoreData.repairId || (entry.restoreData.repair && entry.restoreData.repair.id) || (entry.restoreData.prevRepair && entry.restoreData.prevRepair.id)));
       if (repId) {
-        window.location.href = `trackers.html?editRepair=${repId}`;
+        window.SZVKShared.navigateModule(`trackers.html?editRepair=${encodeURIComponent(repId)}`);
       } else {
-        window.location.href = `trackers.html`;
+        window.SZVKShared.navigateModule('trackers.html');
       }
       return;
     }
 
     // 2. Tracker Hub Inventory
     if (entry.tab === "inventory" || (entry.type && (entry.type.startsWith("inv_") || entry.type.startsWith("bulk_")))) {
-      window.location.href = `trackers.html?tab=inventory`;
+      window.SZVKShared.navigateModule('trackers.html?tab=inventory');
       return;
     }
 

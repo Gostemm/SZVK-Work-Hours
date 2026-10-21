@@ -880,6 +880,133 @@
     applyTheme(currentSavedTheme);
   }
 
+  let moduleNavigation = null;
+
+  function navigateModule(href) {
+    if (!moduleNavigation || !moduleNavigation.navigate(href)) window.location.assign(href);
+  }
+
+  // Called at the start of <body>, before the blocking Firebase scripts. This lets
+  // the destination paint the same loading screen while its application loads.
+  function initModuleTransition() {
+    if (moduleNavigation) return;
+    const modules = [
+      { url: new URL('index.html', window.location.href), icon: '⏱️', name: 'Work Hours' },
+      { url: new URL('trackers.html', window.location.href), icon: '🛰️', name: 'Tracker Hub' }
+    ];
+    const current = modules.find(item => item.url.pathname === window.location.pathname) ||
+      (window.location.pathname.endsWith('/') ? modules[0] : null);
+    if (!current) return;
+
+    const storageKey = 'szvk_module_transition';
+    const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let overlay = null;
+    let navigationTimer = null;
+    let cleanupTimer = null;
+    let previousFocus = null;
+
+    function reset() {
+      clearTimeout(navigationTimer);
+      clearTimeout(cleanupTimer);
+      overlay?.remove();
+      overlay = null;
+      if (previousFocus?.isConnected) previousFocus.focus({ preventScroll: true });
+      previousFocus = null;
+    }
+
+    function mount(from, to, arriving) {
+      overlay = document.createElement('div');
+      overlay.className = 'module-transition' + (arriving ? ' module-transition--arriving' : '');
+      overlay.style.setProperty('--module-turn', to === modules[1] ? '32deg' : '-32deg');
+      overlay.setAttribute('role', 'status');
+      overlay.setAttribute('aria-live', 'polite');
+      overlay.setAttribute('aria-label', 'Перехід до ' + to.name);
+      overlay.tabIndex = -1;
+      overlay.innerHTML = `
+        <div class="module-transition-content" aria-hidden="true">
+          <div class="module-transition-mark">
+            <span class="module-transition-orbit"></span>
+            <span class="module-transition-icon module-transition-from">${from.icon}</span>
+            <span class="module-transition-icon module-transition-to">${to.icon}</span>
+          </div>
+          <div class="module-transition-label">
+            <span class="module-transition-from">${from.name}</span>
+            <span class="module-transition-to">${to.name}</span>
+          </div>
+          <div class="module-transition-progress"><span></span></div>
+        </div>`;
+      document.body.appendChild(overlay);
+      if (!arriving) {
+        previousFocus = document.activeElement;
+        overlay.focus({ preventScroll: true });
+      }
+    }
+
+    function destination(href) {
+      const url = new URL(href, window.location.href);
+      const target = modules.find(item => item !== current && item.url.origin === url.origin && item.url.pathname === url.pathname);
+      return target ? { url, target } : null;
+    }
+
+    moduleNavigation = {
+      navigate(href) {
+        const next = destination(href);
+        if (!next) return false;
+        if (overlay) return true;
+        mount(current, next.target, false);
+        const leave = () => {
+          try {
+            sessionStorage.setItem(storageKey, JSON.stringify({
+              from: current.url.pathname, href: next.url.href, createdAt: Date.now()
+            }));
+          } catch (error) { /* Navigation still works when browser storage is unavailable. */ }
+          window.location.assign(next.url.href);
+          // Recover if a beforeunload handler cancels navigation.
+          cleanupTimer = setTimeout(reset, 10000);
+        };
+        navigationTimer = setTimeout(leave, motion.matches ? 0 : 520);
+        return true;
+      }
+    };
+
+    document.addEventListener('click', event => {
+      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      const link = event.target.closest?.('a[href]');
+      if (!link || link.hasAttribute('download') || (link.target && link.target !== '_self') || !destination(link.href)) return;
+      event.preventDefault();
+      moduleNavigation.navigate(link.href);
+    });
+    document.addEventListener('keydown', event => {
+      if (overlay && event.key === 'Tab') event.preventDefault();
+    });
+    window.addEventListener('pageshow', event => { if (event.persisted) reset(); });
+    window.addEventListener('pagehide', () => {
+      clearTimeout(navigationTimer);
+      clearTimeout(cleanupTimer);
+    });
+
+    try {
+      const pending = JSON.parse(sessionStorage.getItem(storageKey) || 'null');
+      sessionStorage.removeItem(storageKey);
+      const from = pending && modules.find(item => item.url.pathname === pending.from);
+      const age = pending && Date.now() - pending.createdAt;
+      if (from && from !== current && pending.href === window.location.href && age >= 0 && age < 15000) {
+        mount(from, current, true);
+        const reveal = () => {
+          if (!overlay) return;
+          clearTimeout(cleanupTimer);
+          overlay.classList.add('module-transition--ready');
+          cleanupTimer = setTimeout(reset, motion.matches ? 0 : 200);
+        };
+        // All DOMContentLoaded application handlers finish before the next paint.
+        document.addEventListener('DOMContentLoaded', () => {
+          requestAnimationFrame(() => requestAnimationFrame(reveal));
+        }, { once: true });
+        cleanupTimer = setTimeout(reveal, 12000);
+      }
+    } catch (error) { /* A direct visit never depends on stored transition state. */ }
+  }
+
   function filterHistory(list, currentHistoryModule, currentHistoryTab, historySearchQuery) {
     return list.filter(item => {
       // 1. Module filter
@@ -963,6 +1090,8 @@
     updateTask,
     restoreTaskMove,
     initThemeSwitcher,
+    initModuleTransition,
+    navigateModule,
     filterHistory
   });
   initTheme();
