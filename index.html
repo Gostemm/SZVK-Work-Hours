@@ -8,7 +8,7 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg" sizes="any">
   <link rel="apple-touch-icon" href="apple-touch-icon.png" sizes="180x180">
 
-  <script src="shared.js?v=d078f1ffc3aa"></script>
+  <script src="shared.js?v=673fd065494d"></script>
 
   <link rel="stylesheet" href="shared.css?v=03ac1b6b4d21">
 
@@ -1710,7 +1710,7 @@
     </div>
     <form id="taskEditorForm" class="task-editor-form">
       <label>Завдання
-        <textarea id="taskEditorText" maxlength="70" required rows="3"></textarea>
+        <textarea id="taskEditorText" maxlength="140" required rows="3"></textarea>
       </label>
       <div id="taskEditorTimeMount"></div>
       <input type="hidden" id="taskEditorDate">
@@ -1762,7 +1762,7 @@
 
     <div>
       <div class="task-add-form">
-        <input type="text" id="modalNewTaskInput" class="debt-input" maxlength="70" placeholder="+ Додати завдання (макс. 70 симв.)">
+        <input type="text" id="modalNewTaskInput" class="debt-input" maxlength="140" placeholder="+ Додати завдання (макс. 140 симв.)">
         <button class="btn" id="modalAddNewTaskBtn" style="background: #10b981; color: #fff;">+ Додати</button>
       </div>
       <div id="modalNewTaskTimeMount"></div>
@@ -3375,7 +3375,7 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById('taskEditorTitle').textContent = mode === 'move' ? 'Перенести завдання' : 'Редагувати завдання';
     document.getElementById('taskEditorText').value = task.text;
     document.getElementById('taskEditorText').readOnly = task.repairId != null;
-    document.getElementById('taskEditorText').maxLength = task.repairId != null ? Math.max(70, task.text.length) : 70;
+    document.getElementById('taskEditorText').maxLength = task.repairId != null ? Math.max(140, task.text.length) : 140;
     const picker = document.querySelector('#taskEditorTimeMount .task-time-picker');
     window.SZVKShared.setTaskTimePicker(picker, task.time || '');
     picker.open = false;
@@ -3671,7 +3671,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const newTask = {
       id: window.crypto && typeof window.crypto.randomUUID === 'function' ? window.crypto.randomUUID() : Date.now().toString() + '-' + Math.random().toString(36).slice(2),
-      text: val.slice(0, 70),
+      text: val.slice(0, 140),
       done: false,
       author: currentUser ? currentUser.name : "Користувач"
     };

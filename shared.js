@@ -795,7 +795,7 @@
     const index = source.findIndex(task => String(task.id) === String(taskId));
     if (index === -1) throw new Error('Це завдання вже перенесено або видалено. Оновіть список.');
     const previous = { ...source[index] };
-    if (previous.repairId == null && (!cleanText || cleanText.length > 70)) throw new Error('Введіть завдання до 70 символів.');
+    if (previous.repairId == null && (!cleanText || cleanText.length > 140)) throw new Error('Введіть завдання до 140 символів.');
     if (time !== undefined && !isValidTaskTime(time)) throw new Error('Оберіть коректний час.');
     const moved = sourceDateKey !== targetDateKey;
     if (moved && (dayNotes[targetDateKey] || []).some(task => String(task.id) === String(taskId))) {
