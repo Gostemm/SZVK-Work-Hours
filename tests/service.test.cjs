@@ -291,8 +291,8 @@ test('missing or outdated shared script shows a recovery action instead of silen
   }
 });
 
-test('moving an unfinished task keeps its identity, author, completion and extra fields', () => {
-  const original = { id: 'a', text: 'Перевірити трекер', author: 'Олександр', done: false, extra: 'kept' };
+test('moving a task keeps its identity, author, completion and extra fields', () => {
+  const original = { id: 'a', text: 'Перевірити трекер', author: 'Олександр', done: true, extra: 'kept' };
   const data = { '2026-10-13': [copy(original)], '2026-10-14': [{id:'b',text:'Інше завдання'}] };
   const result = shared.updateTask(data, '2026-10-13', 'a', original.text, '2026-10-14');
   assert.ok(result.moved);
@@ -300,23 +300,6 @@ test('moving an unfinished task keeps its identity, author, completion and extra
   assert.equal(data['2026-10-13'], undefined);
   assert.equal(data['2026-10-14'].length, 2);
   assert.deepEqual(copy(data['2026-10-14'][1]), original);
-});
-
-test('completed manual and repair tasks cannot move, but can still be edited on their own day', () => {
-  for (const extra of [{}, { repairId: 7 }]) {
-    const original = { id: 'a', text: 'Виконане завдання', done: true, time: '10:00', author: 'Артем', ...extra };
-    const data = { '2026-10-13': [copy(original)], '2026-10-14': [{ id: 'b', text: 'Інша справа' }] };
-    const before = JSON.stringify(data);
-    for (const target of ['2026-10-14', '2026-10-15']) {
-      assert.throws(() => shared.updateTask(data, '2026-10-13', 'a', 'Новий текст', target, '12:00'), /Виконані завдання/);
-      assert.equal(JSON.stringify(data), before, 'a rejected move preserves both days and all task fields');
-    }
-    const result = shared.updateTask(data, '2026-10-13', 'a', 'Уточнений текст', '2026-10-13', '12:00');
-    assert.equal(result.moved, false);
-    assert.equal(result.task.done, true);
-    assert.equal(result.task.time, '12:00');
-    assert.equal(result.task.text, extra.repairId ? original.text : 'Уточнений текст');
-  }
 });
 
 test('editing changes only the text and trims surrounding whitespace', () => {
@@ -353,12 +336,13 @@ test('invalid task times cannot mutate or move a task', () => {
   }
 });
 
-test('rolling back an unfinished task move restores its original time', () => {
+test('rolling back a move restores time while keeping later completion', () => {
   const data = { '2026-10-14': [{ id: 'a', text: 'Виклик', time: '10:00', done: false }] };
   const result = shared.updateTask(data, '2026-10-14', 'a', 'Виклик', '2026-10-15', '12:00');
+  data['2026-10-15'][0].done = true;
   shared.restoreTaskMove(data, { fromDateKey: '2026-10-14', toDateKey: '2026-10-15', taskId: 'a', previous: result.previous });
   assert.equal(data['2026-10-14'][0].time, '10:00');
-  assert.equal(data['2026-10-14'][0].done, false);
+  assert.equal(data['2026-10-14'][0].done, true);
 });
 
 test('new repairs create one compact note without importing legacy repairs', () => {
@@ -535,17 +519,13 @@ test('dates support month/year boundaries and leap days', () => {
   for (const date of ['2027-02-29','2026-13-01','2026-00-01','2026-10-00']) assert.equal(shared.isValidDateKey(date),false);
 });
 
-test('move rollback cannot relocate a task completed later; reopening allows rollback', () => {
+test('move rollback restores the previous date and text while keeping later completion', () => {
   const data={'2026-10-13':[{id:'a',text:'Оригінал',done:false,author:'Артем'}]};
   const result=shared.updateTask(data,'2026-10-13','a','Новий текст','2027-01-01');
   data['2027-01-01'][0].done=true;
-  const before = JSON.stringify(data);
-  assert.throws(() => shared.restoreTaskMove(data,{fromDateKey:'2026-10-13',toDateKey:'2027-01-01',taskId:'a',previous:result.previous}), /Виконані завдання/);
-  assert.equal(JSON.stringify(data), before);
-  data['2027-01-01'][0].done=false;
   shared.restoreTaskMove(data,{fromDateKey:'2026-10-13',toDateKey:'2027-01-01',taskId:'a',previous:result.previous});
   assert.equal(data['2027-01-01'],undefined);
-  assert.deepEqual(copy(data['2026-10-13'][0]),{id:'a',text:'Оригінал',done:false,author:'Артем'});
+  assert.deepEqual(copy(data['2026-10-13'][0]),{id:'a',text:'Оригінал',done:true,author:'Артем'});
   assert.throws(() => shared.restoreTaskMove(data,{fromDateKey:'2026-10-13',toDateKey:'2027-01-01',taskId:'a',previous:result.previous}));
   assert.equal(data['2026-10-13'].length,1);
 });

@@ -798,7 +798,6 @@
     if (previous.repairId == null && (!cleanText || cleanText.length > 140)) throw new Error('Введіть завдання до 140 символів.');
     if (time !== undefined && !isValidTaskTime(time)) throw new Error('Оберіть коректний час.');
     const moved = sourceDateKey !== targetDateKey;
-    if (moved && previous.done) throw new Error('Виконані завдання не можна переносити на інші дні.');
     if (moved && (dayNotes[targetDateKey] || []).some(task => String(task.id) === String(taskId))) {
       throw new Error('Це завдання вже є на вибраний день.');
     }
@@ -821,7 +820,7 @@
   function restoreTaskMove(dayNotes, restoreData) {
     const { fromDateKey, toDateKey, taskId, previous } = restoreData;
     const result = updateTask(dayNotes, toDateKey, taskId, previous.text, fromDateKey, previous.time || '');
-    // The same completion check applies when undoing a previous move.
+    // Keep later completion changes while restoring the original text and day.
     return result.task;
   }
 

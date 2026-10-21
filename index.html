@@ -8,7 +8,7 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg" sizes="any">
   <link rel="apple-touch-icon" href="apple-touch-icon.png" sizes="180x180">
 
-  <script src="shared.js?v=dbe29faa77e9"></script>
+  <script src="shared.js?v=673fd065494d"></script>
 
   <link rel="stylesheet" href="shared.css?v=03ac1b6b4d21">
 
@@ -3369,7 +3369,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function openTaskEditor(dateKey, taskId, mode = 'edit') {
     const task = getDayTasks(dateKey).find(item => String(item.id) === String(taskId));
-    if (!task || (mode === 'move' && task.done)) return;
+    if (!task) return;
     activeTaskEdit = { dateKey, taskId: task.id, mode };
     taskEditorReturnFocus = document.activeElement;
     document.getElementById('taskEditorTitle').textContent = mode === 'move' ? 'Перенести завдання' : 'Редагувати завдання';
@@ -3434,9 +3434,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function renderTaskCalendar() {
     if (!taskCalendarView || !activeTaskEdit) return;
-    const task = getDayTasks(activeTaskEdit.dateKey).find(item => String(item.id) === String(activeTaskEdit.taskId));
-    document.querySelector('#taskEditorForm .task-mini-calendar').hidden = Boolean(task?.done);
-    if (task?.done) return;
     const { year, month } = taskCalendarView;
     const days = document.getElementById('taskCalendarDays');
     const selectedDate = document.getElementById('taskEditorDate').value;
@@ -3470,8 +3467,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function selectTaskDate(dateKey) {
     if (!window.SZVKShared.isValidDateKey(dateKey)) return;
-    const task = activeTaskEdit && getDayTasks(activeTaskEdit.dateKey).find(item => String(item.id) === String(activeTaskEdit.taskId));
-    if (!task || task.done) return;
     document.getElementById('taskEditorDate').value = dateKey;
     const [year, month] = dateKey.split('-').map(Number);
     taskCalendarView = { year, month: month - 1 };
@@ -3594,7 +3589,7 @@ document.addEventListener("DOMContentLoaded", function () {
         <div class="task-actions">
           ${task.repairId != null ? `<a class="task-action-btn task-repair-link" href="trackers.html?editRepair=${encodeURIComponent(task.repairId)}">↗ Ремонт</a>` : ''}
           <button type="button" class="task-action-btn edit-task" title="Редагувати завдання">Редагувати</button>
-          ${!task.done ? '<button type="button" class="task-action-btn move-task" title="Перенести на інший день">Перенести</button>' : ''}
+          <button type="button" class="task-action-btn move-task" title="Перенести на інший день">Перенести</button>
           ${task.repairId == null ? '<button type="button" class="task-action-btn delete-task" title="Видалити завдання" aria-label="Видалити завдання">✕</button>' : ''}
         </div>
       `;
@@ -3612,8 +3607,7 @@ document.addEventListener("DOMContentLoaded", function () {
       };
 
       item.querySelector('.edit-task').onclick = () => openTaskEditor(dateKey, task.id);
-      const moveButton = item.querySelector('.move-task');
-      if (moveButton) moveButton.onclick = () => openTaskEditor(dateKey, task.id, 'move');
+      item.querySelector('.move-task').onclick = () => openTaskEditor(dateKey, task.id, 'move');
       const deleteButton = item.querySelector('.delete-task');
       if (deleteButton) deleteButton.onclick = () => {
         const deletedTask = tasks.splice(idx, 1)[0];
