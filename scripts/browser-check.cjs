@@ -201,7 +201,7 @@ async function main() {
               return {width:host.width,height:host.height,contained:children.every(rect=>rect.left>=bounds.left && rect.right<=bounds.right && rect.top>=bounds.top && rect.bottom<=bounds.bottom+1),
                 separate:children.every((rect,index)=>!index || rect.top>=children[index-1].bottom),pageFits:document.documentElement.scrollWidth<=innerWidth,children};
             })()`);
-            assert.ok(collapsed.width===56 && collapsed.height<=Math.min(280,height-24)+1 && collapsed.contained && collapsed.separate && collapsed.pageFits,module+': collapsed title, count and preview remain inside a rail whose size is independent of task count '+JSON.stringify({width,height,count,...collapsed}));
+            assert.ok(collapsed.width===56 && collapsed.height<=Math.min(280,height-24)+1 && collapsed.contained && collapsed.separate && collapsed.pageFits,module+': collapsed title and count remain inside a rail whose size is independent of task count '+JSON.stringify({width,height,count,...collapsed}));
             if(width===1440 && [1,250].includes(count)) {
               const shot=await captureScreenshot();
               fs.writeFileSync(path.join(artifacts,`task-rail-${module}-${count}.png`),Buffer.from(shot.data,'base64'));
@@ -708,7 +708,7 @@ async function main() {
     })()`);
     assert.ok(collapseMotion && collapseMotion.basis>56 && collapseMotion.basis<320 && collapseMotion.calendar>fullCalendarWidth && collapseMotion.calendar<fullCalendarWidth+264,'the desktop panel and calendar share space continuously during horizontal collapse');
     await evaluate("Promise.allSettled(document.getAnimations().map(animation=>animation.finished))");
-    assert.equal(await evaluate("document.querySelector('#activeTasksPanel').inert && !document.querySelector('#activeTasksRail').inert && document.querySelector('#activeTasksHost').offsetWidth===56 && document.querySelector('#activeTasksPreview').textContent==='Незавершена справа'"),true,'the collapsed desktop panel becomes an accessible narrow rail with a task preview');
+    assert.equal(await evaluate("document.querySelector('#activeTasksPanel').inert && !document.querySelector('#activeTasksRail').inert && document.querySelector('#activeTasksHost').offsetWidth===56 && document.querySelector('#activeTasksRail').children.length===3 && !document.querySelector('#activeTasksRail').textContent.includes('Незавершена справа')"),true,'the collapsed desktop panel shows only its chevron, count and title');
     assert.equal(await evaluate("document.activeElement===document.querySelector('#activeTasksRail')"),true,'collapsing moves keyboard focus to the visible rail');
     const collapsedDesktopShot=await captureScreenshot();
     fs.writeFileSync(path.join(artifacts,'active-tasks-collapsed.png'),Buffer.from(collapsedDesktopShot.data,'base64'));

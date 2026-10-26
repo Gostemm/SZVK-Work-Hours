@@ -995,7 +995,6 @@
       <span class="active-tasks-chevron" aria-hidden="true">‹</span>
       <span class="active-tasks-count" id="activeTasksRailCount">0</span>
       <span class="active-tasks-rail-title">Зараз у роботі</span>
-      <span class="active-tasks-preview" id="activeTasksPreview"></span>
     </button>
   </aside>`);
     options.container.insertAdjacentHTML('beforeend', `<button type="button" class="active-tasks-dock" id="activeTasksDock" aria-haspopup="dialog" aria-controls="activeTasksSheet" aria-expanded="false" hidden>
@@ -1391,13 +1390,11 @@
       document.getElementById('activeTasksRailCount').textContent = active.length;
       const first = active[0]?.task;
       const preview = first ? (first.time ? first.time + ' · ' : '') + first.text : 'На сьогодні все виконано';
-      activeTasksRail.title = 'Розгорнути список завдань · ' + preview;
-      activeTasksRail.setAttribute('aria-label', `Розгорнути список завдань (${active.length}). ${preview}`);
-      for (const id of ['activeTasksPreview', 'activeTasksDockPreview']) {
-        const element = document.getElementById(id);
-        element.textContent = preview;
-        element.title = preview;
-      }
+      activeTasksRail.title = `Розгорнути список завдань (${active.length})`;
+      activeTasksRail.setAttribute('aria-label', activeTasksRail.title);
+      const dockPreview = document.getElementById('activeTasksDockPreview');
+      dockPreview.textContent = preview;
+      dockPreview.title = preview;
       window.SZVKShared.setHtmlIfChanged(document.getElementById('activeTasksList'), active.length
         ? active.map(entry => activeTaskHtml(entry, todayKey)).join('')
         : '<li class="active-tasks-empty"><strong>На сьогодні все виконано</strong>Нові та перенесені завдання з’являться тут.</li>');

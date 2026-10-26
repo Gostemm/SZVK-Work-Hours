@@ -994,10 +994,6 @@ html[data-theme="dark"] :is(.form-label, .reported-by-sub, .repair-form-hint, .a
 }
 .active-tasks-chevron { margin-left: auto; color: var(--text-muted); font-size: 18px; }
 .active-tasks-rail { display: none; }
-.active-tasks-preview {
-  min-height: 0; color: var(--text-muted); font-size: 11px;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
 .active-tasks-body { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0 12px 12px; }
 .active-tasks-hint { padding: 0 2px 10px; color: var(--text-muted); font-size: 11px; line-height: 1.5; }
 .active-tasks-list { list-style: none; display: flex; flex-direction: column; gap: 7px; }
@@ -1077,7 +1073,7 @@ html[data-theme="dark"] :is(.form-label, .reported-by-sub, .repair-form-hint, .a
   }
   .active-tasks-rail {
     position: absolute; inset: 0 0 0 auto; display: grid;
-    grid-template-columns: minmax(0, 1fr); grid-template-rows: 20px 24px minmax(0, max-content) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr); grid-template-rows: 20px 24px minmax(0, max-content);
     justify-items: center; align-items: start; gap: 12px; width: 56px; padding: 14px 8px;
     border: 1px solid var(--border); border-radius: 14px; background: var(--card-bg);
     color: var(--text); font: inherit; cursor: pointer; overflow: hidden;
@@ -1094,7 +1090,6 @@ html[data-theme="dark"] :is(.form-label, .reported-by-sub, .repair-form-hint, .a
     min-width: 0; min-height: 0; max-width: 100%; max-height: 100%;
     overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
   }
-  .active-tasks-rail > .active-tasks-preview { writing-mode: vertical-rl; height: 100%; max-height: 220px; max-width: 100%; text-align: left; }
   .active-tasks-dock { display: none; }
 }
 @media (max-width: 1099px) {
