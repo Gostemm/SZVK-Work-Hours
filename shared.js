@@ -303,7 +303,7 @@
             <span class="useful-link-copy"><strong>Перенесення терміналів</strong><span>Telegram-бот</span></span>
             <span class="useful-link-arrow" aria-hidden="true">↗</span>
           </a>
-          <a class="useful-link" href="https://m3.material.io/components/app-bars/overview" target="_blank" rel="noopener noreferrer" aria-label="Сонцеслав (відкриється в новій вкладці)">
+          <a class="useful-link" href="https://sonceslav.citrussnow32.chatgpt.site/game/" target="_blank" rel="noopener noreferrer" aria-label="Сонцеслав (відкриється в новій вкладці)">
             <img class="useful-link-logo" src="assets/sontseslav.webp" width="56" height="56" alt="" decoding="async">
             <span class="useful-link-copy"><strong>Сонцеслав</strong></span>
             <span class="useful-link-arrow" aria-hidden="true">↗</span>

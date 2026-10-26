@@ -222,7 +222,7 @@ async function main() {
         }
         localStorage.setItem('szvk_schedule_local_data',JSON.stringify(data));
         window.dispatchEvent(new StorageEvent('storage',{key:'szvk_schedule_local_data'}));
-        const link=document.querySelector('.useful-link[href="https://m3.material.io/components/app-bars/overview"]');
+        const link=document.querySelector('.useful-link[href="https://sonceslav.citrussnow32.chatgpt.site/game/"]');
         window.__sunLink=!!link && link.textContent.includes('Сонцеслав') && link.target==='_blank' && link.querySelector('img').naturalWidth>0;
         const planned=document.querySelector('#activeTasksPlanned');
         if(planned.open) planned.querySelector('summary').click();
