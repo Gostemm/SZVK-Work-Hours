@@ -1522,8 +1522,9 @@
       background: rgba(59, 130, 246, 0.12); font-size: 12px; font-weight: 800;
     }
     .active-tasks-chevron { margin-left: auto; color: var(--text-muted); font-size: 18px; }
+    .active-tasks-rail { display: none; }
     .active-tasks-preview {
-      padding: 0 14px 14px; color: var(--text-muted); font-size: 12px;
+      min-height: 0; color: var(--text-muted); font-size: 11px;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
     .active-tasks-body { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0 12px 12px; }
@@ -1556,7 +1557,7 @@
     .active-tasks-planned { margin-top: 12px; border-top: 1px solid var(--border); }
     .active-tasks-planned > summary { padding: 14px 2px; color: var(--text-muted); font-size: 12px; font-weight: 700; cursor: pointer; }
     .active-tasks-planned > summary span { margin-left: 5px; color: var(--text); }
-    :is(.active-tasks-toggle, .active-task-open, .active-tasks-dock, .active-tasks-planned > summary):focus-visible,
+    :is(.active-tasks-toggle, .active-tasks-rail, .active-task-open, .active-tasks-dock, .active-tasks-planned > summary):focus-visible,
     .active-task-check:has(:focus-visible) { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 8px; }
     .active-tasks-dock {
       position: fixed; z-index: 60; bottom: calc(10px + var(--safe-area-bottom));
@@ -1586,6 +1587,21 @@
       #mainAppContainer { flex-direction: row; flex-wrap: wrap; align-items: flex-start; }
       #mainAppContainer > :is(.top-header-bar, .nav-toolbar, #historyView) { width: 100%; }
       #mainCalendarView { flex: 1; min-width: 0; }
+      .active-tasks-host { overflow: hidden; border-radius: 14px; }
+      .active-tasks-host.is-collapsed { flex-basis: 56px; }
+      .active-tasks-host .active-tasks-panel { width: 320px; }
+      .active-tasks-host.is-collapsed .active-tasks-panel { opacity: 0; transform: translateX(20px); visibility: hidden; pointer-events: none; }
+      .active-tasks-rail {
+        position: absolute; inset: 0 0 0 auto; display: flex; flex-direction: column;
+        align-items: center; gap: 12px; width: 56px; padding: 14px 8px;
+        border: 1px solid var(--border); border-radius: 14px; background: var(--card-bg);
+        color: var(--text); font: inherit; cursor: pointer; overflow: hidden;
+        opacity: 0; transform: translateX(12px); visibility: hidden; pointer-events: none;
+      }
+      .active-tasks-host.is-collapsed .active-tasks-rail { opacity: 1; transform: translateX(0); visibility: visible; pointer-events: auto; }
+      .active-tasks-rail > .active-tasks-chevron { margin: 0; line-height: 20px; flex-shrink: 0; }
+      .active-tasks-rail-title { writing-mode: vertical-rl; font-size: 12px; font-weight: 800; flex-shrink: 0; }
+      .active-tasks-rail > .active-tasks-preview { writing-mode: vertical-rl; max-height: 220px; text-align: left; }
       .active-tasks-dock { display: none; }
     }
     @media (max-width: 1099px) {
@@ -1594,10 +1610,20 @@
       body:has(.active-tasks-dock:not([hidden])) .toast-container { bottom: calc(96px + var(--safe-area-bottom)); }
     }
     @media (prefers-reduced-motion: no-preference) {
-      .active-tasks-sheet[open] { animation: active-tasks-rise 200ms ease-out; }
-      .active-tasks-planned[open] > .active-tasks-list { animation: active-tasks-rise 160ms ease-out; }
+      .active-tasks-host { transition: flex-basis 320ms cubic-bezier(0.4, 0, 0.2, 1); }
+      .active-tasks-host .active-tasks-panel { transition: opacity 180ms ease, transform 320ms ease, visibility 0s 180ms; }
+      .active-tasks-host:not(.is-collapsed) .active-tasks-panel { transition-delay: 70ms, 0s, 0s; }
+      .active-tasks-rail { transition: opacity 160ms ease, transform 320ms ease, visibility 0s 160ms; }
+      .active-tasks-host.is-collapsed .active-tasks-rail { transition-delay: 120ms, 0s, 0s; }
+      .active-tasks-sheet[open] { animation: active-tasks-sheet-in 240ms cubic-bezier(0.2, 0.65, 0.3, 1); }
+      .active-tasks-sheet[open]::backdrop { animation: active-tasks-backdrop-in 240ms ease-out; }
+      .active-tasks-sheet.is-closing { animation: active-tasks-sheet-out 200ms ease-in both; pointer-events: none; }
+      .active-tasks-sheet.is-closing::backdrop { animation: active-tasks-backdrop-out 200ms ease-in both; }
     }
-    @keyframes active-tasks-rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes active-tasks-sheet-in { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    @keyframes active-tasks-sheet-out { from { transform: translateY(var(--sheet-exit-start, 0px)); } to { transform: translateY(100%); } }
+    @keyframes active-tasks-backdrop-in { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes active-tasks-backdrop-out { from { opacity: 1; } to { opacity: 0; } }
 </style>
 </head>
 <body>
@@ -1699,7 +1725,6 @@
         <span class="active-tasks-count" id="activeTasksCount" aria-live="polite" aria-atomic="true">0</span>
         <span class="active-tasks-chevron" id="activeTasksChevron" aria-hidden="true">⌃</span>
       </button>
-      <p class="active-tasks-preview" id="activeTasksPreview" hidden></p>
       <div class="active-tasks-body" id="activeTasksBody">
         <p class="active-tasks-hint">На сьогодні та перенесені з попередніх днів</p>
         <ul class="active-tasks-list" id="activeTasksList" aria-label="Завдання у роботі"></ul>
@@ -1709,6 +1734,12 @@
         </details>
       </div>
     </section>
+    <button type="button" class="active-tasks-rail" id="activeTasksRail" aria-expanded="false" aria-controls="activeTasksPanel" aria-label="Розгорнути список завдань">
+      <span class="active-tasks-chevron" aria-hidden="true">‹</span>
+      <span class="active-tasks-count" id="activeTasksRailCount">0</span>
+      <span class="active-tasks-rail-title">Зараз у роботі</span>
+      <span class="active-tasks-preview" id="activeTasksPreview"></span>
+    </button>
   </aside>
 
   <button type="button" class="active-tasks-dock" id="activeTasksDock" aria-haspopup="dialog" aria-controls="activeTasksSheet" aria-expanded="false" hidden>
@@ -2335,7 +2366,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const btnOpenAdmin = document.getElementById("btnOpenAdminPanel");
 
     if (!currentUser) {
-      closeActiveTasksSheet(false);
+      closeActiveTasksSheet(false, false);
       gateScreen.style.display = "flex";
       mainApp.style.display = "none";
       return;
@@ -3683,33 +3714,62 @@ document.addEventListener("DOMContentLoaded", function () {
   const activeTasksSheet = document.getElementById('activeTasksSheet');
   const activeTasksDock = document.getElementById('activeTasksDock');
   const activeTasksToggle = document.getElementById('activeTasksToggle');
+  const activeTasksRail = document.getElementById('activeTasksRail');
   const activeTasksCompact = window.matchMedia('(max-width: 1099px)');
+  const activeTasksReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   let activeTasksExpanded = true;
   let activeTasksPreviousOverflow = '';
+  let activeTasksSheetClosing = null;
+  let activeTasksPlannedMotion = null;
   try { activeTasksExpanded = localStorage.getItem('szvk_active_tasks_expanded') !== 'false'; } catch (error) {}
 
-  function closeActiveTasksSheet(restoreFocus = true) {
+  function closeActiveTasksSheet(restoreFocus = true, animate = true) {
     if (!activeTasksSheet.open) return;
-    activeTasksSheet.close();
-    activeTasksHost.appendChild(activeTasksPanel);
-    document.body.style.overflow = activeTasksPreviousOverflow;
-    activeTasksDock.setAttribute('aria-expanded', 'false');
-    syncActiveTasksPresentation();
-    if (restoreFocus && !activeTasksDock.hidden) activeTasksDock.focus({ preventScroll: true });
+    if (activeTasksSheetClosing) {
+      if (!animate || activeTasksReducedMotion.matches) activeTasksSheetClosing.finish(restoreFocus);
+      return;
+    }
+    const state = {
+      finish(focus = restoreFocus) {
+        if (activeTasksSheetClosing !== state) return;
+        activeTasksSheetClosing = null;
+        activeTasksSheet.close();
+        activeTasksSheet.classList.remove('is-closing');
+        activeTasksSheet.style.removeProperty('--sheet-exit-start');
+        activeTasksSheet.inert = false;
+        activeTasksHost.appendChild(activeTasksPanel);
+        document.body.style.overflow = activeTasksPreviousOverflow;
+        activeTasksDock.setAttribute('aria-expanded', 'false');
+        syncActiveTasksPresentation();
+        if (focus && !activeTasksDock.hidden) activeTasksDock.focus({ preventScroll: true });
+      }
+    };
+    activeTasksSheetClosing = state;
+    if (!animate || activeTasksReducedMotion.matches) { state.finish(); return; }
+    // Continue from the current position if the user closes during entry.
+    const transform = getComputedStyle(activeTasksSheet).transform;
+    const offset = transform === 'none' ? 0 : new DOMMatrixReadOnly(transform).m42;
+    activeTasksSheet.style.setProperty('--sheet-exit-start', offset + 'px');
+    activeTasksSheet.inert = true;
+    activeTasksSheet.classList.add('is-closing');
+    Promise.allSettled(activeTasksSheet.getAnimations().map(animation => animation.finished)).then(() => state.finish());
   }
 
   function syncActiveTasksPresentation() {
     const visible = Boolean(currentUser) && activeTab === 'calendar';
     const compact = activeTasksCompact.matches;
-    if (activeTasksSheet.open && (!visible || !compact)) closeActiveTasksSheet(false);
+    if (activeTasksSheet.open && (!visible || !compact)) closeActiveTasksSheet(false, false);
     document.getElementById('mainAppContainer').classList.toggle('showing-history', activeTab === 'history');
     activeTasksHost.hidden = !visible || compact;
     activeTasksDock.hidden = !visible || !compact;
-    document.getElementById('activeTasksBody').hidden = !compact && !activeTasksExpanded;
-    document.getElementById('activeTasksPreview').hidden = compact || activeTasksExpanded;
+    activeTasksHost.classList.toggle('is-collapsed', !compact && !activeTasksExpanded);
+    activeTasksPanel.inert = !compact && !activeTasksExpanded;
+    activeTasksRail.inert = compact || activeTasksExpanded;
+    activeTasksRail.setAttribute('aria-hidden', String(compact || activeTasksExpanded));
+    activeTasksRail.setAttribute('aria-expanded', String(activeTasksExpanded));
     activeTasksToggle.setAttribute('aria-expanded', String(compact || activeTasksExpanded));
     activeTasksToggle.title = compact || activeTasksExpanded ? 'Згорнути список завдань' : 'Розгорнути список завдань';
-    document.getElementById('activeTasksChevron').textContent = compact || activeTasksExpanded ? '⌃' : '⌄';
+    document.getElementById('activeTasksChevron').textContent = compact ? '⌃' : '›';
   }
 
   activeTasksDock.addEventListener('click', () => {
@@ -3721,13 +3781,21 @@ document.addEventListener("DOMContentLoaded", function () {
     document.body.style.overflow = 'hidden';
     activeTasksDock.setAttribute('aria-expanded', 'true');
   });
-  activeTasksToggle.addEventListener('click', () => {
+  function toggleActiveTasksPanel() {
     if (activeTasksCompact.matches) { closeActiveTasksSheet(); return; }
     activeTasksExpanded = !activeTasksExpanded;
     try { localStorage.setItem('szvk_active_tasks_expanded', String(activeTasksExpanded)); } catch (error) {}
     syncActiveTasksPresentation();
-  });
+    (activeTasksExpanded ? activeTasksToggle : activeTasksRail).focus({ preventScroll: true });
+  }
+  activeTasksToggle.addEventListener('click', toggleActiveTasksPanel);
+  activeTasksRail.addEventListener('click', toggleActiveTasksPanel);
   activeTasksCompact.addEventListener('change', syncActiveTasksPresentation);
+  activeTasksReducedMotion.addEventListener('change', event => {
+    if (!event.matches) return;
+    activeTasksSheetClosing?.finish();
+    activeTasksPlannedMotion?.finish();
+  });
   activeTasksSheet.addEventListener('cancel', event => {
     event.preventDefault();
     closeActiveTasksSheet();
@@ -3735,6 +3803,37 @@ document.addEventListener("DOMContentLoaded", function () {
   activeTasksSheet.addEventListener('click', event => {
     const bounds = activeTasksSheet.getBoundingClientRect();
     if (event.target === activeTasksSheet && (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom)) closeActiveTasksSheet();
+  });
+
+  document.querySelector('#activeTasksPlanned > summary').addEventListener('click', event => {
+    event.preventDefault();
+    const details = document.getElementById('activeTasksPlanned');
+    const list = document.getElementById('activeTasksPlannedList');
+    const opening = !(activeTasksPlannedMotion?.opening ?? details.open);
+    const height = details.open ? list.getBoundingClientRect().height : 0;
+    const opacity = details.open ? getComputedStyle(list).opacity : 0;
+    activeTasksPlannedMotion?.animation.cancel();
+    if (activeTasksReducedMotion.matches) {
+      activeTasksPlannedMotion = null;
+      list.style.removeProperty('overflow');
+      details.open = opening;
+      return;
+    }
+    details.open = true;
+    list.style.overflow = 'hidden';
+    const animation = list.animate([
+      { height: height + 'px', opacity },
+      { height: (opening ? list.scrollHeight : 0) + 'px', opacity: opening ? 1 : 0 }
+    ], { duration: 220, easing: 'cubic-bezier(0.4, 0, 0.2, 1)', fill: 'both' });
+    const state = { opening, animation, finish() {
+      if (activeTasksPlannedMotion !== state) return;
+      activeTasksPlannedMotion = null;
+      details.open = opening;
+      animation.cancel();
+      list.style.removeProperty('overflow');
+    } };
+    activeTasksPlannedMotion = state;
+    animation.finished.then(state.finish, state.finish);
   });
 
   function activeTaskHtml({ dateKey, task }, todayKey) {
@@ -3759,8 +3858,11 @@ document.addEventListener("DOMContentLoaded", function () {
     const { active, planned } = window.SZVKShared.activeTaskGroups(window.dayNotes, todayKey);
     document.getElementById('activeTasksCount').textContent = active.length;
     document.getElementById('activeTasksDockCount').textContent = active.length;
+    document.getElementById('activeTasksRailCount').textContent = active.length;
     const first = active[0]?.task;
     const preview = first ? (first.time ? first.time + ' · ' : '') + first.text : 'На сьогодні все виконано';
+    activeTasksRail.title = 'Розгорнути список завдань · ' + preview;
+    activeTasksRail.setAttribute('aria-label', `Розгорнути список завдань (${active.length}). ${preview}`);
     for (const id of ['activeTasksPreview', 'activeTasksDockPreview']) {
       const element = document.getElementById(id);
       element.textContent = preview;
@@ -3807,7 +3909,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const button = event.target.closest('.active-task-open');
     if (!button) return;
     const dateKey = button.closest('.active-task-item').dataset.date;
-    closeActiveTasksSheet(false);
+    closeActiveTasksSheet(false, false);
     const [year, month, day] = dateKey.split('-').map(Number);
     const offset = (year - 2026) * 12 + month - 1 - 8;
     currentSeasonIndex = Math.floor(offset / 3);

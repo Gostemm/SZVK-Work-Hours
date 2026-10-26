@@ -455,6 +455,14 @@ async function main() {
         escaped:row.querySelector('.active-task-text').textContent.includes('<перевірити> & завершити') && !row.querySelector('перевірити'),
         scrollLocked:document.body.style.overflow==='hidden'};
     })()`),{modal:true,single:true,escaped:true,scrollLocked:true},'the mobile sheet uses one accessible modal panel, locks background scrolling and escapes task text');
+    assert.equal(await evaluate(`(()=>{
+      const sheet=document.querySelector('#activeTasksSheet');
+      const animation=sheet.getAnimations().find(animation=>animation.animationName==='active-tasks-sheet-in');
+      if(!animation) return false;
+      animation.pause();animation.currentTime=120;
+      const offset=new DOMMatrixReadOnly(getComputedStyle(sheet).transform).m42;
+      const moving=offset>0 && offset<sheet.offsetHeight;animation.finish();return moving;
+    })()`),true,'the mobile panel slides upward from below the viewport');
     await evaluate("Promise.allSettled(document.querySelector('#activeTasksSheet').getAnimations().map(animation=>animation.finished))");
     for(const [width,height] of [[320,480],[390,800],[740,320]]) {
       await call('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:true});
@@ -471,17 +479,49 @@ async function main() {
     }
     await evaluate("document.documentElement.style.removeProperty('--safe-area-bottom')");
     await call('Emulation.setDeviceMetricsOverride',{width:390,height:800,deviceScaleFactor:1,mobile:true});
-    await evaluate("document.querySelector('#activeTasksPlanned').open=true");
+    await clickPointer('#activeTasksPlanned > summary');
+    assert.equal(await evaluate(`(()=>{
+      const details=document.querySelector('#activeTasksPlanned');const list=document.querySelector('#activeTasksPlannedList');
+      const animation=list.getAnimations()[0];if(!animation) return false;
+      animation.pause();animation.currentTime=110;
+      const height=list.getBoundingClientRect().height;
+      const smooth=details.open && height>0 && height<list.scrollHeight;animation.finish();return smooth;
+    })()`),true,'planned tasks reveal their height smoothly');
+    await evaluate("Promise.allSettled(document.getAnimations().map(animation=>animation.finished));document.querySelector('#activeTasksBody').scrollTop=0");
     const liveMobileShot=await captureScreenshot();
     fs.writeFileSync(path.join(artifacts,'active-tasks-mobile.png'),Buffer.from(liveMobileShot.data,'base64'));
-    await evaluate("document.querySelector('#activeTasksPlanned').open=false;document.querySelector('#activeTasksList [data-task-id=\"panel-action\"] input').click()");
+    await clickPointer('#activeTasksPlanned > summary');
+    assert.equal(await evaluate(`(()=>{
+      const details=document.querySelector('#activeTasksPlanned');const list=document.querySelector('#activeTasksPlannedList');
+      const animation=list.getAnimations()[0];if(!animation) return false;
+      animation.pause();animation.currentTime=110;
+      const smooth=details.open && list.getBoundingClientRect().height>0 && list.getBoundingClientRect().height<list.scrollHeight;
+      animation.finish();return smooth;
+    })()`),true,'planned tasks stay visible while their closing height interpolates');
+    await waitFor("!document.querySelector('#activeTasksPlanned').open");
+    await evaluate("document.querySelector('#activeTasksList [data-task-id=\"panel-action\"] input').click()");
     await waitFor("!document.querySelector('#activeTasksList [data-task-id=\"panel-action\"]')");
     assert.equal(await evaluate("JSON.parse(localStorage.getItem('szvk_schedule_local_data')).dayNotes['2026-10-14'].find(task=>task.id==='panel-action').done"),true,'completing in the panel persists through the existing schedule save');
     await pressEscape();
+    assert.equal(await evaluate(`(()=>{
+      const sheet=document.querySelector('#activeTasksSheet');
+      const animation=sheet.getAnimations().find(animation=>animation.animationName==='active-tasks-sheet-out');
+      if(!animation) return false;
+      animation.pause();animation.currentTime=100;
+      const offset=new DOMMatrixReadOnly(getComputedStyle(sheet).transform).m42;
+      const moving=sheet.open && sheet.inert && offset>0 && offset<sheet.offsetHeight && document.body.style.overflow==='hidden';
+      animation.finish();return moving;
+    })()`),true,'closing animates downward while preserving the modal and background scroll lock');
+    await waitFor("!document.querySelector('#activeTasksSheet').open");
     assert.equal(await evaluate("!document.querySelector('#activeTasksSheet').open && document.body.style.overflow==='' && document.activeElement===document.querySelector('#activeTasksDock')"),true,'Escape closes the sheet, unlocks scrolling and restores focus');
     await clickPointer('#activeTasksDock');
     await clickBackdrop();
+    await waitFor("!document.querySelector('#activeTasksSheet').open");
     assert.equal(await evaluate("!document.querySelector('#activeTasksSheet').open"),true,'tapping the backdrop closes the mobile sheet');
+    await clickPointer('#activeTasksDock');
+    await call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
+    assert.equal(await evaluate("document.querySelector('#activeTasksToggle').click();!document.querySelector('#activeTasksSheet').open && document.body.style.overflow===''"),true,'reduced motion closes the mobile panel immediately and releases scrolling');
+    await call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'no-preference'}]});
     await clickPointer('#activeTasksDock');
     await call('Emulation.setDeviceMetricsOverride',{width:1440,height:900,deviceScaleFactor:1,mobile:false});
     await waitFor("!document.querySelector('#activeTasksSheet').open && !document.querySelector('#activeTasksHost').hidden");
@@ -497,11 +537,46 @@ async function main() {
     const liveLightShot=await captureScreenshot();
     fs.writeFileSync(path.join(artifacts,'active-tasks-light.png'),Buffer.from(liveLightShot.data,'base64'));
     await evaluate("document.documentElement.setAttribute('data-theme','dark')");
+    const fullCalendarWidth=await evaluate("document.querySelector('#mainCalendarView').getBoundingClientRect().width");
     await clickPointer('#activeTasksToggle');
-    assert.equal(await evaluate("document.querySelector('#activeTasksBody').hidden && !document.querySelector('#activeTasksPreview').hidden && document.querySelector('#activeTasksPreview').textContent==='Незавершена справа'"),true,'the collapsed desktop panel keeps a task preview');
+    const collapseMotion=await evaluate(`(()=>{
+      const host=document.querySelector('#activeTasksHost');
+      const animation=host.getAnimations().find(animation=>animation.transitionProperty==='flex-basis');
+      if(!animation) return null;
+      animation.pause();animation.currentTime=160;
+      const result={basis:parseFloat(getComputedStyle(host).flexBasis),calendar:document.querySelector('#mainCalendarView').getBoundingClientRect().width};
+      animation.finish();return result;
+    })()`);
+    assert.ok(collapseMotion && collapseMotion.basis>56 && collapseMotion.basis<320 && collapseMotion.calendar>fullCalendarWidth && collapseMotion.calendar<fullCalendarWidth+264,'the desktop panel and calendar share space continuously during horizontal collapse');
+    await evaluate("Promise.allSettled(document.getAnimations().map(animation=>animation.finished))");
+    assert.equal(await evaluate("document.querySelector('#activeTasksPanel').inert && !document.querySelector('#activeTasksRail').inert && document.querySelector('#activeTasksHost').offsetWidth===56 && document.querySelector('#activeTasksPreview').textContent==='Незавершена справа'"),true,'the collapsed desktop panel becomes an accessible narrow rail with a task preview');
+    assert.equal(await evaluate("document.activeElement===document.querySelector('#activeTasksRail')"),true,'collapsing moves keyboard focus to the visible rail');
+    const collapsedDesktopShot=await captureScreenshot();
+    fs.writeFileSync(path.join(artifacts,'active-tasks-collapsed.png'),Buffer.from(collapsedDesktopShot.data,'base64'));
     await navigate('index.html');
-    assert.equal(await evaluate("document.querySelector('#activeTasksBody').hidden && document.querySelector('#activeTasksToggle').getAttribute('aria-expanded')==='false'"),true,'desktop expansion preference survives reloading');
-    await clickPointer('#activeTasksToggle');
+    assert.equal(await evaluate("document.querySelector('#activeTasksHost').offsetWidth===56 && document.querySelector('#activeTasksRail').getAttribute('aria-expanded')==='false'"),true,'desktop expansion preference survives reloading');
+    await clickPointer('#activeTasksRail');
+    assert.equal(await evaluate(`(()=>{
+      const host=document.querySelector('#activeTasksHost');
+      const animation=host.getAnimations().find(animation=>animation.transitionProperty==='flex-basis');
+      if(!animation) return false;
+      animation.pause();animation.currentTime=160;
+      const basis=parseFloat(getComputedStyle(host).flexBasis);animation.finish();return basis>56 && basis<320;
+    })()`),true,'expansion smoothly returns width to the task panel');
+    await evaluate("Promise.allSettled(document.getAnimations().map(animation=>animation.finished))");
+    assert.equal(await evaluate(`(()=>{
+      const host=document.querySelector('#activeTasksHost');document.querySelector('#activeTasksToggle').click();
+      const closing=host.getAnimations().find(animation=>animation.transitionProperty==='flex-basis');
+      if(!closing) return false;closing.pause();closing.currentTime=160;
+      const midway=parseFloat(getComputedStyle(host).flexBasis);document.querySelector('#activeTasksRail').click();
+      const reopening=host.getAnimations().find(animation=>animation.transitionProperty==='flex-basis');
+      return midway>56 && midway<320 && !!reopening && reopening!==closing && document.querySelector('#activeTasksToggle').getAttribute('aria-expanded')==='true';
+    })()`),true,'rapid reversal continues from the current desktop width');
+    await evaluate("Promise.allSettled(document.getAnimations().map(animation=>animation.finished))");
+    await call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
+    assert.equal(await evaluate("document.querySelector('#activeTasksToggle').click();document.querySelector('#activeTasksHost').offsetWidth===56 && document.querySelector('#activeTasksHost').getAnimations().length===0"),true,'reduced motion changes the desktop layout immediately');
+    await evaluate("document.querySelector('#activeTasksRail').click()");
+    await call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'no-preference'}]});
     await evaluate("document.querySelector('#btnTabHistory').click()");
     assert.equal(await evaluate("document.querySelector('#activeTasksHost').hidden && document.querySelector('#activeTasksDock').hidden"),true,'the task panel hides while viewing history');
     await evaluate("document.querySelector('#btnCloseHistory').click();document.querySelector('#activeTasksPlanned').open=true;document.querySelector('#activeTasksPlannedList [data-task-id=\"panel-next-season\"] .active-task-open').click()");
