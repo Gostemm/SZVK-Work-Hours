@@ -709,6 +709,9 @@ body .toast-container {
 .task-modal-content:has(> .repair-report-trigger) { grid-template-columns: 42px minmax(0, 1fr); }
 .task-modal-content .task-modal-author { grid-column: 2; margin-left: 0; white-space: normal; }
 .task-modal-content .task-modal-text { min-width: 0; white-space: pre-wrap; word-break: normal; overflow-wrap: break-word; }
+#modalDayTasksList .task-modal-item { display: grid; grid-template-columns: minmax(0, 1fr); align-items: stretch; }
+#modalDayTasksList .task-modal-content { width: 100%; }
+#modalDayTasksList .task-actions { min-width: 0; justify-self: end; }
 .task-shift-preview { padding: 12px; border: 1px solid var(--accent); border-radius: 8px; font-size: 13px; line-height: 1.5; }
 .repair-step-tabs { display: flex; gap: 6px; margin-bottom: 16px; }
 .repair-step-tab { flex: 1; padding: 11px 8px; background: var(--bg); color: var(--text-muted); border: 1px solid var(--border); border-radius: 8px; font-weight: 700; cursor: pointer; }
@@ -1063,20 +1066,35 @@ html[data-theme="dark"] :is(.form-label, .reported-by-sub, .repair-form-hint, .a
   .schedule-content > :is(.top-header-bar, .nav-toolbar, #historyView) { width: 100%; }
   #mainCalendarView, #trackerViewStage { flex: 1; min-width: 0; }
   .active-tasks-host { overflow: hidden; border-radius: 14px; }
-  .active-tasks-host.is-collapsed { flex-basis: 56px; }
+  .active-tasks-host.is-collapsed {
+    flex-basis: 56px;
+    min-height: min(280px, calc(var(--viewport-height) - 24px - var(--safe-area-top) - var(--safe-area-bottom)));
+  }
   .active-tasks-host .active-tasks-panel { width: 320px; }
-  .active-tasks-host.is-collapsed .active-tasks-panel { opacity: 0; transform: translateX(20px); visibility: hidden; pointer-events: none; }
+  .active-tasks-host.is-collapsed .active-tasks-panel {
+    position: absolute; inset: 0 auto auto 0;
+    opacity: 0; transform: translateX(20px); visibility: hidden; pointer-events: none;
+  }
   .active-tasks-rail {
-    position: absolute; inset: 0 0 0 auto; display: flex; flex-direction: column;
-    align-items: center; gap: 12px; width: 56px; padding: 14px 8px;
+    position: absolute; inset: 0 0 0 auto; display: grid;
+    grid-template-columns: minmax(0, 1fr); grid-template-rows: 20px 24px minmax(0, max-content) minmax(0, 1fr);
+    justify-items: center; align-items: start; gap: 12px; width: 56px; padding: 14px 8px;
     border: 1px solid var(--border); border-radius: 14px; background: var(--card-bg);
     color: var(--text); font: inherit; cursor: pointer; overflow: hidden;
     opacity: 0; transform: translateX(12px); visibility: hidden; pointer-events: none;
   }
   .active-tasks-host.is-collapsed .active-tasks-rail { opacity: 1; transform: translateX(0); visibility: visible; pointer-events: auto; }
   .active-tasks-rail > .active-tasks-chevron { margin: 0; line-height: 20px; flex-shrink: 0; }
-  .active-tasks-rail-title { writing-mode: vertical-rl; font-size: 12px; font-weight: 800; flex-shrink: 0; }
-  .active-tasks-rail > .active-tasks-preview { writing-mode: vertical-rl; max-height: 220px; text-align: left; }
+  .active-tasks-rail > .active-tasks-count {
+    display: block; min-width: 0; max-width: 100%; padding: 2px 4px; line-height: 20px;
+    overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  }
+  .active-tasks-rail-title {
+    writing-mode: vertical-rl; font-size: 12px; font-weight: 800;
+    min-width: 0; min-height: 0; max-width: 100%; max-height: 100%;
+    overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  }
+  .active-tasks-rail > .active-tasks-preview { writing-mode: vertical-rl; height: 100%; max-height: 220px; max-width: 100%; text-align: left; }
   .active-tasks-dock { display: none; }
 }
 @media (max-width: 1099px) {

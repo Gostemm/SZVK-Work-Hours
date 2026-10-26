@@ -168,6 +168,53 @@ async function main() {
       await call('Page.navigate', { url: url + '/' + page });
       await waitFor("document.readyState==='complete' && !!document.querySelector('#accountMount button')");
     };
+    const checkTaskPanelLayout = async module => {
+      console.log('Checking task panel layout in ' + module);
+      const originalSchedule = await evaluate("localStorage.getItem('szvk_schedule_local_data')");
+      const originalExpanded = await evaluate("!document.querySelector('#activeTasksHost').classList.contains('is-collapsed')");
+      await call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
+      try {
+        for (const [width,height] of [[1100,720],[1440,800],[1280,360]]) {
+          await call('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:false});
+          await waitFor("!document.querySelector('#activeTasksHost').hidden");
+          for (const count of [1,12,250,0]) {
+            await evaluate(`(()=>{
+              const data=JSON.parse(${JSON.stringify(originalSchedule)});
+              data.dayNotes={'2026-10-14':Array.from({length:${count}},(_,index)=>({id:'layout-'+index,text:'Довгий опис завдання з перевірки обладнання та серійного номера TEST-1234567890 · '+index,done:false}))};
+              localStorage.setItem('szvk_schedule_local_data',JSON.stringify(data));
+              window.dispatchEvent(new StorageEvent('storage',{key:'szvk_schedule_local_data'}));
+              if(document.querySelector('#activeTasksHost').classList.contains('is-collapsed')) document.querySelector('#activeTasksRail').click();
+            })()`);
+            assert.equal(await evaluate("Number(document.querySelector('#activeTasksCount').textContent)"),count,module+': layout fixture renders the actual task count');
+            const expanded=await evaluate(`(()=>{
+              const list=document.querySelector('#activeTasksBody');const bounds=list.getBoundingClientRect();
+              return {fits:list.scrollWidth<=list.clientWidth+1,scrolls:list.scrollHeight>list.clientHeight,
+                rows:[...list.querySelectorAll('.active-task-item')].every(row=>{const rect=row.getBoundingClientRect();return rect.left>=bounds.left && rect.right<=bounds.right;})};
+            })()`);
+            assert.ok(expanded.fits && expanded.rows,module+': expanded task rows remain inside the scrolling panel '+JSON.stringify({width,height,count,...expanded}));
+            if(count===250) assert.equal(expanded.scrolls,true,module+': many tasks scroll within the panel');
+            await evaluate("document.querySelector('#activeTasksToggle').click()");
+            const collapsed=await evaluate(`(()=>{
+              const host=document.querySelector('#activeTasksHost').getBoundingClientRect();
+              const rail=document.querySelector('#activeTasksRail');const bounds=rail.getBoundingClientRect();
+              const children=[...rail.children].map(element=>{const rect=element.getBoundingClientRect();return {name:element.className,left:rect.left,right:rect.right,top:rect.top,bottom:rect.bottom};});
+              return {width:host.width,height:host.height,contained:children.every(rect=>rect.left>=bounds.left && rect.right<=bounds.right && rect.top>=bounds.top && rect.bottom<=bounds.bottom+1),
+                separate:children.every((rect,index)=>!index || rect.top>=children[index-1].bottom),pageFits:document.documentElement.scrollWidth<=innerWidth,children};
+            })()`);
+            assert.ok(collapsed.width===56 && collapsed.height<=Math.min(280,height-24)+1 && collapsed.contained && collapsed.separate && collapsed.pageFits,module+': collapsed title, count and preview remain inside a rail whose size is independent of task count '+JSON.stringify({width,height,count,...collapsed}));
+            if(width===1440 && [1,250].includes(count)) {
+              const shot=await captureScreenshot();
+              fs.writeFileSync(path.join(artifacts,`task-rail-${module}-${count}.png`),Buffer.from(shot.data,'base64'));
+            }
+            await evaluate("document.querySelector('#activeTasksRail').click()");
+          }
+        }
+      } finally {
+        await evaluate(`localStorage.setItem('szvk_schedule_local_data',${JSON.stringify(originalSchedule)});window.dispatchEvent(new StorageEvent('storage',{key:'szvk_schedule_local_data'}));if(document.querySelector('#activeTasksHost').classList.contains('is-collapsed')===${originalExpanded}) document.querySelector(${JSON.stringify(originalExpanded?'#activeTasksRail':'#activeTasksToggle')}).click()`);
+        await call('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
+        await call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'no-preference'}]});
+      }
+    };
     const checkTaskWorkspace = async module => {
       console.log('Checking direct task editing in ' + module);
       await evaluate("Promise.allSettled(document.getAnimations().map(animation=>animation.finished))");
@@ -229,6 +276,7 @@ async function main() {
       })()`);
       assert.equal(await evaluate('window.__sunLink'),true,module+': Сoнцеслав opens the exact requested URL and loads the supplied logo');
       await evaluate("Promise.allSettled(document.getAnimations().map(animation=>animation.finished))");
+      await checkTaskPanelLayout(module);
       await call('Emulation.setDeviceMetricsOverride',{width:320,height:800,deviceScaleFactor:1,mobile:true});
     };
     const checkModalGeometry = async (modalId, controlId) => {
@@ -844,6 +892,29 @@ async function main() {
     assert.equal(await evaluate("document.querySelector('#modalDayTasksList .task-repair-link').textContent.includes('Відкрити ремонт')"),true,'the repair link has an explicit visible label');
     assert.equal(await evaluate("document.querySelector('#modalDayTasksList .task-repair-link').closest('.task-modal-item').querySelector('.delete-task')"), null);
     assert.equal(await evaluate("document.querySelector('#modalDayTasksList').scrollWidth<=document.querySelector('#modalDayTasksList').clientWidth"), true, 'repair actions must fit on mobile');
+    const originalRepairText=await evaluate("document.querySelector('#modalDayTasksList .task-repair-link').closest('.task-modal-item').querySelector('.task-modal-text').innerHTML");
+    await evaluate("document.querySelector('#modalDayTasksList .task-repair-link').closest('.task-modal-item').querySelector('.task-modal-text').textContent='ТОВ «Довга назва транспортного підприємства» · АА1234ВВ / GPS-1234567890'");
+    for(const theme of ['dark','light']) {
+      await evaluate(`document.documentElement.setAttribute('data-theme',${JSON.stringify(theme)})`);
+      for(const width of [320,600,768,769,1024,1440]) {
+        await call('Emulation.setDeviceMetricsOverride',{width,height:900,deviceScaleFactor:1,mobile:width<768});
+        const layout=await evaluate(`(()=>{
+          const row=document.querySelector('#modalDayTasksList .task-repair-link').closest('.task-modal-item');
+          const content=row.querySelector('.task-modal-content').getBoundingClientRect();const text=row.querySelector('.task-modal-text').getBoundingClientRect();
+          const actions=row.querySelector('.task-actions').getBoundingClientRect();const bounds=row.getBoundingClientRect();
+          return {content:content.width,text:text.width,below:actions.top>=content.bottom,contained:actions.left>=bounds.left && actions.right<=bounds.right,textHeight:text.height,
+            horizontal:getComputedStyle(row.querySelector('.task-modal-text')).writingMode==='horizontal-tb'};
+        })()`);
+        assert.ok(layout.text>=Math.min(160,layout.content-52) && layout.below && layout.contained && layout.horizontal && layout.textHeight<130,
+          'repair text keeps a readable horizontal column and controls use their own row '+JSON.stringify({width,theme,...layout}));
+        if(theme==='dark' && [320,1440].includes(width)) {
+          await evaluate("document.querySelector('#modalDayTasksList .task-repair-link').scrollIntoView({block:'nearest'})");
+          const shot=await captureScreenshot();fs.writeFileSync(path.join(artifacts,`repair-note-layout-${width}.png`),Buffer.from(shot.data,'base64'));
+        }
+      }
+    }
+    await evaluate(`document.querySelector('#modalDayTasksList .task-repair-link').closest('.task-modal-item').querySelector('.task-modal-text').innerHTML=${JSON.stringify(originalRepairText)};document.documentElement.setAttribute('data-theme','dark')`);
+    await call('Emulation.setDeviceMetricsOverride',{width:320,height:800,deviceScaleFactor:1,mobile:true});
     await evaluate("document.querySelector('#modalDayTasksList .task-repair-link').closest('.task-modal-item').querySelector('.move-task').click();document.querySelector('#taskCalendarDays [data-date=\"2026-10-15\"]').click();document.querySelector('#taskEditorTimeMount .task-time-input').value='14:30';document.querySelector('#taskEditorSave').click()");
     assert.equal(await evaluate("window.dayNotes['2026-10-14'].some(task=>task.repairId===" + linkedRepairId + ")"), false);
     assert.equal(await evaluate("window.dayNotes['2026-10-15'].find(task=>task.repairId!=null).time"), '14:30');
