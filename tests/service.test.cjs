@@ -248,7 +248,7 @@ test('all inline scripts and shared.js have valid syntax', () => {
       if (!attributes.includes('src=')) new vm.Script(script, { filename: name });
     }
     for (const [, file] of html.matchAll(/(?:src|href)="([^"?#]+)(?:[^"\s]*)"/g)) {
-      if (!/^https?:/.test(file)) assert.ok(fs.existsSync(path.resolve(root, path.dirname(name), file)), `${name}: missing ${file}`);
+      if (!/^https?:/.test(file) && !file.includes('${')) assert.ok(fs.existsSync(path.resolve(root, path.dirname(name), file)), `${name}: missing ${file}`);
     }
   }
 });
@@ -503,6 +503,29 @@ test('offline completion survives stale snapshots and retries without losing its
   shared.queueRepairCompletion({ ...request, repairId: 2 });
   await shared.flushRepairCompletions(cloud.db, 'trackers', 'schedule');
   assert.equal(Object.keys(shared.pendingRepairCompletions()).length, 0, 'deleted repairs must not block the queue');
+});
+
+test('a saved offline repair report retains its result, chosen specialist and date through stale snapshots and cloud retry', async () => {
+  const memory = new Map();
+  context.localStorage = { getItem: key => memory.get(key) || null, setItem: (key, value) => memory.set(key, value) };
+  const report = { repairDate: '16.10.2026', specialist: 'Перевізник', solution: 'Замінено антену', notes: 'Перевірено GPS', needInvoice: true };
+  shared.queueRepairCompletion({ repairId: 7, done: true, dateKey: '2026-10-16', user: { username: 'kostas', name: 'Костянтин' }, report });
+  const cached = [{ id: 7, vehicle: 'REPORT-7' }];
+  shared.applyPendingRepairCompletions(cached);
+  assert.equal(cached[0].solution, report.solution);
+  assert.equal(cached[0].specialist, 'Перевізник');
+  assert.equal(cached[0].workHoursTask.completedBy, 'kostas');
+  const cloud = fixtureCloud({ trackers: { repairs: [{ id: 7, vehicle: 'REPORT-7', issue: 'Fresh issue' }] }, schedule: {
+    dayNotes: { '2026-10-15': [{ id: 'repair-7', repairId: 7, done: false, time: '17:10' }] }, monthFocusNotes: { '2026-10': 'Keep' }
+  } });
+  await assert.rejects(shared.flushRepairCompletions({ runTransaction: async () => { throw new Error('offline'); } }, 'trackers', 'schedule'));
+  await shared.flushRepairCompletions(cloud.db, 'trackers', 'schedule');
+  for (const [field, value] of Object.entries(report)) assert.equal(cloud.data.trackers.repairs[0][field], value);
+  assert.equal(cloud.data.trackers.repairs[0].issue, 'Fresh issue');
+  assert.equal(cloud.data.schedule.dayNotes['2026-10-15'][0].done, true);
+  assert.equal(cloud.data.schedule.dayNotes['2026-10-15'][0].time, '17:10');
+  assert.deepEqual(cloud.data.schedule.monthFocusNotes, { '2026-10': 'Keep' });
+  assert.equal(Object.keys(shared.pendingRepairCompletions()).length, 0);
 });
 
 test('invalid dates, empty text, missing tasks and collisions do not lose data', () => {

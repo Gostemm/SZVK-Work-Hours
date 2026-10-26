@@ -556,6 +556,16 @@
     return !date || date === '—' || date.toLowerCase().includes('процес') || !specialist || specialist === '—' || specialist === '\u200B';
   }
 
+  function repairTaskHref(repairId, report = false, dateKey = '') {
+    return 'trackers.html?' + (report ? 'finishRepair=' : 'editRepair=') + encodeURIComponent(repairId) +
+      (report && isValidDateKey(dateKey) ? '&taskDate=' + dateKey : '');
+  }
+
+  function repairTaskControlHtml(task, dateKey) {
+    if (task.done) return '<input type="checkbox" class="task-modal-checkbox repair-completed-check" checked disabled aria-label="Ремонт виконано" title="Позначка проставляється автоматично після збереження звіту">';
+    return `<a class="repair-report-trigger" href="${repairTaskHref(task.repairId, true, dateKey)}" data-repair-id="${escapeHtml(task.repairId)}" data-repair-mode="report" data-task-date="${dateKey}" aria-label="Звітувати про завершення ремонту: ${escapeHtml(task.text)}" title="Відкрити звіт про завершення ремонту"><span aria-hidden="true">📋</span><span>Звіт</span></a>`;
+  }
+
   function repairTaskDateKey(repair) {
     const metadata = repair.workHoursTask || {};
     if (isValidDateKey(metadata.dateKey)) return metadata.dateKey;
@@ -761,7 +771,7 @@
       const trackerSnapshot = await transaction.get(trackerDoc);
       const scheduleSnapshot = await transaction.get(scheduleDoc);
       const repairs = trackerSnapshot.exists ? trackerSnapshot.data().repairs || [] : [];
-      const result = setRepairCompletion(repairs, request.repairId, request.done, request.dateKey, request.user);
+      const result = applyRepairCompletionRequest(repairs, request);
       const dayNotes = scheduleSnapshot.exists ? scheduleSnapshot.data().dayNotes || {} : {};
       const notesChanged = reconcileRepairTasks(dayNotes, repairs);
       if (result.changed) transaction.set(trackerDoc, { repairs, updatedAt: Date.now() }, { merge: true });
@@ -785,8 +795,22 @@
   function applyPendingRepairCompletions(repairs) {
     if (!Array.isArray(repairs)) return;
     for (const request of Object.values(pendingRepairCompletions())) {
-      if (repairs.some(repair => String(repair.id) === String(request.repairId))) setRepairCompletion(repairs, request.repairId, request.done, request.dateKey, request.user);
+      if (repairs.some(repair => String(repair.id) === String(request.repairId))) applyRepairCompletionRequest(repairs, request);
     }
+  }
+
+  function applyRepairCompletionRequest(repairs, request) {
+    const result = setRepairCompletion(repairs, request.repairId, request.done, request.dateKey, request.user);
+    if (request.report) {
+      result.repair.workHoursTask ||= { dateKey: request.dateKey };
+      for (const field of ['repairDate', 'specialist', 'solution', 'notes', 'needInvoice']) {
+        if (Object.prototype.hasOwnProperty.call(request.report, field)) result.repair[field] = request.report[field];
+      }
+      if (!isRepairPending(result.repair)) result.repair.workHoursTask.completedBy = request.user.username || request.user.name;
+      else delete result.repair.workHoursTask.completedBy;
+      result.changed = JSON.stringify(result.previous) !== JSON.stringify(result.repair);
+    }
+    return result;
   }
 
   let repairFlush = null;
@@ -1344,16 +1368,16 @@
       const assignment = window.SZVKShared.shiftInfo(dateKey, options.getOverrides());
       const dateLabel = dateKey === todayKey ? 'Сьогодні' : dateKey.split('-').reverse().join('.');
       return `<li class="active-task-item" data-date="${dateKey}" data-task-id="${escapeHtml(task.id)}">
-        <label class="active-task-check" title="Позначити виконаним">
+        ${task.repairId != null ? repairTaskControlHtml(task, dateKey) : `<label class="active-task-check" title="Позначити виконаним">
           <input type="checkbox" aria-label="Виконати: ${escapeHtml(task.text)}">
-        </label>
+        </label>`}
         <div class="active-task-content">
           <button type="button" class="active-task-open" title="Відкрити день із цим завданням">
             <span class="active-task-text">${task.time ? `<span class="task-time-badge">${escapeHtml(task.time)}</span> ` : ''}${escapeHtml(task.text)}</span>
             ${taskCarryLabel(task)}
             <span class="active-task-meta"><span>${dateLabel}</span><span class="active-task-worker ${assignment.worker === 'Артем' ? 'artem' : 'oleksandr'}">Чергує: ${escapeHtml(assignment.worker)}</span></span>
           </button>
-          ${task.repairId != null ? `<a class="task-repair-link" href="trackers.html?editRepair=${encodeURIComponent(task.repairId)}">↗ Ремонт</a>` : ''}
+          ${task.repairId != null ? `<a class="task-repair-link" href="${repairTaskHref(task.repairId)}" data-repair-id="${escapeHtml(task.repairId)}" data-repair-mode="request">🔧 Відкрити ремонт <span aria-hidden="true">↗</span></a>` : ''}
         </div>
         <button type="button" class="active-task-edit" title="Редагувати завдання" aria-label="Редагувати: ${escapeHtml(task.text)}">✎</button>
       </li>`;
@@ -1402,6 +1426,15 @@
       }
     });
     activeTasksPanel.addEventListener('click', event => {
+      const repairLink = event.target.closest('[data-repair-mode]');
+      if (repairLink) {
+        if (event.button > 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+        event.preventDefault();
+        closeActiveTasksSheet(false, false);
+        if (options.openRepair) options.openRepair(repairLink.dataset.repairId, repairLink.dataset.repairMode === 'report', repairLink.dataset.taskDate);
+        else navigateModule(repairLink.getAttribute('href'));
+        return;
+      }
       const edit = event.target.closest('.active-task-edit');
       if (edit) {
         const row = edit.closest('.active-task-item');
@@ -1674,6 +1707,8 @@
     setTaskTimePicker,
     initTaskTimePickers,
     isRepairPending,
+    repairTaskHref,
+    repairTaskControlHtml,
     repairTaskDateKey,
     reconcileRepairTasks,
     syncLocalRepairTasks,

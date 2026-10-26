@@ -8,7 +8,7 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg" sizes="any">
   <link rel="apple-touch-icon" href="apple-touch-icon.png" sizes="180x180">
 
-  <script src="shared.js?v=42adcedbd3b4"></script>
+  <script src="shared.js?v=526ff5568efd"></script>
   <script>
     // Auth guard
     (function() {
@@ -19,7 +19,7 @@
     })();
   </script>
 
-  <link rel="stylesheet" href="shared.css?v=722f6118632d">
+  <link rel="stylesheet" href="shared.css?v=539c1e5c3ed5">
 
   <style>
     :root {
@@ -3053,20 +3053,16 @@
     onChange: () => taskWorkspace.renderActiveTasks(window.SZVKShared.kyivDateKey()),
     onError: error => showToast(window.SZVKShared.escapeHtml(error.message), false),
     logAction,
+    openRepair(id, report, dateKey) {
+      if (report) window.finishRepair(id, dateKey);
+      else window.editRepair(id);
+    },
     async setTaskDone(dateKey, taskId, done) {
       const task = (taskStore.getData().dayNotes[dateKey] || []).find(item => String(item.id) === String(taskId));
       if (!task) return;
       if (task.repairId != null) {
-        const result = window.SZVKShared.setRepairCompletion(appData.repairs, task.repairId, done, dateKey, currentUser.name || currentUser.username);
-        window.SZVKShared.queueRepairCompletion({ repairId: task.repairId, done, dateKey, user: currentUser.name || currentUser.username });
-        logAction({ module: 'tracker_hub', tab: 'repairs', type: 'repair_edit',
-          description: 'Виконано ремонт із поточних завдань', details: task.text,
-          restoreData: { prevRepair: result.previous }, editRef: { module: 'tracker_hub', type: 'repair', id: task.repairId } });
-        task.done = done;
-        saveLocalData();
-        taskStore.refresh();
-        renderActiveView();
-        await syncRepairNotesFromJournal();
+        taskWorkspace.closeActiveTasksSheet(false, false);
+        window.finishRepair(task.repairId, dateKey);
         return;
       }
       const previousDone = Boolean(task.done);
@@ -3248,6 +3244,7 @@
       cloudSyncDot.className = 'status-dot syncing';
       cloudSyncText.textContent = 'Збереження…';
 
+      await window.SZVKShared.flushRepairCompletions(dbTrackers, DB_TRACKERS_DOC, DB_SCHEDULE_DOC);
       await window.SZVKShared.saveTrackerDataAndNotes(dbTrackers, DB_TRACKERS_DOC, DB_SCHEDULE_DOC, payload, previous);
       cloudSyncDot.className = 'status-dot';
       cloudSyncText.textContent = 'Дані збережено';
@@ -4551,9 +4548,10 @@
   };
 
   // Quick Finish in-progress repair
-  window.finishRepair = function(id) {
+  window.finishRepair = function(id, taskDateKey = '') {
     const item = appData.repairs.find(r => String(r.id) === String(id));
-    if (!item || !isRepairPending(item)) return;
+    if (!item) return;
+    if (!isRepairPending(item)) { window.editRepair(id); setRepairStep('result'); return; }
     setRepairStep('result');
 
     document.getElementById('editRecordId').value = item.id;
@@ -4564,7 +4562,8 @@
     document.getElementById('inputSerial').value = item.serial || '';
     document.getElementById('inputIssue').value = item.issue || '';
     // Keep a date already entered for a repair still awaiting its specialist.
-    document.getElementById('inputRepairDate').value = parseDateToTimestamp(item.repairDate) ? item.repairDate : getTodayString();
+    document.getElementById('inputRepairDate').value = parseDateToTimestamp(item.repairDate) ? item.repairDate
+      : window.SZVKShared.isValidDateKey(taskDateKey) ? taskDateKey.split('-').reverse().join('.') : getTodayString();
     setRepairSpecialist(item.specialist || (currentUser && currentUser.name) || 'Артем');
     document.getElementById('inputSolution').value = item.solution || '';
     document.getElementById('inputNotes').value = item.notes || '';
@@ -4572,7 +4571,7 @@
     const isInvoice = window.SZVKShared.needsInvoice(item);
     document.getElementById('checkboxInvoice').checked = isInvoice;
 
-    repairModalTitle.innerHTML = `<span>⚡ Завершити ремонт авто #${escapeHtml(item.vehicle || item.id)}</span>`;
+    repairModalTitle.innerHTML = `<span>📋 Звіт про завершення ремонту авто #${escapeHtml(item.vehicle || item.id)}</span>`;
     window.SZVKShared.openModal(repairModalOverlay);
 
     setTimeout(() => {
@@ -4920,6 +4919,19 @@
         rec.solution = solution;
         rec.notes = notes;
         rec.needInvoice = needInvoice;
+
+        if (rec.workHoursTask) {
+          const pending = isRepairPending(rec);
+          if (pending) delete rec.workHoursTask.completedBy;
+          else if (isRepairPending(prevRepair)) rec.workHoursTask.completedBy = currentUser.username;
+          const reportFields = ['repairDate', 'specialist', 'solution', 'notes', 'needInvoice'];
+          if (DB_TRACKERS_DOC && reportFields.some(field => rec[field] !== prevRepair[field])) {
+            const dateKey = window.SZVKShared.isValidDateKey(repairDate.split('.').reverse().join('-'))
+              ? repairDate.split('.').reverse().join('-') : window.SZVKShared.kyivDateKey();
+            window.SZVKShared.queueRepairCompletion({ repairId: rec.id, done: !pending, dateKey, user: { username: currentUser.username, name: currentUser.name },
+              report: Object.fromEntries(reportFields.map(field => [field, rec[field]])) });
+          }
+        }
 
         logAction({
           module: 'tracker_hub',
@@ -5332,6 +5344,7 @@
 
   const urlParams = new URLSearchParams(window.location.search);
   const editRepairParam = urlParams.get('editRepair');
+  const finishRepairParam = urlParams.get('finishRepair');
   let linkedRepairOpened = false;
   window.SZVKShared.initThemeSwitcher(urlParams.get('theme'));
 
@@ -5351,12 +5364,13 @@
   }
 
   function openLinkedRepair() {
-    if (linkedRepairOpened || !editRepairParam) return;
-    const repId = editRepairParam;
+    if (linkedRepairOpened || !(finishRepairParam || editRepairParam)) return;
+    const repId = finishRepairParam || editRepairParam;
     if (appData.repairs.some(repair => String(repair.id) === repId)) {
       linkedRepairOpened = true;
       tabBtnJournal.click();
-      window.editRepair(repId);
+      if (finishRepairParam) window.finishRepair(repId, urlParams.get('taskDate'));
+      else window.editRepair(repId);
     }
   }
   openLinkedRepair();

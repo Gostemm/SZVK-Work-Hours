@@ -54,6 +54,20 @@ const seed = () => ({
   overrides: { '2099-01-04': 'Артем' }, monthlyDebts: { '2099-01': 'keep monthly note' }
 });
 
+test('repair notes open a report before completion and show an automatic read-only check after completion', () => {
+  const { shared } = fixture(seed());
+  const pending = shared.repairTaskControlHtml({ repairId: 'legacy-"<&', text: 'Bus <7>', done: false }, '2099-01-06');
+  assert.ok(pending.includes('finishRepair=legacy-%22%3C%26&taskDate=2099-01-06'));
+  assert.ok(pending.includes('Bus &lt;7&gt;'));
+  assert.ok(pending.includes('Звіт'));
+  assert.ok(!pending.includes('type="checkbox"'));
+  const completed = shared.repairTaskControlHtml({ repairId: 7, text: 'Bus', done: true }, '2099-01-06');
+  assert.ok(completed.includes('checked disabled'));
+  assert.ok(!completed.includes('finishRepair='));
+  assert.equal(shared.repairTaskHref(7), 'trackers.html?editRepair=7');
+  assert.equal(shared.repairTaskHref(7, true, 'invalid'), 'trackers.html?finishRepair=7');
+});
+
 test('Tracker Hub saves only the edited task against fresh cloud data, retaining concurrent tasks and schedule fields', async () => {
   const remote = seed();
   remote.dayNotes['2099-01-04'][0].done = true;
