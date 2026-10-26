@@ -8,7 +8,7 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg" sizes="any">
   <link rel="apple-touch-icon" href="apple-touch-icon.png" sizes="180x180">
 
-  <script src="shared.js?v=2d94fb2cd99d"></script>
+  <script src="shared.js?v=80f0eb6c1903"></script>
   <script>
     // Auth guard
     (function() {
@@ -2512,7 +2512,7 @@
  */
 (function() {
   'use strict';
-  if (!window.SZVKShared || ['readAuthSession', 'mountTaskWorkspace', 'createScheduleTaskStore'].some(name => typeof window.SZVKShared[name] !== 'function')) return;
+  if (!window.SZVKShared || ['readAuthSession', 'mountTaskWorkspace', 'createScheduleTaskStore', 'markListChange', 'animateListUpdate'].some(name => typeof window.SZVKShared[name] !== 'function')) return;
   const currentUser = window.SZVKShared.readAuthSession();
   if (!currentUser) return;
   window.SZVKShared.mountAccountMenu({ backup: true, historyId: 'tabBtnHistory' });
@@ -3597,8 +3597,10 @@
   }
 
   function renderRepairRows(container, items, emptyText) {
-    window.SZVKShared.reconcileRows(container, items, buildRepairRow);
-    if (!items.length) container.innerHTML = '<tr><td colspan="10" class="repair-table-empty">' + escapeHtml(emptyText) + '</td></tr>';
+    window.SZVKShared.animateListUpdate(container, 'repair', '[data-repair-id]', 'data-repair-id', () => {
+      window.SZVKShared.reconcileRows(container, items, buildRepairRow);
+      if (!items.length) container.innerHTML = '<tr><td colspan="10" class="repair-table-empty">' + escapeHtml(emptyText) + '</td></tr>';
+    });
   }
 
   document.querySelectorAll('[data-repair-table]').forEach(table => {
@@ -4630,6 +4632,8 @@
       showToast('Цей запис уже видалено');
       return;
     }
+    window.SZVKShared.markListChange?.('repair', toDelete.id, 'delete', 160);
+    window.SZVKShared.markListChange?.('task', 'repair-' + toDelete.id, 'delete', 160);
     appData.repairs = appData.repairs.filter(r => String(r.id) !== pendingDeleteRepairId);
     closeDeleteRepairModal();
     logAction({
@@ -4962,6 +4966,8 @@
         needInvoice,
         workHoursTask: { dateKey: window.SZVKShared.kyivDateKey(), author: currentUser ? currentUser.name : 'Користувач' }
       };
+      window.SZVKShared.markListChange('repair', newRec.id, 'add', 160);
+      window.SZVKShared.markListChange('task', 'repair-' + newRec.id, 'add', 160);
       appData.repairs.unshift(newRec);
 
       logAction({

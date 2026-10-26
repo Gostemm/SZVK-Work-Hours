@@ -283,6 +283,183 @@
     for (const key of entries.keys()) if (!keys.has(key)) entries.delete(key);
   }
 
+  const listChanges = new Map();
+  const listChangeSeen = new WeakMap();
+  const listTransitions = new WeakMap();
+  const activeListTransitions = new Set();
+  let listChangeSequence = 0;
+  const listMotionNow = () => window.performance?.now() ?? Date.now();
+
+  function markListChange(category, id, kind, delay = 0) {
+    const now = listMotionNow();
+    for (const [key, change] of listChanges) if (change.expires <= now) listChanges.delete(key);
+    listChanges.set(category + ':' + String(id), { category, id: String(id), kind, delay, sequence: ++listChangeSequence, expires: now + 1200 });
+  }
+
+  function listClipBounds(container) {
+    const clip = { left: 0, top: 0, right: window.innerWidth, bottom: window.innerHeight };
+    for (let parent = container; parent && parent !== document.body; parent = parent.parentElement) {
+      const style = getComputedStyle(parent);
+      const bounds = parent.getBoundingClientRect();
+      if (/auto|scroll|hidden|clip/.test(style.overflowX)) {
+        clip.left = Math.max(clip.left, bounds.left + parent.clientLeft);
+        clip.right = Math.min(clip.right, bounds.left + parent.clientLeft + parent.clientWidth);
+      }
+      if (/auto|scroll|hidden|clip/.test(style.overflowY)) {
+        clip.top = Math.max(clip.top, bounds.top + parent.clientTop);
+        clip.bottom = Math.min(clip.bottom, bounds.top + parent.clientTop + parent.clientHeight);
+      }
+    }
+    if (container.tagName === 'TBODY') {
+      const heading = container.closest('table').querySelector('thead th');
+      if (heading && getComputedStyle(heading).position === 'sticky') clip.top = Math.max(clip.top, heading.getBoundingClientRect().bottom);
+    }
+    return clip;
+  }
+
+  function listExitSnapshot(element) {
+    const style = getComputedStyle(element);
+    const copy = element.cloneNode(true);
+    // Decorative copies never duplicate live identifiers or accept interaction.
+    for (const node of [copy, ...copy.querySelectorAll('*')]) {
+      for (const attribute of [...node.attributes]) {
+        if (/^(id|name|for|autofocus|required)$/.test(attribute.name) || attribute.name.startsWith('data-')) node.removeAttribute(attribute.name);
+      }
+      if (node.matches('button, input, select, textarea, fieldset')) node.disabled = true;
+    }
+    copy.classList.remove('active-task-item', 'task-modal-item');
+    copy.inert = true;
+    copy.setAttribute('aria-hidden', 'true');
+    for (const property of ['display', 'box-sizing', 'padding', 'border', 'border-radius', 'background-color', 'color', 'font', 'gap', 'grid-template-columns', 'align-items', 'justify-content', 'list-style', 'box-shadow', 'opacity']) {
+      copy.style.setProperty(property, style.getPropertyValue(property));
+    }
+    const styledChildren = 'td, .task-modal-text, .task-carried-from';
+    const originalChildren = element.querySelectorAll(styledChildren);
+    copy.querySelectorAll(styledChildren).forEach((node, index) => {
+      const originalStyle = getComputedStyle(originalChildren[index]);
+      for (const property of ['color', 'background-color', 'font', 'text-decoration']) node.style.setProperty(property, originalStyle.getPropertyValue(property));
+    });
+    Object.assign(copy.style, { margin: '0', transform: 'none', translate: 'none', pointerEvents: 'none' });
+    if (element.tagName === 'TR') {
+      [...copy.cells].forEach((cell, index) => {
+        cell.style.width = element.cells[index].getBoundingClientRect().width + 'px';
+      });
+      const table = document.createElement('table');
+      table.className = element.closest('table').className;
+      Object.assign(table.style, { margin: '0', minWidth: '0', tableLayout: 'fixed' });
+      const body = document.createElement('tbody');
+      body.appendChild(copy);
+      table.appendChild(body);
+      return { element: table, opacity: style.opacity };
+    }
+    return { element: copy, opacity: style.opacity };
+  }
+
+  function revealListEntry(container, category, entries, selector, keyAttribute) {
+    if (category !== 'task' || !entries.length) return false;
+    const element = [...container.querySelectorAll(selector)].find(node => entries.some(change => node.getAttribute(keyAttribute) === change.id));
+    const scroller = container.closest('.active-tasks-body') || container;
+    if (!element || !/auto|scroll/.test(getComputedStyle(scroller).overflowY)) return false;
+    const previous = scroller.scrollTop;
+    const bounds = scroller.getBoundingClientRect();
+    const rect = element.getBoundingClientRect();
+    const top = bounds.top + scroller.clientTop;
+    const bottom = top + scroller.clientHeight;
+    if (rect.bottom > bottom) scroller.scrollTop += rect.bottom - bottom;
+    else if (rect.top < top) scroller.scrollTop += rect.top - top;
+    return scroller.scrollTop !== previous;
+  }
+
+  function animateListUpdate(container, category, selector, keyAttribute, update) {
+    if (!container || typeof container.animate !== 'function') return update();
+    const now = listMotionNow();
+    const seen = listChangeSeen.get(container) || new Set();
+    const changes = [...listChanges.values()].filter(change => change.category === category && change.expires > now && !seen.has(change.sequence));
+    if (!changes.length) return update();
+    const liveSequences = new Set([...listChanges.values()].filter(change => change.expires > now).map(change => change.sequence));
+    for (const sequence of seen) if (!liveSequences.has(sequence)) seen.delete(sequence);
+    changes.forEach(change => seen.add(change.sequence));
+    listChangeSeen.set(container, seen);
+    const bounds = container.getBoundingClientRect();
+    if (!bounds.width || !bounds.height || getComputedStyle(container).visibility !== 'visible' || container.closest('[inert]')) return update();
+    const clip = listClipBounds(container);
+    const visible = rect => clip.right > clip.left && clip.bottom > clip.top && rect.width > 0 && rect.height > 0 && rect.right > clip.left && rect.left < clip.right && rect.bottom > clip.top && rect.top < clip.bottom;
+    const before = new Map([...container.querySelectorAll(selector)].map(element => [element.getAttribute(keyAttribute), { element, bounds: element.getBoundingClientRect() }]));
+    if (modalMotionPreference.matches) {
+      const result = update();
+      revealListEntry(container, category, changes.filter(change => change.kind === 'add' && !before.has(change.id)), selector, keyAttribute);
+      return result;
+    }
+    const exits = changes.filter(change => change.kind === 'delete' && before.has(change.id)).map(change => {
+      const item = before.get(change.id);
+      return visible(item.bounds) ? { ...item, change, snapshot: listExitSnapshot(item.element) } : null;
+    }).filter(Boolean);
+    const sizeHost = container.tagName === 'TBODY' ? container.closest('table').parentElement : container;
+    const startHeight = sizeHost.getBoundingClientRect().height;
+    listTransitions.get(container)?.cleanup();
+    const result = update();
+    const after = new Map([...container.querySelectorAll(selector)].map(element => [element.getAttribute(keyAttribute), element]));
+    const entries = changes.filter(change => change.kind === 'add' && !before.has(change.id) && after.has(change.id));
+    const revealed = revealListEntry(container, category, entries, selector, keyAttribute);
+    const removals = exits.filter(item => !after.has(item.change.id));
+    if (!entries.length && !removals.length) return result;
+    const delay = Math.max(...entries.map(change => change.delay), ...removals.map(item => item.change.delay), 0);
+    const timing = { duration: 280, delay, easing: 'cubic-bezier(0.2, 0.65, 0.3, 1)', fill: 'both' };
+    const animations = [];
+    const ghosts = [];
+    for (const change of entries) {
+      const element = after.get(change.id);
+      if (!visible(element.getBoundingClientRect())) continue;
+      animations.push(element.animate([
+        { opacity: 0, translate: '0 8px', filter: 'brightness(1.16)' },
+        { opacity: 1, translate: '0 0', filter: 'brightness(1)' }
+      ], timing));
+    }
+    for (const item of removals) {
+      const ghost = document.createElement('div');
+      ghost.className = 'list-motion-ghost';
+      ghost.dataset.listMotion = category;
+      ghost.dataset.motionKey = item.change.id;
+      ghost.inert = true;
+      ghost.setAttribute('aria-hidden', 'true');
+      Object.assign(ghost.style, { position: 'fixed', left: clip.left + 'px', top: clip.top + 'px', width: Math.max(0, clip.right - clip.left) + 'px', height: Math.max(0, clip.bottom - clip.top) + 'px', overflow: 'hidden', pointerEvents: 'none', zIndex: '50' });
+      const copy = item.snapshot.element;
+      Object.assign(copy.style, { position: 'absolute', left: (item.bounds.left - clip.left) + 'px', top: (item.bounds.top - clip.top) + 'px', width: item.bounds.width + 'px', height: item.bounds.height + 'px' });
+      ghost.appendChild(copy);
+      (container.closest('dialog[open], .modal-overlay.active') || document.body).appendChild(ghost);
+      ghosts.push(ghost);
+      animations.push(copy.animate([
+        { opacity: item.snapshot.opacity, translate: '0 0' },
+        { opacity: 0, translate: '8px 0' }
+      ], { ...timing, duration: 240 }));
+    }
+    for (const [key, element] of after) {
+      if (!before.has(key)) continue;
+      const rect = element.getBoundingClientRect();
+      const offset = before.get(key).bounds.top - rect.top;
+      if (!revealed && Math.abs(offset) > 1 && visible(rect)) animations.push(element.animate([{ translate: '0 ' + offset + 'px' }, { translate: '0 0' }], timing));
+    }
+    const endHeight = sizeHost.getBoundingClientRect().height;
+    if (!revealed && Math.abs(startHeight - endHeight) > 1) animations.push(sizeHost.animate([{ height: startHeight + 'px' }, { height: endHeight + 'px' }], timing));
+    let timer;
+    const state = { cleanup() {
+      window.clearTimeout(timer);
+      animations.forEach(animation => animation.cancel());
+      ghosts.forEach(ghost => ghost.remove());
+      activeListTransitions.delete(state);
+      if (listTransitions.get(container) === state) listTransitions.delete(container);
+    } };
+    listTransitions.set(container, state);
+    activeListTransitions.add(state);
+    timer = window.setTimeout(state.cleanup, delay + 420);
+    Promise.allSettled(animations.map(animation => animation.finished)).then(state.cleanup);
+    return result;
+  }
+
+  modalMotionPreference.addEventListener?.('change', event => {
+    if (event.matches) [...activeListTransitions].forEach(state => state.cleanup());
+  });
+
   function mountUsefulLinks() {
     const themeSwitcher = document.getElementById('themeSwitchGroup');
     if (!themeSwitcher) return;
@@ -1410,12 +1587,14 @@
       const dockPreview = document.getElementById('activeTasksDockPreview');
       dockPreview.textContent = preview;
       dockPreview.title = preview;
-      window.SZVKShared.setHtmlIfChanged(document.getElementById('activeTasksList'), active.length
+      const activeList = document.getElementById('activeTasksList');
+      animateListUpdate(activeList, 'task', '[data-task-id]', 'data-task-id', () => setHtmlIfChanged(activeList, active.length
         ? active.map(entry => activeTaskHtml(entry, todayKey)).join('')
-        : '<li class="active-tasks-empty"><strong>На сьогодні все виконано</strong>Нові та перенесені завдання з’являться тут.</li>');
-      document.getElementById('activeTasksPlanned').hidden = planned.length === 0;
+        : '<li class="active-tasks-empty"><strong>На сьогодні все виконано</strong>Нові та перенесені завдання з’являться тут.</li>'));
       document.getElementById('activeTasksPlannedCount').textContent = planned.length;
-      window.SZVKShared.setHtmlIfChanged(document.getElementById('activeTasksPlannedList'), planned.map(entry => activeTaskHtml(entry, todayKey)).join(''));
+      const plannedList = document.getElementById('activeTasksPlannedList');
+      animateListUpdate(plannedList, 'task', '[data-task-id]', 'data-task-id', () => setHtmlIfChanged(plannedList, planned.map(entry => activeTaskHtml(entry, todayKey)).join('')));
+      document.getElementById('activeTasksPlanned').hidden = planned.length === 0;
       syncActiveTasksPresentation();
     }
 
@@ -1445,6 +1624,7 @@
         const index = [...list.children].indexOf(row);
         const restoreFocus = row.contains(document.activeElement);
         const dateKey = row.dataset.date;
+        markListChange('task', row.dataset.taskId, 'delete');
         const task = deleteManualTask(options.getDayNotes(), dateKey, row.dataset.taskId);
         if (!task) return;
         options.logAction({ module: 'schedule', tab: 'day_tasks', type: 'task_delete',
@@ -1724,6 +1904,8 @@
     openModal,
     closeModal,
     transitionViews,
+    markListChange,
+    animateListUpdate,
     reconcileRows,
     updateAccount,
     mountAccountMenu,

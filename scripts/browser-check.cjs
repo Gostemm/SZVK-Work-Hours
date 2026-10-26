@@ -112,14 +112,31 @@ async function main() {
       await call('Input.dispatchMouseEvent',{type:'mousePressed',x:2,y:2,button:'left',clickCount:1});
       await call('Input.dispatchMouseEvent',{type:'mouseReleased',x:2,y:2,button:'left',clickCount:1});
     };
+    const assertListExit = async (category, key, screenshot) => {
+      const sample=await evaluate(`new Promise(resolve=>{const start=performance.now();const frame=now=>now-start>=${category==='repair'?250:90}?resolve():requestAnimationFrame(frame);requestAnimationFrame(frame);}).then(()=>{
+        const ghost=[...document.querySelectorAll('.list-motion-ghost')].find(element=>element.dataset.listMotion===${JSON.stringify(category)} && element.dataset.motionKey===${JSON.stringify(String(key))});
+        if(!ghost) return null;
+        const copy=ghost.firstElementChild;const alpha=Number(getComputedStyle(copy).opacity);const bounds=copy.getBoundingClientRect();
+        return {fading:alpha>0 && alpha<1,visible:bounds.width>0 && bounds.height>0 && bounds.bottom>0 && bounds.top<innerHeight,
+          safe:ghost.inert && ghost.getAttribute('aria-hidden')==='true' && !ghost.querySelector('[id], [name], [data-task-id], [data-repair-id], [data-repair-action]')};
+      })`);
+      assert.deepEqual(sample,{fading:true,visible:true,safe:true},category+': deleting visibly fades a decorative copy while the saved record is already removed');
+      if(screenshot) { const shot=await call('Page.captureScreenshot',{format:'png'});fs.writeFileSync(path.join(artifacts,screenshot),Buffer.from(shot.data,'base64')); }
+      await waitFor(`![...document.querySelectorAll('.list-motion-ghost')].some(element=>element.dataset.listMotion===${JSON.stringify(category)} && element.dataset.motionKey===${JSON.stringify(String(key))})`);
+    };
+    const assertListEntry = async (selector, delay, screenshot) => {
+      assert.equal(await evaluate(`new Promise(resolve=>{const start=performance.now();const frame=now=>now-start>=${delay+80}?resolve():requestAnimationFrame(frame);requestAnimationFrame(frame);}).then(()=>{const element=document.querySelector(${JSON.stringify(selector)});const alpha=Number(getComputedStyle(element).opacity);return alpha>0 && alpha<1 && element.getAnimations().some(animation=>animation.effect.getKeyframes().some(frame=>Number(frame.opacity)===0));})`),true,'new records visibly fade into their actual list position');
+      if(screenshot) { const shot=await call('Page.captureScreenshot',{format:'png'});fs.writeFileSync(path.join(artifacts,screenshot),Buffer.from(shot.data,'base64')); }
+      await evaluate(`Promise.allSettled(document.querySelector(${JSON.stringify(selector)}).getAnimations().map(animation=>animation.finished))`);
+      assert.equal(await evaluate(`getComputedStyle(document.querySelector(${JSON.stringify(selector)})).opacity`),'1','the added record ends fully visible');
+    };
     const assertAnimatedDismissal = async (openExpression, modalId, dismiss, artifact) => {
       const target=JSON.stringify('#'+modalId);
       await evaluate(openExpression);
       await evaluate(`Promise.allSettled(document.querySelector(${target}).getAnimations({subtree:true}).map(animation=>animation.finished))`);
       await dismiss();
       // Sample real elapsed frames: an animation object alone cannot prove a visible exit.
-      await evaluate("new Promise(resolve=>{const start=performance.now();const frame=now=>now-start>=90?resolve():requestAnimationFrame(frame);requestAnimationFrame(frame);})");
-      assert.deepEqual(await evaluate(`(()=>{const modal=document.querySelector(${target});const style=getComputedStyle(modal);const box=getComputedStyle(modal.querySelector('.modal-box'));return {closed:!modal.classList.contains('active'),visible:style.display==='flex',fading:Number(style.opacity)>0 && Number(style.opacity)<1,moving:parseFloat(box.scale)<1,inert:modal.inert};})()`),{closed:true,visible:true,fading:true,moving:true,inert:true},modalId+' visibly fades and shrinks after actual user dismissal');
+      assert.deepEqual(await evaluate(`new Promise(resolve=>{const start=performance.now();const frame=now=>now-start>=90?resolve():requestAnimationFrame(frame);requestAnimationFrame(frame);}).then(()=>{const modal=document.querySelector(${target});const style=getComputedStyle(modal);const box=getComputedStyle(modal.querySelector('.modal-box'));return {closed:!modal.classList.contains('active'),visible:style.display==='flex',fading:Number(style.opacity)>0 && Number(style.opacity)<1,moving:parseFloat(box.scale)<1,inert:modal.inert};})`),{closed:true,visible:true,fading:true,moving:true,inert:true},modalId+' visibly fades and shrinks after actual user dismissal');
       if(artifact) {
         const shot=await call('Page.captureScreenshot',{format:'png'});
         fs.writeFileSync(path.join(artifacts,artifact),Buffer.from(shot.data,'base64'));
@@ -268,6 +285,7 @@ async function main() {
       await evaluate("Promise.allSettled(document.getAnimations().map(animation=>animation.finished))");
       assert.equal(await evaluate("[...document.querySelectorAll('#activeTasksPanel [data-repair-mode=\"request\"]')].every(link=>!link.closest('.active-task-item').querySelector('.active-task-delete'))"),true,module+': linked repair notes have no delete action');
       await clickPointer(row+' .active-task-delete');
+      await assertListExit('task',taskId,'note-delete-'+module+'.png');
       assert.equal(await evaluate(`!Object.values(JSON.parse(localStorage.getItem('szvk_schedule_local_data')).dayNotes).flat().some(task=>task.id===${JSON.stringify(taskId)})`),true,module+': planned notes can be deleted directly');
       assert.equal(await evaluate(`JSON.parse(localStorage.getItem('szvk_action_history_unified')).some(entry=>entry.type==='task_delete' && entry.restoreData.task.id===${JSON.stringify(taskId)} && entry.restoreData.task.time==='16:45')`),true,module+': deletion records the complete note for undo');
       const activeDeleteId=taskId+'-active-delete';
@@ -277,6 +295,7 @@ async function main() {
       await clickPointer('#activeTasksDock');
       await evaluate("Promise.allSettled(document.querySelector('#activeTasksSheet').getAnimations({subtree:true}).map(animation=>animation.finished))");
       await clickPointer(`.active-task-item[data-task-id="${activeDeleteId}"] .active-task-delete`);
+      await assertListExit('task',activeDeleteId);
       assert.equal(await evaluate(`document.querySelector('#activeTasksSheet').open && !Object.values(JSON.parse(localStorage.getItem('szvk_schedule_local_data')).dayNotes).flat().some(task=>task.id===${JSON.stringify(activeDeleteId)})`),true,module+': deleting an active note keeps the mobile list open');
       await pressEscape();
       await waitFor("!document.querySelector('#activeTasksSheet').open");
@@ -435,6 +454,7 @@ async function main() {
     await evaluate("document.querySelector('#closeRepairModalBtn').click()");
     assert.equal(await evaluate("getComputedStyle(document.querySelector('#repairModalOverlay')).display"),'none','reduced motion closes dialogs immediately');
     await call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'no-preference'}]});
+    await evaluate("new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))");
     for(const dismiss of [()=>clickPointer('#closeRepairModalBtn'),()=>clickPointer('#btnCancelRepairModal'),clickBackdrop,pressEscape]) {
       await assertAnimatedDismissal('window.editRepair(1)','repairModalOverlay',dismiss);
     }
@@ -510,6 +530,7 @@ async function main() {
     assert.equal(data.repairs[0].needInvoice,false);
     assert.equal(data.repairs[0].repairDate,'');
     const linkedRepairId = data.repairs[0].id;
+    await assertListEntry('#recentRepairTableBody [data-repair-id="'+linkedRepairId+'"]',160,'repair-add-midway.png');
     const initialRepairNote = await evaluate("Object.values(JSON.parse(localStorage.getItem('szvk_schedule_local_data')).dayNotes).flat().find(task=>task.repairId===" + linkedRepairId + ")");
     assert.equal(initialRepairNote.text, 'Тестовий перевізник · TEST-002');
     assert.equal(initialRepairNote.done, false);
@@ -897,7 +918,14 @@ async function main() {
     assert.equal(await evaluate("document.querySelector('#modalNewTaskTimeMount details').open"), false, 'time picker starts collapsed');
     assert.equal(await evaluate("document.querySelector('#modalNewTaskTimeMount input').required"), false);
     assert.equal(await evaluate("document.querySelector('#modalNewTaskTimeMount summary').textContent.includes('Обрати час') && document.querySelector('#modalNewTaskTimeMount summary').getBoundingClientRect().height>=42"),true,'the day note form also shows a prominent time selection button');
+    await call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
+    assert.equal(await evaluate("(()=>{document.querySelector('#modalNewTaskInput').value='Перевірка без анімації';document.querySelector('#modalAddNewTaskBtn').click();const row=[...document.querySelectorAll('#modalDayTasksList [data-task-id]')].find(row=>row.textContent.includes('Перевірка без анімації'));const staticEntry=row.getAnimations().length===0;row.querySelector('.delete-task').click();return staticEntry && !document.querySelector('.list-motion-ghost');})()"),true,'reduced motion adds and deletes notes immediately without decorative copies');
+    await call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'no-preference'}]});
+    await evaluate("new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))");
     await evaluate("document.querySelector('#modalNewTaskTimeMount details').open=true;document.querySelector('#modalNewTaskTimeMount [data-task-time=\"14:00\"]').click();document.querySelector('#modalNewTaskInput').value='Запланований виклик';document.querySelector('#modalAddNewTaskBtn').click()");
+    assert.equal(await evaluate("[...document.querySelectorAll('#modalDayTasksList [data-task-id]')].find(row=>row.textContent.includes('Запланований виклик')).getAnimations().some(animation=>animation.effect.getKeyframes().some(frame=>Number(frame.opacity)===0))"),true,'adding a note starts its own short fade and movement');
+    const addedNoteId=await evaluate("[...document.querySelectorAll('#modalDayTasksList [data-task-id]')].find(row=>row.textContent.includes('Запланований виклик')).dataset.taskId");
+    await assertListEntry('#modalDayTasksList [data-task-id="'+addedNoteId+'"]',0,'note-add-midway.png');
     assert.equal(await evaluate("window.dayNotes['2026-10-14'].find(task=>task.text==='Запланований виклик').time"), '14:00');
     assert.equal(await evaluate("document.querySelector('#modalNewTaskTimeMount .task-time-input').value"), '', 'adding resets optional time');
     await evaluate("[...document.querySelectorAll('.task-modal-item')].find(row=>row.textContent.includes('Запланований виклик')).querySelector('.edit-task').click();document.querySelector('#taskEditorTimeMount .task-time-input').value='16:25';document.querySelector('#taskEditorTimeMount .task-time-input').dispatchEvent(new Event('input'));document.querySelector('#taskEditorSave').click()");
@@ -1149,6 +1177,7 @@ async function main() {
     for (const id of deleteIds) {
       await clickTrash(id);
       await evaluate("document.querySelector('#confirmDeleteRepair').click()");
+      await assertListExit('repair',id, id===deleteIds[0]?'repair-delete-midway.png':null);
       await waitFor(`!window.__cloudData.trackers.repairs.some(repair=>String(repair.id)===${JSON.stringify(String(id))})`);
       await waitFor(`!Object.values(window.__cloudData.schedule.dayNotes).flat().some(task=>String(task.repairId)===${JSON.stringify(String(id))})`);
       assert.equal(await evaluate(`JSON.parse(localStorage.getItem('szvk_action_history_unified')).some(entry=>entry.type==='repair_delete' && String(entry.restoreData?.repair?.id)===${JSON.stringify(String(id))})`),true,'deletion preserves the record in undo history');

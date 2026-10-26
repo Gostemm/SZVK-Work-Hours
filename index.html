@@ -8,7 +8,7 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg" sizes="any">
   <link rel="apple-touch-icon" href="apple-touch-icon.png" sizes="180x180">
 
-  <script src="shared.js?v=2d94fb2cd99d"></script>
+  <script src="shared.js?v=80f0eb6c1903"></script>
 
   <link rel="stylesheet" href="shared.css?v=e259a52277cd">
 
@@ -1616,7 +1616,7 @@
 <script>
 document.addEventListener("DOMContentLoaded", function () {
   const requiredSharedMethods = ['readAuthSession', 'saveAuthSession', 'clearAuthSession', 'fetchLoginAccounts', 'mountAccountMenu', 'updateAccount', 'escapeHtml', 'formatHistoryTime', 'initThemeSwitcher', 'updateTask', 'restoreTaskMove', 'debounce', 'setHtmlIfChanged', 'shiftInfo', 'calendarMonthDays', 'taskTimePickerHtml', 'initTaskTimePickers', 'reconcileRepairTasks', 'setRepairCompletion', 'flushRepairCompletions', 'syncRepairTasksToCloud', 'carryForwardTasks', 'rollOverTasksInCloud'];
-  requiredSharedMethods.push('openModal', 'closeModal', 'transitionViews', 'activeTaskGroups', 'mountTaskWorkspace', 'taskCarryLabel', 'applyPendingScheduleTaskChanges', 'flushScheduleTaskChanges', 'repairTaskHref', 'repairTaskControlHtml');
+  requiredSharedMethods.push('openModal', 'closeModal', 'transitionViews', 'activeTaskGroups', 'mountTaskWorkspace', 'taskCarryLabel', 'applyPendingScheduleTaskChanges', 'flushScheduleTaskChanges', 'repairTaskHref', 'repairTaskControlHtml', 'markListChange', 'animateListUpdate');
   if (!window.SZVKShared || requiredSharedMethods.some(name => typeof window.SZVKShared[name] !== 'function')) {
     const message = document.getElementById('loginErrorMessage');
     message.textContent = 'Не вдалося завантажити оновлення сервісу. Оновіть сторінку.';
@@ -3242,6 +3242,12 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function renderModalTasks(tasks, dateKey) {
+    const list = document.getElementById('modalDayTasksList');
+    if (!list) return;
+    return window.SZVKShared.animateListUpdate(list, 'task', '[data-task-id]', 'data-task-id', () => renderModalTaskContents(tasks, dateKey));
+  }
+
+  function renderModalTaskContents(tasks, dateKey) {
     const listEl = document.getElementById("modalDayTasksList");
     const countEl = document.getElementById("modalTasksCount");
     if (!listEl || !countEl) return;
@@ -3271,6 +3277,7 @@ document.addEventListener("DOMContentLoaded", function () {
     tasks.forEach((task, idx) => {
       const item = document.createElement("div");
       item.className = `task-modal-item ${task.done ? 'done' : ''}`;
+      item.dataset.taskId = String(task.id);
       const authorText = task.author && task.repairId == null ? `<span class="task-modal-author">(${escapeHtml(task.author)})</span>` : '';
 
       item.innerHTML = `
@@ -3296,6 +3303,7 @@ document.addEventListener("DOMContentLoaded", function () {
       item.querySelector('.move-task').onclick = () => openTaskEditor(dateKey, task.id, 'move');
       const deleteButton = item.querySelector('.delete-task');
       if (deleteButton) deleteButton.onclick = () => {
+        window.SZVKShared.markListChange('task', task.id, 'delete');
         const deletedTask = tasks.splice(idx, 1)[0];
         if (tasks.length === 0) delete window.dayNotes[dateKey];
         else window.dayNotes[dateKey] = tasks;
@@ -3364,6 +3372,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const picker = document.querySelector('#modalNewTaskTimeMount .task-time-picker');
     const time = picker.querySelector('.task-time-input').value;
     if (time) newTask.time = time;
+    window.SZVKShared.markListChange('task', newTask.id, 'add');
     tasks.push(newTask);
 
     window.dayNotes[dateKey] = tasks;
