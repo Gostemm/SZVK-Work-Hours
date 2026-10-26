@@ -28,8 +28,8 @@ const shared = loadShared();
 
 function loadIndexHelpers(names, globals) {
   const helpers = names.map(name => {
-    const match = indexHtml.match(new RegExp(`  function ${name}\\([^\\n]*\\) \\{[\\s\\S]*?\\n  \\}`));
-    assert.ok(match, `index.html must define ${name}`);
+    const match = (indexHtml + '\n' + source).match(new RegExp(`^( +)function ${name}\\([^\\n]*\\) \\{[\\s\\S]*?\\n\\1\\}`, 'm'));
+    assert.ok(match, `the task workspace must define ${name}`);
     return match[0];
   });
   const context = vm.createContext(globals);
@@ -268,7 +268,7 @@ test('an open editor follows a carried task across a year boundary while keeping
   };
   const notes = { '2027-01-01': [{ id: 7, text: 'Original text', time: '10:00' }] };
   const fixture = loadIndexHelpers(['refreshTaskEditorSource'], {
-    window: { dayNotes: notes },
+    options: { getDayNotes: () => notes },
     activeTaskEdit: { dateKey: '2026-12-31', taskId: '7' },
     getDayTasks: key => notes[key] || [],
     document: { getElementById: id => fields[id] },
@@ -291,7 +291,7 @@ test('an open editor keeps a manually chosen destination when its source task ca
   const notes = { '2027-01-01': [{ id: 'a', text: 'Original text', time: '10:00' }] };
   const calendarView = { year: 2027, month: 1 };
   const fixture = loadIndexHelpers(['refreshTaskEditorSource'], {
-    window: { dayNotes: notes }, activeTaskEdit: { dateKey: '2026-12-31', taskId: 'a' },
+    options: { getDayNotes: () => notes }, activeTaskEdit: { dateKey: '2026-12-31', taskId: 'a' },
     getDayTasks: key => notes[key] || [], document: { getElementById: id => fields[id] },
     taskCalendarView: calendarView, taskCalendarSignature: 'selected-destination'
   });

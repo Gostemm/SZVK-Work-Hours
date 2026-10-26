@@ -8,9 +8,9 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg" sizes="any">
   <link rel="apple-touch-icon" href="apple-touch-icon.png" sizes="180x180">
 
-  <script src="shared.js?v=e2682b806837"></script>
+  <script src="shared.js?v=66128d7d8002"></script>
 
-  <link rel="stylesheet" href="shared.css?v=03ac1b6b4d21">
+  <link rel="stylesheet" href="shared.css?v=722f6118632d">
 
   <style>
     :root {
@@ -337,23 +337,6 @@
     }
 
     /* Season Overview Modal & Global Focus Modal */
-    [data-theme="light"] .overview-group-box {
-      background: #ffffff;
-      border: 1.5px solid #cbd5e1;
-    }
-    [data-theme="light"] .overview-group-header {
-      color: #92400e !important;
-      font-weight: 900;
-      border-bottom: 1.5px solid #fcd34d;
-    }
-    [data-theme="light"] .overview-task-line {
-      color: #0f172a !important;
-      font-weight: 600;
-    }
-    [data-theme="light"] #seasonOverviewTitle {
-      color: #92400e !important;
-      font-weight: 900;
-    }
     [data-theme="light"] #globalModalTitle {
       color: #0f172a !important;
       font-weight: 900;
@@ -362,22 +345,6 @@
       background: #f8fafc;
       border-color: #cbd5e1;
       color: #0f172a;
-    }
-    [data-theme="light"] .overview-task-text {
-      color: #0f172a !important;
-      font-weight: 600;
-    }
-    [data-theme="light"] .overview-bullet-day {
-      color: #2563eb !important;
-      font-weight: 900;
-    }
-    [data-theme="light"] .overview-bullet-debt {
-      color: #d97706 !important;
-      font-weight: 900;
-    }
-    [data-theme="light"] .overview-focus-text {
-      color: #1d4ed8 !important;
-      font-weight: 700;
     }
     [data-theme="light"] .tab-btn.notes-tab {
       border-color: #d97706;
@@ -553,56 +520,6 @@
     .season-label-wrapper { display: flex; align-items: center; gap: 6px; }
     .season-label { font-size: 14px; font-weight: 800; min-width: 110px; text-align: center; }
 
-    .season-overview-btn, .season-task-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid var(--border);
-      color: var(--text-muted);
-      font-size: 11px;
-      font-weight: 700;
-      padding: 4px 9px;
-      border-radius: 8px;
-      cursor: pointer;
-      user-select: none;
-
-      line-height: 1.2;
-    }
-    .season-overview-btn:hover, .season-task-badge:hover {
-      background: rgba(255, 255, 255, 0.12);
-      color: var(--text);
-      border-color: rgba(255, 255, 255, 0.25);
-    }
-    .season-daily-badge {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-width: 16px;
-      height: 16px;
-      padding: 0 4px;
-      background: rgba(245, 158, 11, 0.2);
-      color: #fbbf24;
-      border: 1px solid rgba(245, 158, 11, 0.35);
-      border-radius: 8px;
-      font-size: 10px;
-      font-weight: 800;
-      line-height: 1;
-    }
-    [data-theme="light"] .season-overview-btn, [data-theme="light"] .season-task-badge {
-      background: #f1f5f9;
-      border-color: #cbd5e1;
-      color: #475569;
-    }
-    [data-theme="light"] .season-overview-btn:hover, [data-theme="light"] .season-task-badge:hover {
-      background: #e2e8f0;
-      color: #0f172a;
-    }
-    [data-theme="light"] .season-daily-badge {
-      background: rgba(217, 119, 6, 0.12);
-      color: #b45309;
-      border-color: rgba(217, 119, 6, 0.3);
-    }
 
     .tab-btn {
       background: transparent;
@@ -1020,41 +937,9 @@
       color: #fff;
     }
 
-    .season-overview-list {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      max-height: 420px;
-      overflow-y: auto;
-      padding-right: 4px;
-    }
 
-    .overview-group-box {
-      background: #0f172a;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 10px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
 
-    .overview-group-header {
-      font-size: 12px;
-      font-weight: 800;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      color: #fbbf24;
-      border-bottom: 1px solid rgba(255,255,255,0.06);
-      padding-bottom: 4px;
-    }
 
-    .overview-task-line { display: flex; align-items: center; justify-content: space-between; font-size: 12px; gap: 8px; padding: 3px 0; }
-    .overview-task-text { color: #f1f5f9; display: flex; align-items: center; gap: 6px; }
-    .overview-bullet-day { color: #38bdf8; }
-    .overview-bullet-debt { color: #fbbf24; }
-    .overview-focus-text { font-size: 13px; color: #38bdf8; font-weight: 600; }
 
     .admin-user-card {
       display: flex;
@@ -1501,129 +1386,6 @@
     @media (max-width: 380px) {
       .day-task-counters { --day-counter-gap: 1px; }
     }
-    /* Live work stays beside the calendar; compact screens use a bottom sheet. */
-    .active-tasks-host { flex: 0 0 320px; min-width: 0; position: sticky; top: 12px; }
-    .active-tasks-panel {
-      display: flex; flex-direction: column; min-height: 0;
-      max-height: calc(var(--viewport-height) - 24px - var(--safe-area-top) - var(--safe-area-bottom));
-      border: 1px solid var(--border); border-radius: 14px;
-      background: var(--card-bg); color: var(--text); overflow: hidden;
-    }
-    .active-tasks-toggle {
-      display: flex; align-items: center; gap: 9px; width: 100%; min-height: 58px;
-      padding: 14px; border: 0; background: transparent; color: inherit;
-      font: inherit; text-align: left; cursor: pointer; flex-shrink: 0;
-    }
-    .active-tasks-mark { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
-    .active-tasks-title { font-size: 14px; font-weight: 800; }
-    .active-tasks-count {
-      display: inline-grid; place-items: center; min-width: 26px; min-height: 24px;
-      padding: 2px 7px; border-radius: 8px; color: var(--accent);
-      background: rgba(59, 130, 246, 0.12); font-size: 12px; font-weight: 800;
-    }
-    .active-tasks-chevron { margin-left: auto; color: var(--text-muted); font-size: 18px; }
-    .active-tasks-rail { display: none; }
-    .active-tasks-preview {
-      min-height: 0; color: var(--text-muted); font-size: 11px;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-    .active-tasks-body { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0 12px 12px; }
-    .active-tasks-hint { padding: 0 2px 10px; color: var(--text-muted); font-size: 11px; line-height: 1.5; }
-    .active-tasks-list { list-style: none; display: flex; flex-direction: column; gap: 7px; }
-    .active-task-item {
-      display: flex; align-items: flex-start; gap: 3px; min-width: 0;
-      border: 1px solid var(--border); border-radius: 10px; padding: 6px;
-      background: var(--bg);
-    }
-    .active-task-check { display: grid; place-items: center; flex: 0 0 34px; min-height: 44px; cursor: pointer; }
-    .active-task-check input { width: 17px; height: 17px; accent-color: var(--accent); cursor: pointer; }
-    .active-task-content { flex: 1; min-width: 0; }
-    .active-task-open {
-      display: block; width: 100%; min-height: 44px; padding: 6px 3px;
-      border: 0; border-radius: 6px; background: transparent; color: var(--text);
-      font: inherit; font-size: 13px; line-height: 1.5; text-align: left; cursor: pointer;
-      overflow-wrap: anywhere;
-    }
-    .active-task-open:hover { background: var(--card-bg); }
-    .active-task-text { font-weight: 650; }
-    .active-task-meta { display: flex; flex-wrap: wrap; gap: 3px 8px; margin-top: 6px; font-size: 10px; color: var(--text-muted); }
-    .active-task-worker.artem { color: var(--artem); }
-    .active-task-worker.oleksandr { color: var(--oleksandr); }
-    .active-task-item .task-carried-from { color: #fbbf24; font-size: 10px; }
-    [data-theme="light"] .active-task-item .task-carried-from { color: #a16207; }
-    .active-task-content > .task-repair-link { display: inline-block; margin: 0 3px 6px; font-size: 11px; padding: 5px 0; }
-    .active-tasks-empty { padding: 20px 10px; text-align: center; color: var(--text-muted); font-size: 12px; line-height: 1.6; }
-    .active-tasks-empty strong { display: block; margin-bottom: 3px; color: var(--text); font-size: 13px; }
-    .active-tasks-planned { margin-top: 12px; border-top: 1px solid var(--border); }
-    .active-tasks-planned > summary { padding: 14px 2px; color: var(--text-muted); font-size: 12px; font-weight: 700; cursor: pointer; }
-    .active-tasks-planned > summary span { margin-left: 5px; color: var(--text); }
-    :is(.active-tasks-toggle, .active-tasks-rail, .active-task-open, .active-tasks-dock, .active-tasks-planned > summary):focus-visible,
-    .active-task-check:has(:focus-visible) { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 8px; }
-    .active-tasks-dock {
-      position: fixed; z-index: 60; bottom: calc(10px + var(--safe-area-bottom));
-      left: calc(10px + var(--safe-area-left)); right: calc(10px + var(--safe-area-right));
-      display: flex; align-items: center; gap: 10px; max-width: 560px; min-height: 66px;
-      margin: 0 auto; padding: 12px 14px; border: 1px solid var(--border); border-radius: 14px;
-      background: var(--card-bg); color: var(--text); text-align: left; font: inherit;
-      box-shadow: 0 6px 26px rgba(0, 0, 0, 0.22); cursor: pointer;
-    }
-    .active-tasks-dock-copy { flex: 1; min-width: 0; }
-    .active-tasks-dock-title { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 800; }
-    .active-tasks-dock-preview { display: block; margin-top: 4px; font-size: 11px; color: var(--text-muted); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-    .active-tasks-sheet {
-      position: fixed; inset: auto 0 0; margin: 0 auto; width: min(100%, 560px);
-      height: min(72dvh, 680px); max-height: calc(var(--viewport-height) - 16px - var(--safe-area-top));
-      max-width: 100%; padding: 0 0 var(--safe-area-bottom); overflow: hidden;
-      border: 1px solid var(--border); border-bottom: 0; border-radius: 20px 20px 0 0;
-      background: var(--card-bg); color: var(--text);
-    }
-    .active-tasks-sheet[open] { display: flex; flex-direction: column; }
-    .active-tasks-sheet::backdrop { background: rgba(0, 0, 0, 0.5); }
-    .active-tasks-handle { width: 36px; height: 4px; border-radius: 4px; background: var(--text-muted); opacity: 0.5; margin: 9px auto 0; flex-shrink: 0; }
-    .active-tasks-sheet .active-tasks-panel { flex: 1; max-height: none; border: 0; border-radius: 0; }
-    .active-tasks-sheet .active-tasks-body { padding: 0 14px 18px; }
-    .active-tasks-sheet .active-tasks-toggle { padding-top: 10px; }
-    @media (min-width: 1100px) {
-      #mainAppContainer { flex-direction: row; flex-wrap: wrap; align-items: flex-start; }
-      #mainAppContainer > :is(.top-header-bar, .nav-toolbar, #historyView) { width: 100%; }
-      #mainCalendarView { flex: 1; min-width: 0; }
-      .active-tasks-host { overflow: hidden; border-radius: 14px; }
-      .active-tasks-host.is-collapsed { flex-basis: 56px; }
-      .active-tasks-host .active-tasks-panel { width: 320px; }
-      .active-tasks-host.is-collapsed .active-tasks-panel { opacity: 0; transform: translateX(20px); visibility: hidden; pointer-events: none; }
-      .active-tasks-rail {
-        position: absolute; inset: 0 0 0 auto; display: flex; flex-direction: column;
-        align-items: center; gap: 12px; width: 56px; padding: 14px 8px;
-        border: 1px solid var(--border); border-radius: 14px; background: var(--card-bg);
-        color: var(--text); font: inherit; cursor: pointer; overflow: hidden;
-        opacity: 0; transform: translateX(12px); visibility: hidden; pointer-events: none;
-      }
-      .active-tasks-host.is-collapsed .active-tasks-rail { opacity: 1; transform: translateX(0); visibility: visible; pointer-events: auto; }
-      .active-tasks-rail > .active-tasks-chevron { margin: 0; line-height: 20px; flex-shrink: 0; }
-      .active-tasks-rail-title { writing-mode: vertical-rl; font-size: 12px; font-weight: 800; flex-shrink: 0; }
-      .active-tasks-rail > .active-tasks-preview { writing-mode: vertical-rl; max-height: 220px; text-align: left; }
-      .active-tasks-dock { display: none; }
-    }
-    @media (max-width: 1099px) {
-      .active-tasks-host { display: none; }
-      #mainAppContainer:not(.showing-history) { padding-bottom: calc(90px + var(--safe-area-bottom)); }
-      body:has(.active-tasks-dock:not([hidden])) .toast-container { bottom: calc(96px + var(--safe-area-bottom)); }
-    }
-    @media (prefers-reduced-motion: no-preference) {
-      .active-tasks-host { transition: flex-basis 320ms cubic-bezier(0.4, 0, 0.2, 1); }
-      .active-tasks-host .active-tasks-panel { transition: opacity 180ms ease, transform 320ms ease, visibility 0s 180ms; }
-      .active-tasks-host:not(.is-collapsed) .active-tasks-panel { transition-delay: 70ms, 0s, 0s; }
-      .active-tasks-rail { transition: opacity 160ms ease, transform 320ms ease, visibility 0s 160ms; }
-      .active-tasks-host.is-collapsed .active-tasks-rail { transition-delay: 120ms, 0s, 0s; }
-      .active-tasks-sheet[open] { animation: active-tasks-sheet-in 240ms cubic-bezier(0.2, 0.65, 0.3, 1); }
-      .active-tasks-sheet[open]::backdrop { animation: active-tasks-backdrop-in 240ms ease-out; }
-      .active-tasks-sheet.is-closing { animation: active-tasks-sheet-out 200ms ease-in both; pointer-events: none; }
-      .active-tasks-sheet.is-closing::backdrop { animation: active-tasks-backdrop-out 200ms ease-in both; }
-    }
-    @keyframes active-tasks-sheet-in { from { transform: translateY(100%); } to { transform: translateY(0); } }
-    @keyframes active-tasks-sheet-out { from { transform: translateY(var(--sheet-exit-start, 0px)); } to { transform: translateY(100%); } }
-    @keyframes active-tasks-backdrop-in { from { opacity: 0; } to { opacity: 1; } }
-    @keyframes active-tasks-backdrop-out { from { opacity: 1; } to { opacity: 0; } }
 </style>
 </head>
 <body>
@@ -1660,7 +1422,9 @@
 </div>
 
 <!-- ГОЛОВНИЙ ЕКРАН СЕРВІСУ -->
-<div class="container module-entry" id="mainAppContainer">
+<div class="container module-entry task-workspace" id="mainAppContainer">
+  <div class="schedule-viewport" id="scheduleViewport">
+  <div class="schedule-content" id="scheduleContent">
   <div class="top-header-bar">
     <div class="brand-title">
       <span>⏱️ SZVK Work Hours</span>
@@ -1688,9 +1452,6 @@
       <button class="btn" id="btnPrevSeason">◀</button>
       <div class="season-label-wrapper">
         <div class="season-label" id="currentSeasonLabel">Осінь 2026</div>
-        <button class="season-overview-btn" id="seasonTaskBadge" title="Розгорнути завдання та огляд сезону">
-          <span>📋 Огляд</span>
-        </button>
       </div>
       <button class="btn" id="btnNextSeason">▶</button>
     </div>
@@ -1717,42 +1478,6 @@
     <div class="days-grid" id="daysGrid"></div>
   </div>
 
-  <aside class="active-tasks-host" id="activeTasksHost" aria-label="Поточні завдання" hidden>
-    <section class="active-tasks-panel" id="activeTasksPanel" aria-labelledby="activeTasksTitle">
-      <button type="button" class="active-tasks-toggle" id="activeTasksToggle" aria-expanded="true" aria-controls="activeTasksBody">
-        <span class="active-tasks-mark" aria-hidden="true"></span>
-        <span class="active-tasks-title" id="activeTasksTitle">Зараз у роботі</span>
-        <span class="active-tasks-count" id="activeTasksCount" aria-live="polite" aria-atomic="true">0</span>
-        <span class="active-tasks-chevron" id="activeTasksChevron" aria-hidden="true">⌃</span>
-      </button>
-      <div class="active-tasks-body" id="activeTasksBody">
-        <p class="active-tasks-hint">На сьогодні та перенесені з попередніх днів</p>
-        <ul class="active-tasks-list" id="activeTasksList" aria-label="Завдання у роботі"></ul>
-        <details class="active-tasks-planned" id="activeTasksPlanned" hidden>
-          <summary>Заплановані <span id="activeTasksPlannedCount">0</span></summary>
-          <ul class="active-tasks-list" id="activeTasksPlannedList" aria-label="Майбутні завдання"></ul>
-        </details>
-      </div>
-    </section>
-    <button type="button" class="active-tasks-rail" id="activeTasksRail" aria-expanded="false" aria-controls="activeTasksPanel" aria-label="Розгорнути список завдань">
-      <span class="active-tasks-chevron" aria-hidden="true">‹</span>
-      <span class="active-tasks-count" id="activeTasksRailCount">0</span>
-      <span class="active-tasks-rail-title">Зараз у роботі</span>
-      <span class="active-tasks-preview" id="activeTasksPreview"></span>
-    </button>
-  </aside>
-
-  <button type="button" class="active-tasks-dock" id="activeTasksDock" aria-haspopup="dialog" aria-controls="activeTasksSheet" aria-expanded="false" hidden>
-    <span class="active-tasks-mark" aria-hidden="true"></span>
-    <span class="active-tasks-dock-copy">
-      <span class="active-tasks-dock-title">У роботі <span class="active-tasks-count" id="activeTasksDockCount">0</span></span>
-      <span class="active-tasks-dock-preview" id="activeTasksDockPreview"></span>
-    </span>
-    <span class="active-tasks-chevron" aria-hidden="true">⌃</span>
-  </button>
-  <dialog class="active-tasks-sheet" id="activeTasksSheet" aria-labelledby="activeTasksTitle">
-    <div class="active-tasks-handle" aria-hidden="true"></div>
-  </dialog>
 
   <div class="view-card" id="historyView" style="display: none;">
     <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
@@ -1801,17 +1526,10 @@
 
     <div class="history-list" id="historyListContainer"></div>
   </div>
-</div>
-
-<!-- Модальне вікно огляду завдань сезону -->
-<div class="modal-overlay" id="seasonOverviewModal">
-  <div class="modal-box">
-    <div style="display: flex; justify-content: space-between; align-items: center;">
-      <h3 id="seasonOverviewTitle" style="font-size: 16px; font-weight: 800; color: #fbbf24;">🔔 Усі активні завдання сезону</h3>
-      <button class="btn" id="seasonOverviewCloseX" style="padding: 4px 8px;">✕</button>
-    </div>
-    <div class="season-overview-list" id="seasonOverviewList"></div>
   </div>
+  </div>
+
+
 </div>
 
 <!-- Модальне вікно керування користувачами (Адмін) -->
@@ -1861,41 +1579,6 @@
   </div>
 </div>
 
-<!-- Редагування та перенесення завдання -->
-<div class="modal-overlay" id="taskEditorModal" role="dialog" aria-modal="true" aria-labelledby="taskEditorTitle">
-  <div class="modal-box">
-    <div class="modal-header">
-      <h3 id="taskEditorTitle">Редагувати завдання</h3>
-      <button type="button" class="btn" id="taskEditorClose" aria-label="Закрити">✕</button>
-    </div>
-    <form id="taskEditorForm" class="task-editor-form">
-      <label>Завдання
-        <textarea id="taskEditorText" maxlength="140" required rows="3"></textarea>
-      </label>
-      <div id="taskEditorTimeMount"></div>
-      <input type="hidden" id="taskEditorDate">
-      <div class="task-shift-preview" id="taskEditorShift" role="status" aria-live="polite"></div>
-      <section class="task-mini-calendar" aria-label="Календар вибору дня виконання">
-        <div class="task-calendar-header">
-          <button type="button" class="task-calendar-nav" id="taskCalendarPrev" aria-label="Попередній місяць">‹</button>
-          <h4 id="taskCalendarMonth" role="status" aria-live="polite"></h4>
-          <button type="button" class="task-calendar-nav" id="taskCalendarNext" aria-label="Наступний місяць">›</button>
-        </div>
-        <div class="task-calendar-weekdays" aria-hidden="true"><span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span><span>Сб</span><span>Нд</span></div>
-        <div class="task-calendar-days" id="taskCalendarDays" role="group" aria-label="Дні місяця"></div>
-        <div class="task-calendar-legend">
-          <span class="artem">● Артем</span><span class="oleksandr">● Олександр</span><span>↔ підміна · № зміни</span>
-        </div>
-      </section>
-      <p class="task-editor-error" id="taskEditorError" role="alert" hidden></p>
-      <div class="modal-footer">
-        <button type="button" class="btn" id="taskEditorCancel">Скасувати</button>
-        <button type="submit" class="btn" id="taskEditorSave" style="background:var(--accent);color:#fff">Зберегти</button>
-      </div>
-    </form>
-  </div>
-</div>
-
 <!-- Модальне вікно дня -->
 <div class="modal-overlay" id="dayActionModal">
   <div class="modal-box">
@@ -1933,7 +1616,7 @@
 <script>
 document.addEventListener("DOMContentLoaded", function () {
   const requiredSharedMethods = ['readAuthSession', 'saveAuthSession', 'clearAuthSession', 'fetchLoginAccounts', 'mountAccountMenu', 'updateAccount', 'escapeHtml', 'formatHistoryTime', 'initThemeSwitcher', 'updateTask', 'restoreTaskMove', 'debounce', 'setHtmlIfChanged', 'shiftInfo', 'calendarMonthDays', 'taskTimePickerHtml', 'initTaskTimePickers', 'reconcileRepairTasks', 'setRepairCompletion', 'flushRepairCompletions', 'syncRepairTasksToCloud', 'carryForwardTasks', 'rollOverTasksInCloud'];
-  requiredSharedMethods.push('openModal', 'closeModal', 'transitionViews', 'activeTaskGroups');
+  requiredSharedMethods.push('openModal', 'closeModal', 'transitionViews', 'activeTaskGroups', 'mountTaskWorkspace', 'taskCarryLabel', 'applyPendingScheduleTaskChanges', 'flushScheduleTaskChanges');
   if (!window.SZVKShared || requiredSharedMethods.some(name => typeof window.SZVKShared[name] !== 'function')) {
     const message = document.getElementById('loginErrorMessage');
     message.textContent = 'Не вдалося завантажити оновлення сервісу. Оновіть сторінку.';
@@ -1948,7 +1631,7 @@ document.addEventListener("DOMContentLoaded", function () {
     return;
   }
   window.SZVKShared.mountAccountMenu({ admin: true });
-  for (const id of ['taskEditorTimeMount', 'modalNewTaskTimeMount']) {
+  for (const id of ['modalNewTaskTimeMount']) {
     document.getElementById(id).innerHTML = window.SZVKShared.taskTimePickerHtml();
   }
   window.SZVKShared.initTaskTimePickers(document);
@@ -2080,6 +1763,7 @@ document.addEventListener("DOMContentLoaded", function () {
   let hasRemoteRepairs = false;
   let repairCloudSync = null;
   let taskRolloverSync = null;
+  let pendingTaskSync = null;
   let taskRolloverRequested = false;
   let activeDayKey = window.SZVKShared.kyivDateKey();
 
@@ -2176,6 +1860,19 @@ document.addEventListener("DOMContentLoaded", function () {
 
   window.addEventListener('storage', event => {
     if (['szvk_trackers_data', 'szvk_pending_repair_completions'].includes(event.key)) refreshRepairNotes(readLocalRepairs(), hasRemoteRepairs || !isFirebaseReady);
+    if ([STORAGE_KEY, 'szvk_pending_schedule_tasks'].includes(event.key)) {
+      const data = loadLocalData();
+      window.dayNotes = data.dayNotes || {};
+      window.SZVKShared.applyPendingScheduleTaskChanges(window.dayNotes);
+      window.overrides = data.overrides || {};
+      window.monthlyDebts = data.monthlyDebts || {};
+      window.monthFocusNotes = data.monthFocusNotes || {};
+      monthlyCountCache.clear();
+      lastScheduleSignature = scheduleSignature(data);
+      renderApp();
+      refreshOpenDayTasks();
+      syncPendingTaskChanges();
+    }
   });
 
   function cacheLocalRepairs(repairs) {
@@ -2606,6 +2303,8 @@ document.addEventListener("DOMContentLoaded", function () {
   function initRealtimeSync() {
     if (!isFirebaseReady || !currentUser) return;
 
+    syncPendingTaskChanges();
+
     updateSyncIndicator("syncing", "З'єднання...");
 
     if (unsubscribeSchedule) unsubscribeSchedule();
@@ -2613,6 +2312,7 @@ document.addEventListener("DOMContentLoaded", function () {
       if (docSnapshot.exists) {
         const data = docSnapshot.data();
         if (data) {
+          window.SZVKShared.applyPendingScheduleTaskChanges(data.dayNotes || (data.dayNotes = {}));
           reconcileScheduleRepairs(data.dayNotes || (data.dayNotes = {}), hasRemoteRepairs);
           const carried = carryScheduleTasks(data.dayNotes);
           const signature = scheduleSignature(data);
@@ -2712,6 +2412,14 @@ document.addEventListener("DOMContentLoaded", function () {
     }, 350);
   }
 
+  function syncPendingTaskChanges() {
+    if (!isFirebaseReady || !currentUser || pendingTaskSync) return;
+    pendingTaskSync = window.SZVKShared.flushScheduleTaskChanges(db, DB_SCHEDULE_DOC)
+      .catch(error => { console.warn('Pending task sync notice:', error); updateSyncIndicator('error'); })
+      .finally(() => { pendingTaskSync = null; });
+  }
+  window.addEventListener('online', syncPendingTaskChanges);
+
   function pushHistoryToFirestore() {
     try {
       localStorage.setItem(UNIFIED_HISTORY_STORAGE_KEY, JSON.stringify(window.actionHistory || []));
@@ -2748,6 +2456,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const initialData = loadLocalData();
   window.overrides = initialData.overrides || {};
   window.dayNotes = initialData.dayNotes || {};
+  window.SZVKShared.applyPendingScheduleTaskChanges(window.dayNotes);
   window.monthlyDebts = initialData.monthlyDebts || {};
   window.monthFocusNotes = initialData.monthFocusNotes || {};
   reconcileScheduleRepairs(window.dayNotes, !isFirebaseReady);
@@ -3515,148 +3224,28 @@ document.addEventListener("DOMContentLoaded", function () {
     return getMonthActiveDailyTasksCount(year, month);
   }
 
-  function getSeasonActiveDailyTasksCount(season) {
-    return season.months.reduce((acc, m) => acc + getMonthActiveDailyTasksCount(m.year, m.month), 0);
-  }
-
-  function getSeasonActiveTasksCount(season) {
-    return getSeasonActiveDailyTasksCount(season);
-  }
-
-  let activeTaskEdit = null;
-  let taskEditorReturnFocus = null;
-  let taskCalendarView = null;
-  let taskCalendarSignature = '';
-
-  function openTaskEditor(dateKey, taskId, mode = 'edit') {
-    const task = getDayTasks(dateKey).find(item => String(item.id) === String(taskId));
-    if (!task) return;
-    activeTaskEdit = { dateKey, taskId: task.id, mode };
-    taskEditorReturnFocus = document.activeElement;
-    document.getElementById('taskEditorTitle').textContent = mode === 'move' ? 'Перенести завдання' : 'Редагувати завдання';
-    document.getElementById('taskEditorText').value = task.text;
-    document.getElementById('taskEditorText').readOnly = task.repairId != null;
-    document.getElementById('taskEditorText').maxLength = task.repairId != null ? Math.max(140, task.text.length) : 140;
-    const picker = document.querySelector('#taskEditorTimeMount .task-time-picker');
-    window.SZVKShared.setTaskTimePicker(picker, task.time || '');
-    picker.open = false;
-    document.getElementById('taskEditorDate').value = dateKey;
-    document.getElementById('taskEditorSave').textContent = mode === 'move' ? 'Перенести на обрану зміну' : 'Зберегти';
-    const [year, month] = dateKey.split('-').map(Number);
-    taskCalendarView = { year, month: month - 1 };
-    taskCalendarSignature = '';
-    updateTaskShiftPreview();
-    document.getElementById('taskEditorError').hidden = true;
-    window.SZVKShared.openModal(document.getElementById('taskEditorModal'));
-    if (mode === 'move') document.querySelector('#taskCalendarDays [aria-pressed="true"]').focus();
-    else document.getElementById('taskEditorText').focus();
-  }
-
-  function closeTaskEditor() {
-    window.SZVKShared.closeModal(document.getElementById('taskEditorModal'));
-    activeTaskEdit = null;
-    if (taskEditorReturnFocus && taskEditorReturnFocus.isConnected) taskEditorReturnFocus.focus();
-  }
-
-  function refreshTaskEditorSource() {
-    if (!activeTaskEdit || getDayTasks(activeTaskEdit.dateKey).some(task => String(task.id) === String(activeTaskEdit.taskId))) return;
-    const source = Object.entries(window.dayNotes).find(([, tasks]) => Array.isArray(tasks) && tasks.some(task => String(task.id) === String(activeTaskEdit.taskId)));
-    if (!source) return;
-    const previousDateKey = activeTaskEdit.dateKey;
-    activeTaskEdit.dateKey = source[0];
-    const dateInput = document.getElementById('taskEditorDate');
-    if (dateInput.value === previousDateKey) {
-      dateInput.value = source[0];
-      const [year, month] = source[0].split('-').map(Number);
-      taskCalendarView = { year, month: month - 1 };
-      taskCalendarSignature = '';
+  const taskWorkspace = window.SZVKShared.mountTaskWorkspace({
+    container: document.getElementById('mainAppContainer'),
+    content: document.getElementById('scheduleContent'),
+    getDayNotes: () => window.dayNotes,
+    getOverrides: () => window.overrides || {},
+    isVisible: () => Boolean(currentUser) && activeTab === 'calendar',
+    onSave: () => saveLocalData(),
+    onChange: () => { refreshOpenDayTasks(); renderApp(); },
+    logAction,
+    setTaskDone: setDayTaskDone,
+    openDay(dateKey) {
+      const [year, month, day] = dateKey.split('-').map(Number);
+      const offset = (year - 2026) * 12 + month - 1 - 8;
+      currentSeasonIndex = Math.floor(offset / 3);
+      selectedMonthRelative = ((offset % 3) + 3) % 3;
+      activeTab = 'calendar';
+      renderApp();
+      openDayModal(year, month - 1, day);
     }
-  }
-
-  function taskShiftLabel(dateKey) {
-    if (!window.SZVKShared.isValidDateKey(dateKey)) return '';
-    const [year, month, day] = dateKey.split('-').map(Number);
-    const assignment = getAssignedWorker(year, month - 1, day);
-    const label = new Date(year, month - 1, day).toLocaleDateString('uk-UA', {
-      weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric'
-    });
-    return `${label} · ${assignment.worker}${assignment.isEdited ? ' (підміна)' : ''} · зміна №${assignment.shiftNum} з 3`;
-  }
-
-  function updateTaskShiftPreview() {
-    const dateKey = document.getElementById('taskEditorDate').value;
-    const label = taskShiftLabel(dateKey);
-    const preview = document.getElementById('taskEditorShift');
-    const info = window.SZVKShared.shiftInfo(dateKey, window.overrides || {});
-    preview.className = 'task-shift-preview' + (info ? info.worker === 'Артем' ? ' artem' : ' oleksandr' : '');
-    preview.textContent = label || 'Оберіть дату, щоб побачити працівника зміни.';
-    if (activeTaskEdit) renderTaskCalendar();
-  }
-
-  function renderTaskCalendar() {
-    if (!taskCalendarView || !activeTaskEdit) return;
-    const { year, month } = taskCalendarView;
-    const days = document.getElementById('taskCalendarDays');
-    const selectedDate = document.getElementById('taskEditorDate').value;
-    const todayKey = window.SZVKShared.kyivDateKey();
-    const signature = JSON.stringify([year, month, selectedDate, todayKey, activeTaskEdit.dateKey, window.overrides || {}]);
-    if (taskCalendarSignature === signature) return;
-    taskCalendarSignature = signature;
-    document.getElementById('taskCalendarMonth').textContent = MONTH_NAMES[month] + ' ' + year;
-    document.getElementById('taskCalendarPrev').disabled = year === 1000 && month === 0;
-    document.getElementById('taskCalendarNext').disabled = year === 9999 && month === 11;
-    days.replaceChildren();
-    for (const entry of window.SZVKShared.calendarMonthDays(year, month)) {
-      const key = entry.dateKey;
-      const info = window.SZVKShared.shiftInfo(key, window.overrides || {});
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'task-calendar-day' + (!entry.inMonth ? ' other-month' : '') + (info ? info.worker === 'Артем' ? ' artem' : ' oleksandr' : '');
-      button.dataset.date = key;
-      button.disabled = !info;
-      button.innerHTML = `<span class="task-calendar-day-number">${entry.day}</span>${info ? `<span class="task-calendar-worker">${info.worker === 'Артем' ? 'А' : 'О'}·${info.shiftNum}</span>${info.isEdited ? '<span class="task-calendar-substitution" aria-hidden="true">↔</span>' : ''}` : ''}`;
-      button.setAttribute('aria-label', info ? taskShiftLabel(key) + (key === activeTaskEdit.dateKey ? ' · Поточний день завдання' : '') : 'Дата недоступна');
-      button.title = button.getAttribute('aria-label');
-      button.setAttribute('aria-pressed', String(key === selectedDate));
-      button.tabIndex = key === selectedDate ? 0 : -1;
-      if (key === todayKey) { button.classList.add('today'); button.setAttribute('aria-current', 'date'); }
-      if (key === activeTaskEdit.dateKey) button.classList.add('source-day');
-      days.appendChild(button);
-    }
-    if (!days.querySelector('[tabindex="0"]')) days.querySelector('button:not(.other-month):not(:disabled)').tabIndex = 0;
-  }
-
-  function selectTaskDate(dateKey) {
-    if (!window.SZVKShared.isValidDateKey(dateKey)) return;
-    document.getElementById('taskEditorDate').value = dateKey;
-    const [year, month] = dateKey.split('-').map(Number);
-    taskCalendarView = { year, month: month - 1 };
-    updateTaskShiftPreview();
-    document.querySelector('#taskCalendarDays [aria-pressed="true"]').focus();
-  }
-
-  document.getElementById('taskCalendarDays').addEventListener('click', event => {
-    const button = event.target.closest('[data-date]');
-    if (button && !button.disabled) selectTaskDate(button.dataset.date);
   });
-  document.getElementById('taskCalendarDays').addEventListener('keydown', event => {
-    const button = event.target.closest('[data-date]');
-    const offsets = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 };
-    if (!button || !(event.key in offsets)) return;
-    event.preventDefault();
-    const [year, month, day] = button.dataset.date.split('-').map(Number);
-    const date = new Date(year, month - 1, day + offsets[event.key]);
-    selectTaskDate(formatDateKey(date.getFullYear(), date.getMonth(), date.getDate()));
-  });
-  function navigateTaskMonth(offset) {
-    const next = new Date(taskCalendarView.year, taskCalendarView.month + offset, 1);
-    if (next.getFullYear() < 1000 || next.getFullYear() > 9999) return;
-    taskCalendarView = { year: next.getFullYear(), month: next.getMonth() };
-    renderTaskCalendar();
-  }
-  document.getElementById('taskCalendarPrev').onclick = () => navigateTaskMonth(-1);
-  document.getElementById('taskCalendarNext').onclick = () => navigateTaskMonth(1);
-  document.getElementById('taskEditorDate').addEventListener('input', () => selectTaskDate(document.getElementById('taskEditorDate').value));
+  const { openTaskEditor, closeActiveTasksSheet, syncActiveTasksPresentation, renderActiveTasks } = taskWorkspace;
+  const taskCarryLabel = window.SZVKShared.taskCarryLabel;
 
   function refreshOpenDayTasks() {
     if (activeDayModalTarget && document.getElementById('dayActionModal').classList.contains('active')) {
@@ -3664,217 +3253,6 @@ document.addEventListener("DOMContentLoaded", function () {
       const key = formatDateKey(year, month, day);
       renderModalTasks(getDayTasks(key), key);
     }
-  }
-
-  document.getElementById('taskEditorClose').onclick = closeTaskEditor;
-  document.getElementById('taskEditorCancel').onclick = closeTaskEditor;
-  document.getElementById('taskEditorModal').addEventListener('click', event => {
-    if (event.target === event.currentTarget) closeTaskEditor();
-  });
-  document.addEventListener('keydown', event => {
-    if (event.key === 'Escape' && activeTaskEdit) { event.preventDefault(); closeTaskEditor(); }
-  });
-  document.getElementById('taskEditorForm').addEventListener('submit', event => {
-    event.preventDefault();
-    if (!activeTaskEdit || !event.currentTarget.reportValidity()) return;
-    const { dateKey, taskId } = activeTaskEdit;
-    const targetDateKey = document.getElementById('taskEditorDate').value;
-    try {
-      if (activeTaskEdit.mode === 'move' && targetDateKey === dateKey) throw new Error('Оберіть інший день для перенесення завдання.');
-      const result = window.SZVKShared.updateTask(window.dayNotes, dateKey, taskId, document.getElementById('taskEditorText').value, targetDateKey, document.querySelector('#taskEditorTimeMount .task-time-input').value);
-      if (result.changed) {
-        logAction({
-          module: 'schedule', tab: 'day_tasks', type: result.moved ? 'task_move' : 'task_edit',
-          description: result.moved ? 'Перенесено завдання: ' + dateKey + ' → ' + taskShiftLabel(targetDateKey) : 'Оновлено завдання на ' + dateKey,
-          details: '«' + result.task.text + '»' + (result.task.time ? ' · ' + result.task.time : ''),
-          restoreData: result.moved
-            ? { fromDateKey: dateKey, toDateKey: targetDateKey, taskId: result.task.id, previous: result.previous }
-            : { dateKey, taskId: result.task.id, prevText: result.previous.text, prevTime: result.previous.time || '' },
-          editRef: { module: 'schedule', type: 'task', dateKey: targetDateKey, taskId: result.task.id }
-        });
-        saveLocalData();
-      }
-      closeTaskEditor();
-      refreshOpenDayTasks();
-      renderApp();
-    } catch (error) {
-      const message = document.getElementById('taskEditorError');
-      message.textContent = error.message;
-      message.hidden = false;
-    }
-  });
-
-  function taskCarryLabel(task) {
-    if (!window.SZVKShared.isValidDateKey(task.carriedFrom)) return '';
-    return '<span class="task-carried-from">↪ З ' + task.carriedFrom.split('-').reverse().join('.') + '</span>';
-  }
-
-  const activeTasksHost = document.getElementById('activeTasksHost');
-  const activeTasksPanel = document.getElementById('activeTasksPanel');
-  const activeTasksSheet = document.getElementById('activeTasksSheet');
-  const activeTasksDock = document.getElementById('activeTasksDock');
-  const activeTasksToggle = document.getElementById('activeTasksToggle');
-  const activeTasksRail = document.getElementById('activeTasksRail');
-  const activeTasksCompact = window.matchMedia('(max-width: 1099px)');
-  const activeTasksReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-  let activeTasksExpanded = true;
-  let activeTasksPreviousOverflow = '';
-  let activeTasksSheetClosing = null;
-  let activeTasksPlannedMotion = null;
-  try { activeTasksExpanded = localStorage.getItem('szvk_active_tasks_expanded') !== 'false'; } catch (error) {}
-
-  function closeActiveTasksSheet(restoreFocus = true, animate = true) {
-    if (!activeTasksSheet.open) return;
-    if (activeTasksSheetClosing) {
-      if (!animate || activeTasksReducedMotion.matches) activeTasksSheetClosing.finish(restoreFocus);
-      return;
-    }
-    const state = {
-      finish(focus = restoreFocus) {
-        if (activeTasksSheetClosing !== state) return;
-        activeTasksSheetClosing = null;
-        activeTasksSheet.close();
-        activeTasksSheet.classList.remove('is-closing');
-        activeTasksSheet.style.removeProperty('--sheet-exit-start');
-        activeTasksSheet.inert = false;
-        activeTasksHost.appendChild(activeTasksPanel);
-        document.body.style.overflow = activeTasksPreviousOverflow;
-        activeTasksDock.setAttribute('aria-expanded', 'false');
-        syncActiveTasksPresentation();
-        if (focus && !activeTasksDock.hidden) activeTasksDock.focus({ preventScroll: true });
-      }
-    };
-    activeTasksSheetClosing = state;
-    if (!animate || activeTasksReducedMotion.matches) { state.finish(); return; }
-    // Continue from the current position if the user closes during entry.
-    const transform = getComputedStyle(activeTasksSheet).transform;
-    const offset = transform === 'none' ? 0 : new DOMMatrixReadOnly(transform).m42;
-    activeTasksSheet.style.setProperty('--sheet-exit-start', offset + 'px');
-    activeTasksSheet.inert = true;
-    activeTasksSheet.classList.add('is-closing');
-    Promise.allSettled(activeTasksSheet.getAnimations().map(animation => animation.finished)).then(() => state.finish());
-  }
-
-  function syncActiveTasksPresentation() {
-    const visible = Boolean(currentUser) && activeTab === 'calendar';
-    const compact = activeTasksCompact.matches;
-    if (activeTasksSheet.open && (!visible || !compact)) closeActiveTasksSheet(false, false);
-    document.getElementById('mainAppContainer').classList.toggle('showing-history', activeTab === 'history');
-    activeTasksHost.hidden = !visible || compact;
-    activeTasksDock.hidden = !visible || !compact;
-    activeTasksHost.classList.toggle('is-collapsed', !compact && !activeTasksExpanded);
-    activeTasksPanel.inert = !compact && !activeTasksExpanded;
-    activeTasksRail.inert = compact || activeTasksExpanded;
-    activeTasksRail.setAttribute('aria-hidden', String(compact || activeTasksExpanded));
-    activeTasksRail.setAttribute('aria-expanded', String(activeTasksExpanded));
-    activeTasksToggle.setAttribute('aria-expanded', String(compact || activeTasksExpanded));
-    activeTasksToggle.title = compact || activeTasksExpanded ? 'Згорнути список завдань' : 'Розгорнути список завдань';
-    document.getElementById('activeTasksChevron').textContent = compact ? '⌃' : '›';
-  }
-
-  activeTasksDock.addEventListener('click', () => {
-    if (!currentUser || !activeTasksCompact.matches || activeTasksSheet.open) return;
-    activeTasksSheet.appendChild(activeTasksPanel);
-    syncActiveTasksPresentation();
-    activeTasksPreviousOverflow = document.body.style.overflow;
-    activeTasksSheet.showModal();
-    document.body.style.overflow = 'hidden';
-    activeTasksDock.setAttribute('aria-expanded', 'true');
-  });
-  function toggleActiveTasksPanel() {
-    if (activeTasksCompact.matches) { closeActiveTasksSheet(); return; }
-    activeTasksExpanded = !activeTasksExpanded;
-    try { localStorage.setItem('szvk_active_tasks_expanded', String(activeTasksExpanded)); } catch (error) {}
-    syncActiveTasksPresentation();
-    (activeTasksExpanded ? activeTasksToggle : activeTasksRail).focus({ preventScroll: true });
-  }
-  activeTasksToggle.addEventListener('click', toggleActiveTasksPanel);
-  activeTasksRail.addEventListener('click', toggleActiveTasksPanel);
-  activeTasksCompact.addEventListener('change', syncActiveTasksPresentation);
-  activeTasksReducedMotion.addEventListener('change', event => {
-    if (!event.matches) return;
-    activeTasksSheetClosing?.finish();
-    activeTasksPlannedMotion?.finish();
-  });
-  activeTasksSheet.addEventListener('cancel', event => {
-    event.preventDefault();
-    closeActiveTasksSheet();
-  });
-  activeTasksSheet.addEventListener('click', event => {
-    const bounds = activeTasksSheet.getBoundingClientRect();
-    if (event.target === activeTasksSheet && (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom)) closeActiveTasksSheet();
-  });
-
-  document.querySelector('#activeTasksPlanned > summary').addEventListener('click', event => {
-    event.preventDefault();
-    const details = document.getElementById('activeTasksPlanned');
-    const list = document.getElementById('activeTasksPlannedList');
-    const opening = !(activeTasksPlannedMotion?.opening ?? details.open);
-    const height = details.open ? list.getBoundingClientRect().height : 0;
-    const opacity = details.open ? getComputedStyle(list).opacity : 0;
-    activeTasksPlannedMotion?.animation.cancel();
-    if (activeTasksReducedMotion.matches) {
-      activeTasksPlannedMotion = null;
-      list.style.removeProperty('overflow');
-      details.open = opening;
-      return;
-    }
-    details.open = true;
-    list.style.overflow = 'hidden';
-    const animation = list.animate([
-      { height: height + 'px', opacity },
-      { height: (opening ? list.scrollHeight : 0) + 'px', opacity: opening ? 1 : 0 }
-    ], { duration: 220, easing: 'cubic-bezier(0.4, 0, 0.2, 1)', fill: 'both' });
-    const state = { opening, animation, finish() {
-      if (activeTasksPlannedMotion !== state) return;
-      activeTasksPlannedMotion = null;
-      details.open = opening;
-      animation.cancel();
-      list.style.removeProperty('overflow');
-    } };
-    activeTasksPlannedMotion = state;
-    animation.finished.then(state.finish, state.finish);
-  });
-
-  function activeTaskHtml({ dateKey, task }, todayKey) {
-    const assignment = window.SZVKShared.shiftInfo(dateKey, window.overrides || {});
-    const dateLabel = dateKey === todayKey ? 'Сьогодні' : dateKey.split('-').reverse().join('.');
-    return `<li class="active-task-item" data-date="${dateKey}" data-task-id="${escapeHtml(task.id)}">
-      <label class="active-task-check" title="Позначити виконаним">
-        <input type="checkbox" aria-label="Виконати: ${escapeHtml(task.text)}">
-      </label>
-      <div class="active-task-content">
-        <button type="button" class="active-task-open" title="Відкрити день із цим завданням">
-          <span class="active-task-text">${task.time ? `<span class="task-time-badge">${escapeHtml(task.time)}</span> ` : ''}${escapeHtml(task.text)}</span>
-          ${taskCarryLabel(task)}
-          <span class="active-task-meta"><span>${dateLabel}</span><span class="active-task-worker ${assignment.worker === 'Артем' ? 'artem' : 'oleksandr'}">Чергує: ${escapeHtml(assignment.worker)}</span></span>
-        </button>
-        ${task.repairId != null ? `<a class="task-repair-link" href="trackers.html?editRepair=${encodeURIComponent(task.repairId)}">↗ Ремонт</a>` : ''}
-      </div>
-    </li>`;
-  }
-
-  function renderActiveTasks(todayKey) {
-    const { active, planned } = window.SZVKShared.activeTaskGroups(window.dayNotes, todayKey);
-    document.getElementById('activeTasksCount').textContent = active.length;
-    document.getElementById('activeTasksDockCount').textContent = active.length;
-    document.getElementById('activeTasksRailCount').textContent = active.length;
-    const first = active[0]?.task;
-    const preview = first ? (first.time ? first.time + ' · ' : '') + first.text : 'На сьогодні все виконано';
-    activeTasksRail.title = 'Розгорнути список завдань · ' + preview;
-    activeTasksRail.setAttribute('aria-label', `Розгорнути список завдань (${active.length}). ${preview}`);
-    for (const id of ['activeTasksPreview', 'activeTasksDockPreview']) {
-      const element = document.getElementById(id);
-      element.textContent = preview;
-      element.title = preview;
-    }
-    window.SZVKShared.setHtmlIfChanged(document.getElementById('activeTasksList'), active.length
-      ? active.map(entry => activeTaskHtml(entry, todayKey)).join('')
-      : '<li class="active-tasks-empty"><strong>На сьогодні все виконано</strong>Нові та перенесені завдання з’являться тут.</li>');
-    document.getElementById('activeTasksPlanned').hidden = planned.length === 0;
-    document.getElementById('activeTasksPlannedCount').textContent = planned.length;
-    window.SZVKShared.setHtmlIfChanged(document.getElementById('activeTasksPlannedList'), planned.map(entry => activeTaskHtml(entry, todayKey)).join(''));
-    syncActiveTasksPresentation();
   }
 
   function setDayTaskDone(dateKey, taskId, done) {
@@ -3890,34 +3268,6 @@ document.addEventListener("DOMContentLoaded", function () {
     refreshOpenDayTasks();
     renderApp();
   }
-
-  activeTasksPanel.addEventListener('change', async event => {
-    if (!event.target.matches('.active-task-check input')) return;
-    const checkbox = event.target;
-    const row = checkbox.closest('.active-task-item');
-    const list = row.parentElement;
-    const index = [...list.children].indexOf(row);
-    const hadFocus = document.activeElement === checkbox;
-    await setDayTaskDone(row.dataset.date, row.dataset.taskId, checkbox.checked);
-    if (checkbox.isConnected) checkbox.checked = false;
-    if (hadFocus && (activeTasksSheet.open || !activeTasksCompact.matches)) {
-      const inputs = list.querySelectorAll('input');
-      (inputs[Math.min(index, inputs.length - 1)] || activeTasksToggle).focus({ preventScroll: true });
-    }
-  });
-  activeTasksPanel.addEventListener('click', event => {
-    const button = event.target.closest('.active-task-open');
-    if (!button) return;
-    const dateKey = button.closest('.active-task-item').dataset.date;
-    closeActiveTasksSheet(false, false);
-    const [year, month, day] = dateKey.split('-').map(Number);
-    const offset = (year - 2026) * 12 + month - 1 - 8;
-    currentSeasonIndex = Math.floor(offset / 3);
-    selectedMonthRelative = ((offset % 3) + 3) % 3;
-    activeTab = 'calendar';
-    renderApp();
-    openDayModal(year, month - 1, day);
-  });
 
   function renderModalTasks(tasks, dateKey) {
     const listEl = document.getElementById("modalDayTasksList");
@@ -4059,82 +3409,6 @@ document.addEventListener("DOMContentLoaded", function () {
   document.getElementById("modalAddNewTaskBtn").onclick = handleAddNewTask;
   dayInputEl.onkeydown = (e) => { if (e.key === "Enter") handleAddNewTask(); };
 
-  function openSeasonOverviewModal() {
-    const season = getSeasonDetails(currentSeasonIndex);
-    const modal = document.getElementById("seasonOverviewModal");
-    const list = document.getElementById("seasonOverviewList");
-    document.getElementById("seasonOverviewTitle").textContent = `📋 Огляд сезону: ${season.name}`;
-    list.innerHTML = "";
-
-    let hasAnyTask = false;
-
-    season.months.forEach((mObj, mIdx) => {
-      const mKey = formatMonthKey(mObj.year, mObj.month);
-      const daysInMonth = new Date(mObj.year, mObj.month + 1, 0).getDate();
-      const monthLabel = `${MONTH_NAMES[mObj.month]} ${mObj.year}`;
-
-      for (let day = 1; day <= daysInMonth; day++) {
-        const dateKey = formatDateKey(mObj.year, mObj.month, day);
-        const dayTasks = getDayTasks(dateKey).filter(t => !t.done);
-
-        if (dayTasks.length > 0) {
-          hasAnyTask = true;
-          const assignment = getAssignedWorker(mObj.year, mObj.month, day);
-          const dateObj = new Date(mObj.year, mObj.month, day);
-          const box = document.createElement("div");
-          box.className = "overview-group-box";
-
-          let tasksHtml = dayTasks.map(t => `
-            <div class="overview-task-line">
-              <span class="overview-task-text">
-                <span class="overview-bullet-day">•</span> ${t.time ? `<span class="task-time-badge">${escapeHtml(t.time)}</span> ` : ''}${escapeHtml(t.text)}${taskCarryLabel(t)}
-              </span>
-              ${t.repairId != null ? `<a class="task-action-btn task-repair-link" href="trackers.html?editRepair=${encodeURIComponent(t.repairId)}">↗ Ремонт</a>` : t.author ? `<span class="author-badge">${escapeHtml(t.author)}</span>` : ''}
-            </div>
-          `).join('');
-
-          box.innerHTML = `
-            <div class="overview-group-header">
-              <span>📅 ${day} ${MONTH_NAMES[mObj.month]} (${WEEKDAYS[dateObj.getDay()]}) — Чергує: ${assignment.worker}</span>
-              <button class="btn" style="padding: 2px 7px; font-size: 10px;" onclick="openSpecificDayFromOverview(${mObj.year}, ${mObj.month}, ${day})">Відкрити день</button>
-            </div>
-            ${tasksHtml}
-          `;
-          list.appendChild(box);
-        }
-      }
-
-    });
-
-    if (!hasAnyTask) {
-      list.innerHTML = `<div style="text-align: center; color: var(--text-muted); font-size: 13px; padding: 20px 0;">🎉 Активних завдань немає!</div>`;
-    }
-
-    window.SZVKShared.openModal(modal);
-  }
-
-  window.openSpecificDayFromOverview = (y, m, d) => {
-    window.SZVKShared.closeModal(document.getElementById("seasonOverviewModal"));
-    const season = getSeasonDetails(currentSeasonIndex);
-    const mIdx = season.months.findIndex(item => item.year === y && item.month === m);
-    if (mIdx !== -1) selectedMonthRelative = mIdx;
-    activeTab = "calendar";
-    renderApp();
-    openDayModal(y, m, d);
-  };
-
-  window.switchMonthAndTab = (mIdx, tabName) => {
-    window.SZVKShared.closeModal(document.getElementById("seasonOverviewModal"));
-    selectedMonthRelative = mIdx;
-    activeTab = tabName;
-    renderApp();
-  };
-
-  document.getElementById("seasonTaskBadge").onclick = openSeasonOverviewModal;
-  document.getElementById("seasonOverviewCloseX").onclick = () => {
-    window.SZVKShared.closeModal(document.getElementById("seasonOverviewModal"));
-  };
-
   function renderApp() {
     syncActiveTasksPresentation();
     const viewKey = activeTab === 'history' ? 'history' : 'calendar:' + currentSeasonIndex + ':' + selectedMonthRelative;
@@ -4146,27 +3420,12 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
     renderedViewKey = viewKey;
-    if (activeTaskEdit) {
-      refreshTaskEditorSource();
-      updateTaskShiftPreview();
-    }
     const todayKey = window.SZVKShared.kyivDateKey();
     renderActiveTasks(todayKey);
 
     const season = getSeasonDetails(currentSeasonIndex);
     const seasonLabel = document.getElementById('currentSeasonLabel');
     if (seasonLabel.textContent !== season.name) seasonLabel.textContent = season.name;
-
-    const seasonDailyCount = getSeasonActiveDailyTasksCount(season);
-    const seasonBadgeEl = document.getElementById("seasonTaskBadge");
-    if (seasonBadgeEl) {
-      if (seasonDailyCount > 0) {
-        window.SZVKShared.setHtmlIfChanged(seasonBadgeEl, `<span>📋 Огляд</span><span class="season-daily-badge" title="Активні завдання по днях: ${seasonDailyCount}">${seasonDailyCount}</span>`);
-      } else {
-        window.SZVKShared.setHtmlIfChanged(seasonBadgeEl, `<span>📋 Огляд</span>`);
-      }
-      seasonBadgeEl.style.display = "inline-flex";
-    }
 
     const calView = document.getElementById("mainCalendarView");
     const historyView = document.getElementById("historyView");
@@ -4388,8 +3647,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
   const scheduleDialogs = [
     document.getElementById("dayActionModal"),
-    document.getElementById("taskEditorModal"),
-    document.getElementById("seasonOverviewModal"),
     document.getElementById("adminUsersModal")
   ];
   scheduleDialogs.forEach(modal => {
@@ -4417,6 +3674,13 @@ document.addEventListener("DOMContentLoaded", function () {
     if (urlParams.get('tab') === 'history' || window.location.hash === '#history') {
       activeTab = 'history';
       renderApp();
+    } else if (currentUser && window.SZVKShared.isValidDateKey(urlParams.get('date'))) {
+      const [year, month, day] = urlParams.get('date').split('-').map(Number);
+      const offset = (year - 2026) * 12 + month - 1 - 8;
+      currentSeasonIndex = Math.floor(offset / 3);
+      selectedMonthRelative = ((offset % 3) + 3) % 3;
+      renderApp();
+      openDayModal(year, month - 1, day);
     }
   } catch (e) {}
 

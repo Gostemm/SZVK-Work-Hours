@@ -28,6 +28,11 @@ async function main() {
       releaseModuleLoad = () => { res.setHeader('Content-Type', 'text/javascript'); res.end('/* Test resumes page loading. */'); };
       return;
     }
+    if (['assets/sontseslav.webp','assets/cardchecker.svg','assets/navisoft.png','assets/terminal-transfer.jpg'].includes(filename)) {
+      res.setHeader('Content-Type', 'image/' + (filename.endsWith('.svg') ? 'svg+xml' : filename.split('.').pop()));
+      res.end(fs.readFileSync(path.join(root, filename)));
+      return;
+    }
     if (!['index.html','trackers.html','shared.js','shared.css','tracker_data.js'].includes(filename)) { res.writeHead(404).end(); return; }
     res.setHeader('Content-Type', filename.endsWith('.css') ? 'text/css; charset=utf-8' : filename.endsWith('.js') ? 'text/javascript; charset=utf-8' : 'text/html; charset=utf-8');
     let content = fs.readFileSync(path.join(root, filename));
@@ -74,12 +79,20 @@ async function main() {
       socket.send(JSON.stringify({ id, method, params }));
     });
     const evaluate = async expression => {
-      const result = await call('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true });
+      let result;
+      try { result = await call('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true }); }
+      catch (error) { throw new Error(error.message + ' while evaluating: ' + expression.slice(0, 220)); }
       if (result.exceptionDetails) throw new Error(JSON.stringify(result.exceptionDetails));
       return result.result.value;
     };
     const waitFor = async expression => {
-      for (let i = 0; i < 100; i++) { if (await evaluate(expression)) return; await sleep(50); }
+      for (let i = 0; i < 100; i++) {
+        try { if (await evaluate(expression)) return; }
+        catch (error) {
+          if (!/Inspected target navigated|Execution context was destroyed|Cannot find context/.test(error.message)) throw error;
+        }
+        await sleep(50);
+      }
       throw new Error('Timed out: ' + expression);
     };
     const captureScreenshot = async () => {
@@ -154,6 +167,69 @@ async function main() {
       console.log('Checking ' + page);
       await call('Page.navigate', { url: url + '/' + page });
       await waitFor("document.readyState==='complete' && !!document.querySelector('#accountMount button')");
+    };
+    const checkTaskWorkspace = async module => {
+      console.log('Checking direct task editing in ' + module);
+      await evaluate("Promise.allSettled(document.getAnimations().map(animation=>animation.finished))");
+      const taskId = 'workspace-' + module;
+      const row = `.active-task-item[data-task-id="${taskId}"]`;
+      await call('Emulation.setDeviceMetricsOverride',{width:390,height:800,deviceScaleFactor:1,mobile:true});
+      await waitFor("!document.querySelector('#activeTasksDock').hidden");
+      await evaluate(`(()=>{
+        const data=JSON.parse(localStorage.getItem('szvk_schedule_local_data'));
+        data.dayNotes['2026-10-14'].push({id:${JSON.stringify(taskId)},text:'Редагування <тест> & час',time:'08:15',done:false,author:'Тест',extra:'preserved'});
+        localStorage.setItem('szvk_schedule_local_data',JSON.stringify(data));
+        window.dispatchEvent(new StorageEvent('storage',{key:'szvk_schedule_local_data'}));
+      })()`);
+      await clickPointer('#activeTasksDock');
+      await evaluate("Promise.allSettled(document.querySelector('#activeTasksSheet').getAnimations({subtree:true}).map(animation=>animation.finished))");
+      await clickPointer(row+' .active-task-edit');
+      assert.equal(await evaluate("document.querySelector('#taskEditorModal').classList.contains('active') && !document.querySelector('#activeTasksSheet').open && !document.querySelector('#dayActionModal')?.classList.contains('active')"),true,module+': edit opens directly from the work list without the day dialog');
+      assert.equal(await evaluate("document.querySelector('#taskEditorText').value"),'Редагування <тест> & час');
+      await checkModalGeometry('taskEditorModal','taskEditorSave');
+      const editorShot=await captureScreenshot();
+      fs.writeFileSync(path.join(artifacts,'task-editor-'+module+'-mobile.png'),Buffer.from(editorShot.data,'base64'));
+      await evaluate("document.querySelector('#taskEditorText').value='Змінено <тест> & збережено';document.querySelector('#taskEditorTimeMount .task-time-input').value='16:45';document.querySelector('#taskCalendarDays [data-date=\"2026-10-15\"]').click()");
+      await clickPointer('#taskEditorSave');
+      await waitFor("document.querySelector('#activeTasksSheet').open");
+      const task=await evaluate(`JSON.parse(localStorage.getItem('szvk_schedule_local_data')).dayNotes['2026-10-15'].find(task=>task.id===${JSON.stringify(taskId)})`);
+      assert.deepEqual(task,{id:taskId,text:'Змінено <тест> & збережено',time:'16:45',done:false,author:'Тест',extra:'preserved'},module+': edits preserve identity and metadata while changing text, time and day');
+      assert.equal(await evaluate(`JSON.parse(localStorage.getItem('szvk_action_history_unified')).some(entry=>entry.type==='task_move' && entry.editRef.taskId===${JSON.stringify(taskId)})`),true,module+': editing is recorded in the common action history');
+      await evaluate("Promise.allSettled(document.querySelector('#activeTasksSheet').getAnimations({subtree:true}).map(animation=>animation.finished))");
+      await clickPointer('#activeTasksPlanned > summary');
+      await waitFor("document.querySelector('#activeTasksPlanned').open");
+      await evaluate("Promise.allSettled(document.getAnimations().map(animation=>animation.finished))");
+      await clickPointer(row+' .active-task-edit');
+      assert.equal(await evaluate("document.querySelector('#taskEditorModal').classList.contains('active') && !document.querySelector('#activeTasksSheet').open"),true,module+': planned tasks can also be edited directly');
+      await evaluate("document.querySelector('#taskEditorText').value='Скасована зміна'");
+      await clickPointer('#taskEditorCancel');
+      await waitFor("document.querySelector('#activeTasksSheet').open");
+      assert.equal(await evaluate(`JSON.parse(localStorage.getItem('szvk_schedule_local_data')).dayNotes['2026-10-15'].find(task=>task.id===${JSON.stringify(taskId)}).text`),'Змінено <тест> & збережено',module+': cancelling preserves saved text');
+      await pressEscape();
+      await waitFor("!document.querySelector('#activeTasksSheet').open");
+      await call('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
+      await waitFor("!document.querySelector('#activeTasksHost').hidden && document.querySelector('#activeTasksDock').hidden");
+      assert.equal(await evaluate("!document.querySelector('#activeTasksHost').hidden && document.querySelector('#activeTasksDock').hidden"),true,module+': desktop uses the shared sidebar');
+      await evaluate("Promise.allSettled(document.getAnimations().map(animation=>animation.finished))");
+      const shot=await captureScreenshot();
+      fs.writeFileSync(path.join(artifacts,'task-workspace-'+module+'.png'),Buffer.from(shot.data,'base64'));
+      await assertAnimatedDismissal("document.querySelector('"+row+" .active-task-edit').click()",'taskEditorModal',pressEscape);
+      await evaluate("Promise.allSettled(document.getAnimations().map(animation=>animation.finished))");
+      await evaluate(`(()=>{
+        const data=JSON.parse(localStorage.getItem('szvk_schedule_local_data'));
+        for(const tasks of Object.values(data.dayNotes)) if(Array.isArray(tasks)) {
+          const index=tasks.findIndex(task=>task.id===${JSON.stringify(taskId)});if(index!==-1) tasks.splice(index,1);
+        }
+        localStorage.setItem('szvk_schedule_local_data',JSON.stringify(data));
+        window.dispatchEvent(new StorageEvent('storage',{key:'szvk_schedule_local_data'}));
+        const link=document.querySelector('.useful-link[href="https://m3.material.io/components/app-bars/overview"]');
+        window.__sunLink=!!link && link.textContent.includes('Сонцеслав') && link.target==='_blank' && link.querySelector('img').naturalWidth>0;
+        const planned=document.querySelector('#activeTasksPlanned');
+        if(planned.open) planned.querySelector('summary').click();
+      })()`);
+      assert.equal(await evaluate('window.__sunLink'),true,module+': Сoнцеслав opens the exact requested URL and loads the supplied logo');
+      await evaluate("Promise.allSettled(document.getAnimations().map(animation=>animation.finished))");
+      await call('Emulation.setDeviceMetricsOverride',{width:320,height:800,deviceScaleFactor:1,mobile:true});
     };
     const checkModalGeometry = async (modalId, controlId) => {
       for (const [width, height] of [[320,480], [740,320]]) {
@@ -431,9 +507,44 @@ async function main() {
       }
       await evaluate("document.querySelector('#closeRepairModalBtn').click()");
     }
+    await checkTaskWorkspace('tracker');
     await call('Emulation.setDeviceMetricsOverride', { width:320,height:800,deviceScaleFactor:1,mobile:true });
     await navigate('index.html');
     await waitFor("document.querySelector('#mainAppContainer').style.display==='flex'");
+    await checkTaskWorkspace('hours');
+    await evaluate("Promise.allSettled(document.getAnimations().map(animation=>animation.finished))");
+    // The persistent task strip gets its own row, outside the calendar's scroll area.
+    for(const [width,height] of [[320,480],[390,664],[740,320],[768,800],[1099,800]]) {
+      await call('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:true});
+      await evaluate("document.documentElement.style.setProperty('--safe-area-bottom','34px')");
+      for(const position of [0,0.5,1,0.5,0]) {
+        const geometry=await evaluate(`(()=>{
+          const viewport=document.querySelector('#scheduleViewport');
+          viewport.scrollTop=(viewport.scrollHeight-viewport.clientHeight)*${position};
+          const bounds=viewport.getBoundingClientRect();const dock=document.querySelector('#activeTasksDock').getBoundingClientRect();
+          const visible=[...document.querySelectorAll('.day-card[data-date]')].filter(card=>{
+            const rect=card.getBoundingClientRect();return rect.bottom>bounds.top+1 && rect.top<bounds.bottom-1;
+          });
+          const clickable=visible.every(card=>{
+            const rect=card.getBoundingClientRect();const y=(Math.max(rect.top,bounds.top)+Math.min(rect.bottom,bounds.bottom))/2;
+            const hit=document.elementFromPoint(rect.left+rect.width/2,y);return card===hit || card.contains(hit);
+          });
+          return {separate:bounds.bottom<=dock.top-1,safe:dock.bottom<=innerHeight-34,clickable,
+            contained:document.documentElement.scrollHeight<=innerHeight+1 && document.documentElement.scrollWidth<=innerWidth,
+            scrollable:viewport.scrollHeight>viewport.clientHeight};
+        })()`);
+        assert.equal(geometry.separate && geometry.safe && geometry.clickable && geometry.contained,true,
+          'the mobile task strip never covers visible calendar cells while scrolling either direction: '+JSON.stringify({width,height,position,...geometry}));
+        if(height<=480) assert.equal(geometry.scrollable,true,'short screens scroll the calendar above the task strip');
+      }
+      if(width===390) {
+        await evaluate("document.querySelector('#scheduleViewport').scrollTop=100000");
+        const scrollShot=await captureScreenshot();
+        fs.writeFileSync(path.join(artifacts,'calendar-mobile-scroll.png'),Buffer.from(scrollShot.data,'base64'));
+      }
+    }
+    await evaluate("document.documentElement.style.removeProperty('--safe-area-bottom');document.querySelector('#scheduleViewport').scrollTop=0");
+    await call('Emulation.setDeviceMetricsOverride',{width:320,height:800,deviceScaleFactor:1,mobile:true});
     // Exercise the live list through its real controls, using temporary local tasks.
     await evaluate(`(()=>{
       window.dayNotes['2026-10-14'].push({id:'panel-action',text:'Панель: <перевірити> & завершити',time:'08:15',done:false});
@@ -609,14 +720,14 @@ async function main() {
     assert.deepEqual(await evaluate(`(()=>{
       const tabs=document.querySelector('#monthTabsContainer').children;
       tabs[2].click();tabs[0].click();tabs[1].click();
-      const snapshots=document.querySelectorAll('#mainAppContainer > .view-transition-outgoing');
+      const snapshots=document.querySelectorAll('#scheduleContent > .view-transition-outgoing');
       return {latest:document.querySelector('#currentMonthTitle').textContent.includes('Жовтень'),single:snapshots.length===1,safe:snapshots[0].inert && !snapshots[0].querySelector('[id], [name]'),horizontal:new DOMMatrixReadOnly(getComputedStyle(document.querySelector('#mainCalendarView')).transform).m41};
     })()`),{latest:true,single:true,safe:true,horizontal:0},'rapid month changes keep only the latest transition without horizontal jumps or duplicate controls');
     await evaluate("Promise.allSettled(document.getAnimations().map(animation=>animation.finished))");
     assert.equal(await evaluate("document.querySelectorAll('.view-transition-outgoing').length"),0,'outgoing views are removed after transitions finish');
     assert.equal(await evaluate(`(()=>{
       document.querySelector('#monthTabsContainer').children[2].click();
-      const host=document.querySelector('#mainAppContainer');
+      const host=document.querySelector('#scheduleContent');
       const animation=host.getAnimations().find(animation=>animation.effect.getKeyframes().some(frame=>frame.height));
       if(!animation) return false;
       const frames=animation.effect.getKeyframes();
@@ -627,13 +738,7 @@ async function main() {
       animation.finish();return smooth;
     })()`),true,'calendar height interpolates between months with different week counts');
     await evaluate("document.querySelector('#monthTabsContainer').children[1].click();Promise.allSettled(document.getAnimations().map(animation=>animation.finished))");
-    await assertAnimatedDismissal("document.querySelector('#seasonTaskBadge').click()",'seasonOverviewModal',()=>clickPointer('#seasonOverviewCloseX'),'overview-closing-midway.png');
-    await assertAnimatedDismissal("document.querySelector('#seasonTaskBadge').click()",'seasonOverviewModal',clickBackdrop);
-    await assertAnimatedDismissal("document.querySelector('#seasonTaskBadge').click()",'seasonOverviewModal',pressEscape);
-    await evaluate("document.querySelector('#seasonTaskBadge').click();document.querySelector('#seasonOverviewCloseX').click();document.querySelector('#seasonTaskBadge').click();Promise.allSettled(document.querySelector('#seasonOverviewModal').getAnimations({subtree:true}).map(animation=>animation.finished))");
-    assert.equal(await evaluate("document.querySelector('#seasonOverviewModal').classList.contains('active') && !document.querySelector('#seasonOverviewModal').inert && getComputedStyle(document.querySelector('#seasonOverviewModal')).opacity==='1'"),true,'reopening a closing dialog cancels its exit and keeps the latest open state');
-    await clickPointer('#seasonOverviewCloseX');
-    await evaluate("Promise.allSettled(document.getAnimations().map(animation=>animation.finished))");
+    assert.equal(await evaluate("!document.querySelector('#seasonTaskBadge, #seasonOverviewModal')"),true,'the redundant seasonal overview is removed');
     await call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
     assert.equal(await evaluate("document.querySelector('#monthTabsContainer').children[0].click();document.querySelector('#mainCalendarView').getAnimations().length"),0,'reduced motion cancels and skips view animations');
     assert.equal(await evaluate("getComputedStyle(document.querySelector('#btnGoToToday')).transitionDuration"),'0s','reduced motion disables button transitions');
@@ -662,7 +767,7 @@ async function main() {
       assert.equal(Math.abs(counterLayout.buttons[0].top-counterLayout.buttons[1].top)<1 && counterLayout.buttons[0].right<=counterLayout.buttons[1].left && counterLayout.buttons[0].left>=counterLayout.card.left && counterLayout.buttons[1].right<=counterLayout.card.right && counterLayout.values.every(value=>value.scrollWidth<=value.width) && counterLayout.pageWidth<=counterLayout.width,true,'both counters stay side by side and fit the calendar cell: '+JSON.stringify(counterLayout)+'; screenshots: '+artifacts);
     }
     await call('Emulation.setDeviceMetricsOverride',{width:320,height:800,deviceScaleFactor:1,mobile:true});
-    await evaluate("window.scrollTo(0,0)");
+    await evaluate("document.querySelector('#scheduleViewport').scrollTop=0;window.scrollTo(0,0)");
     await evaluate("[...document.querySelectorAll('.day-card')].find(card=>card.querySelector('.day-num')?.textContent==='12').click()");
     assert.equal(await evaluate("document.querySelector('#modalDayTasksList .completed-tasks').open"),false,'a completed-only day starts collapsed');
     assert.equal(await evaluate("document.querySelectorAll('#modalDayTasksList > .task-modal-item').length"),0);
@@ -931,7 +1036,7 @@ async function main() {
     assert.equal(await peer("Object.values(w.dayNotes).flat().filter(task=>task.id==='test-task').length"), 1, 'repeated activation does not duplicate tasks');
     assert.equal(await peer("d.querySelector('#activeTasksList [data-task-id=\"test-task\"]').dataset.date==='2026-10-17'"),true,'the live panel follows carried work across Kyiv midnight');
     assert.equal(errors.length,0,JSON.stringify(errors));
-    console.log('Browser checks passed: live task panel and mobile sheet, previews, safe areas, saved expansion, cross-season navigation, manual and repair completion, simplified navigation, view animations and reduced motion, repair tables/search, calendars, warehouse/references, optional time, cloud note creation, simultaneous Tracker Hub and Work Hours, bidirectional completion/reopening, transferred-day and clicking-account attribution, offline retry, responsive notes, history.');
+    console.log('Browser checks passed: direct task editing, moving and cancellation in Work Hours and Tracker Hub, supplied Сoнцеслав logo and link, live task panel and mobile sheet, previews, safe areas, saved expansion, cross-season navigation, manual and repair completion, simplified navigation, view animations and reduced motion, repair tables/search, calendars, warehouse/references, optional time, cloud note creation, simultaneous Tracker Hub and Work Hours, bidirectional completion/reopening, transferred-day and clicking-account attribution, offline retry, responsive notes, history.');
     console.log('Screenshots: ' + artifacts);
   } finally {
     if (socket) socket.close();

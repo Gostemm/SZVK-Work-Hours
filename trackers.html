@@ -8,7 +8,7 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg" sizes="any">
   <link rel="apple-touch-icon" href="apple-touch-icon.png" sizes="180x180">
 
-  <script src="shared.js?v=e2682b806837"></script>
+  <script src="shared.js?v=66128d7d8002"></script>
   <script>
     // Auth guard
     (function() {
@@ -19,7 +19,7 @@
     })();
   </script>
 
-  <link rel="stylesheet" href="shared.css?v=03ac1b6b4d21">
+  <link rel="stylesheet" href="shared.css?v=722f6118632d">
 
   <style>
     :root {
@@ -1849,7 +1849,9 @@
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 
-<div class="container module-entry">
+<div class="container module-entry task-workspace" id="trackerAppContainer">
+  <div class="schedule-viewport" id="scheduleViewport">
+  <div class="schedule-content" id="scheduleContent">
 
   <!-- Top Header Bar -->
   <div class="top-header-bar">
@@ -2146,6 +2148,9 @@
   </div>
 
 </div>
+
+  </div>
+  </div>
 
 <!-- MODAL: ADD / EDIT REPAIR ENTRY -->
 <div class="modal-overlay" id="referenceEditorModal" role="dialog" aria-modal="true" aria-labelledby="referenceEditorTitle">
@@ -2507,7 +2512,7 @@
  */
 (function() {
   'use strict';
-  if (!window.SZVKShared || typeof window.SZVKShared.readAuthSession !== 'function') return;
+  if (!window.SZVKShared || ['readAuthSession', 'mountTaskWorkspace', 'createScheduleTaskStore'].some(name => typeof window.SZVKShared[name] !== 'function')) return;
   const currentUser = window.SZVKShared.readAuthSession();
   if (!currentUser) return;
   window.SZVKShared.mountAccountMenu({ backup: true, historyId: 'tabBtnHistory' });
@@ -3002,6 +3007,8 @@
   let DB_TRACKERS_DOC = null;
   let DB_HISTORY_DOC = null;
   let DB_SCHEDULE_DOC = null;
+  let taskWorkspace = null;
+  let taskStore = null;
   const UNIFIED_HISTORY_STORAGE_KEY = 'szvk_action_history_unified';
 
   window.SZVKShared.updateAccount(currentUser);
@@ -3029,6 +3036,52 @@
   } catch(e) {
     console.warn("Firebase initialization notice:", e);
   }
+
+  taskStore = window.SZVKShared.createScheduleTaskStore({
+    db: dbTrackers,
+    scheduleDoc: DB_SCHEDULE_DOC,
+    onChange: () => taskWorkspace?.renderActiveTasks(window.SZVKShared.kyivDateKey()),
+    onError: () => { cloudSyncText.textContent = 'Зміни завдань збережено на пристрої. Очікуємо з’єднання.'; }
+  });
+  taskWorkspace = window.SZVKShared.mountTaskWorkspace({
+    container: document.getElementById('trackerAppContainer'),
+    content: document.getElementById('scheduleContent'),
+    getDayNotes: () => taskStore.getData().dayNotes,
+    getOverrides: () => taskStore.getData().overrides,
+    isVisible: () => activeTab !== 'history',
+    onSave: change => taskStore.save(change),
+    onChange: () => taskWorkspace.renderActiveTasks(window.SZVKShared.kyivDateKey()),
+    onError: error => showToast(window.SZVKShared.escapeHtml(error.message), false),
+    logAction,
+    async setTaskDone(dateKey, taskId, done) {
+      const task = (taskStore.getData().dayNotes[dateKey] || []).find(item => String(item.id) === String(taskId));
+      if (!task) return;
+      if (task.repairId != null) {
+        const result = window.SZVKShared.setRepairCompletion(appData.repairs, task.repairId, done, dateKey, currentUser.name || currentUser.username);
+        window.SZVKShared.queueRepairCompletion({ repairId: task.repairId, done, dateKey, user: currentUser.name || currentUser.username });
+        logAction({ module: 'tracker_hub', tab: 'repairs', type: 'repair_edit',
+          description: 'Виконано ремонт із поточних завдань', details: task.text,
+          restoreData: { prevRepair: result.previous }, editRef: { module: 'tracker_hub', type: 'repair', id: task.repairId } });
+        task.done = done;
+        saveLocalData();
+        taskStore.refresh();
+        renderActiveView();
+        await syncRepairNotesFromJournal();
+        return;
+      }
+      const previousDone = Boolean(task.done);
+      task.done = done;
+      logAction({ module: 'schedule', tab: 'day_tasks', type: 'task_toggle',
+        description: `${done ? 'Виконано' : 'Повернуто в роботу'} завдання на ${dateKey}`, details: '«' + task.text + '»',
+        restoreData: { dateKey, taskId: task.id, prevDone: previousDone },
+        editRef: { module: 'schedule', type: 'task', dateKey, taskId: task.id } });
+      await taskStore.save({ kind: 'done', taskId: task.id, done });
+    },
+    openDay(dateKey) {
+      window.SZVKShared.navigateModule('index.html?date=' + encodeURIComponent(dateKey));
+    }
+  });
+  taskWorkspace.renderActiveTasks(window.SZVKShared.kyivDateKey());
 
   // Initialize Data
   function initData() {
@@ -3210,6 +3263,7 @@
     try {
       await window.SZVKShared.flushRepairCompletions(dbTrackers, DB_TRACKERS_DOC, DB_SCHEDULE_DOC);
       await window.SZVKShared.syncRepairTasksToCloud(dbTrackers, DB_TRACKERS_DOC, DB_SCHEDULE_DOC);
+      await window.SZVKShared.rollOverTasksInCloud(dbTrackers, DB_TRACKERS_DOC, DB_SCHEDULE_DOC);
     } catch (error) {
       console.warn('Repair notes cloud sync notice:', error);
       cloudSyncText.textContent = 'Немає з’єднання. Зміни збережено на пристрої.';
@@ -4692,6 +4746,7 @@
     const previousView = trackerViews[activeTab];
     const update = () => {
       activeTab = tab;
+      taskWorkspace.renderActiveTasks(window.SZVKShared.kyivDateKey());
       tabBtnJournal.className = 'main-tab-btn' + (tab === 'journal' ? ' active' : '');
       tabBtnInventory.className = 'main-tab-btn inventory-tab' + (tab === 'inventory' ? ' active' : '');
       tabBtnAtCommands.className = 'main-tab-btn at-tab' + (tab === 'at' ? ' active' : '');

@@ -303,6 +303,11 @@
             <span class="useful-link-copy"><strong>Перенесення терміналів</strong><span>Telegram-бот</span></span>
             <span class="useful-link-arrow" aria-hidden="true">↗</span>
           </a>
+          <a class="useful-link" href="https://m3.material.io/components/app-bars/overview" target="_blank" rel="noopener noreferrer" aria-label="Сонцеслав (відкриється в новій вкладці)">
+            <img class="useful-link-logo" src="assets/sontseslav.webp" width="56" height="56" alt="" decoding="async">
+            <span class="useful-link-copy"><strong>Сонцеслав</strong></span>
+            <span class="useful-link-arrow" aria-hidden="true">↗</span>
+          </a>
           <a class="useful-link" href="https://navisoft.com.ua" target="_blank" rel="noopener noreferrer" aria-label="Navisoft (відкриється в новій вкладці)">
             <img class="useful-link-logo" src="assets/navisoft.png" width="56" height="56" alt="" decoding="async">
             <span class="useful-link-copy"><strong>Navisoft</strong><span>navisoft.com.ua</span></span>
@@ -604,7 +609,10 @@
       const key = 'szvk_schedule_local_data';
       const schedule = JSON.parse(localStorage.getItem(key) || '{}');
       if (!schedule.dayNotes) schedule.dayNotes = {};
-      if (reconcileRepairTasks(schedule.dayNotes, repairs, removeMissing)) localStorage.setItem(key, JSON.stringify(schedule));
+      if (reconcileRepairTasks(schedule.dayNotes, repairs, removeMissing)) {
+        localStorage.setItem(key, JSON.stringify(schedule));
+        window.dispatchEvent?.(new Event('szvk-schedule-updated'));
+      }
     } catch (error) {
       console.warn('Repair notes cache notice:', error);
     }
@@ -841,6 +849,581 @@
     // Keep later completion changes while restoring the original text and day.
     return result.task;
   }
+
+
+  // Replay only the intended task change against fresh cloud data. Other days,
+  // task metadata and schedule fields remain owned by their existing writers.
+  function applyScheduleTaskChange(dayNotes, change) {
+    const entry = Object.entries(dayNotes).find(([, tasks]) => Array.isArray(tasks) &&
+      tasks.some(task => String(task.id) === String(change.taskId)));
+    if (!entry) return false;
+    if (change.kind === 'edit') {
+      updateTask(dayNotes, entry[0], change.taskId, change.text, change.targetDateKey, change.time);
+    } else if (change.kind === 'done') {
+      const task = entry[1].find(task => String(task.id) === String(change.taskId));
+      task.done = change.done;
+    }
+    return true;
+  }
+
+  function createScheduleTaskStore({ db, scheduleDoc, onChange, onError }) {
+    const cacheKey = 'szvk_schedule_local_data';
+    const pendingKey = 'szvk_pending_schedule_tasks';
+    const read = (key, fallback) => {
+      try { return JSON.parse(localStorage.getItem(key) || 'null') || fallback; }
+      catch (error) { return fallback; }
+    };
+    let data = read(cacheKey, {});
+    let syncing = null;
+    function accept(next) {
+      data = { ...next, dayNotes: next.dayNotes || {}, overrides: next.overrides || {} };
+      applyPendingScheduleTaskChanges(data.dayNotes);
+      carryForwardTasks(data.dayNotes, kyivDateKey(), !db);
+      localStorage.setItem(cacheKey, JSON.stringify(data));
+      onChange();
+    }
+    function refresh() { accept(read(cacheKey, {})); }
+    function flush() {
+      if (!db || !scheduleDoc) return Promise.resolve();
+      if (syncing) return syncing;
+      if (!read(pendingKey, []).length) return Promise.resolve();
+      syncing = flushScheduleTaskChanges(db, scheduleDoc, accept)
+        .catch(error => onError(error)).finally(() => { syncing = null; });
+      return syncing;
+    }
+    function save(change) {
+      if (db && scheduleDoc) {
+        const pending = read(pendingKey, []);
+        pending.push({ ...change, id: Date.now() + '-' + Math.random().toString(36).slice(2) });
+        localStorage.setItem(pendingKey, JSON.stringify(pending));
+      }
+      localStorage.setItem(cacheKey, JSON.stringify(data));
+      onChange();
+      return syncing ? syncing.then(flush) : flush();
+    }
+    data.dayNotes ||= {};
+    data.overrides ||= {};
+    window.addEventListener('storage', event => {
+      if ([cacheKey, pendingKey].includes(event.key)) refresh();
+    });
+    window.addEventListener('szvk-schedule-updated', refresh);
+    window.addEventListener('online', flush);
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
+    window.setInterval(refresh, 60000);
+    if (scheduleDoc) scheduleDoc.onSnapshot(snapshot => {
+      if (snapshot.exists) accept(snapshot.data());
+      flush();
+    }, onError);
+    refresh();
+    flush();
+    return { getData: () => data, save, refresh };
+  }
+
+  function pendingScheduleTaskChanges() {
+    try { return JSON.parse(localStorage.getItem('szvk_pending_schedule_tasks') || '[]'); }
+    catch (error) { return []; }
+  }
+
+  function applyPendingScheduleTaskChanges(dayNotes) {
+    for (const change of pendingScheduleTaskChanges()) applyScheduleTaskChange(dayNotes, change);
+  }
+
+  async function flushScheduleTaskChanges(db, scheduleDoc, onSave = () => {}) {
+    while (pendingScheduleTaskChanges().length) {
+      const batch = pendingScheduleTaskChanges();
+      const saved = await db.runTransaction(async transaction => {
+        const snapshot = await transaction.get(scheduleDoc);
+        const next = snapshot.exists ? snapshot.data() : {};
+        const dayNotes = next.dayNotes || {};
+        for (const change of batch) applyScheduleTaskChange(dayNotes, change);
+        transaction.set(scheduleDoc, { dayNotes, updatedAt: Date.now() }, { mergeFields: ['dayNotes', 'updatedAt'] });
+        return { ...next, dayNotes };
+      });
+      const ids = new Set(batch.map(change => change.id));
+      localStorage.setItem('szvk_pending_schedule_tasks', JSON.stringify(pendingScheduleTaskChanges().filter(change => !ids.has(change.id))));
+      onSave(saved);
+    }
+  }
+
+  function mountTaskWorkspace(options) {
+    const getDayTasks = dateKey => options.getDayNotes()[dateKey] || [];
+    const MONTH_NAMES = ['Січень','Лютий','Березень','Квітень','Травень','Червень','Липень','Серпень','Вересень','Жовтень','Листопад','Грудень'];
+    const formatDateKey = (year, month, day) => String(year).padStart(4,'0') + '-' + String(month + 1).padStart(2,'0') + '-' + String(day).padStart(2,'0');
+    options.content.insertAdjacentHTML('beforeend', `<aside class="active-tasks-host" id="activeTasksHost" aria-label="Поточні завдання" hidden>
+    <section class="active-tasks-panel" id="activeTasksPanel" aria-labelledby="activeTasksTitle">
+      <button type="button" class="active-tasks-toggle" id="activeTasksToggle" aria-expanded="true" aria-controls="activeTasksBody">
+        <span class="active-tasks-mark" aria-hidden="true"></span>
+        <span class="active-tasks-title" id="activeTasksTitle">Зараз у роботі</span>
+        <span class="active-tasks-count" id="activeTasksCount" aria-live="polite" aria-atomic="true">0</span>
+        <span class="active-tasks-chevron" id="activeTasksChevron" aria-hidden="true">⌃</span>
+      </button>
+      <div class="active-tasks-body" id="activeTasksBody">
+        <p class="active-tasks-hint">На сьогодні та перенесені з попередніх днів</p>
+        <ul class="active-tasks-list" id="activeTasksList" aria-label="Завдання у роботі"></ul>
+        <details class="active-tasks-planned" id="activeTasksPlanned" hidden>
+          <summary>Заплановані <span id="activeTasksPlannedCount">0</span></summary>
+          <ul class="active-tasks-list" id="activeTasksPlannedList" aria-label="Майбутні завдання"></ul>
+        </details>
+      </div>
+    </section>
+    <button type="button" class="active-tasks-rail" id="activeTasksRail" aria-expanded="false" aria-controls="activeTasksPanel" aria-label="Розгорнути список завдань">
+      <span class="active-tasks-chevron" aria-hidden="true">‹</span>
+      <span class="active-tasks-count" id="activeTasksRailCount">0</span>
+      <span class="active-tasks-rail-title">Зараз у роботі</span>
+      <span class="active-tasks-preview" id="activeTasksPreview"></span>
+    </button>
+  </aside>`);
+    options.container.insertAdjacentHTML('beforeend', `<button type="button" class="active-tasks-dock" id="activeTasksDock" aria-haspopup="dialog" aria-controls="activeTasksSheet" aria-expanded="false" hidden>
+    <span class="active-tasks-mark" aria-hidden="true"></span>
+    <span class="active-tasks-dock-copy">
+      <span class="active-tasks-dock-title">У роботі <span class="active-tasks-count" id="activeTasksDockCount">0</span></span>
+      <span class="active-tasks-dock-preview" id="activeTasksDockPreview"></span>
+    </span>
+    <span class="active-tasks-chevron" aria-hidden="true">⌃</span>
+  </button>
+  <dialog class="active-tasks-sheet" id="activeTasksSheet" aria-labelledby="activeTasksTitle">
+    <div class="active-tasks-handle" aria-hidden="true"></div>
+  </dialog>`);
+    document.body.insertAdjacentHTML('beforeend', `<!-- Редагування та перенесення завдання -->
+<div class="modal-overlay" id="taskEditorModal" role="dialog" aria-modal="true" aria-labelledby="taskEditorTitle">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 id="taskEditorTitle">Редагувати завдання</h3>
+      <button type="button" class="btn" id="taskEditorClose" aria-label="Закрити">✕</button>
+    </div>
+    <form id="taskEditorForm" class="task-editor-form">
+      <label>Завдання
+        <textarea id="taskEditorText" maxlength="140" required rows="3"></textarea>
+      </label>
+      <div id="taskEditorTimeMount"></div>
+      <input type="hidden" id="taskEditorDate">
+      <div class="task-shift-preview" id="taskEditorShift" role="status" aria-live="polite"></div>
+      <section class="task-mini-calendar" aria-label="Календар вибору дня виконання">
+        <div class="task-calendar-header">
+          <button type="button" class="task-calendar-nav" id="taskCalendarPrev" aria-label="Попередній місяць">‹</button>
+          <h4 id="taskCalendarMonth" role="status" aria-live="polite"></h4>
+          <button type="button" class="task-calendar-nav" id="taskCalendarNext" aria-label="Наступний місяць">›</button>
+        </div>
+        <div class="task-calendar-weekdays" aria-hidden="true"><span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span><span>Сб</span><span>Нд</span></div>
+        <div class="task-calendar-days" id="taskCalendarDays" role="group" aria-label="Дні місяця"></div>
+        <div class="task-calendar-legend">
+          <span class="artem">● Артем</span><span class="oleksandr">● Олександр</span><span>↔ підміна · № зміни</span>
+        </div>
+      </section>
+      <p class="task-editor-error" id="taskEditorError" role="alert" hidden></p>
+      <div class="modal-footer">
+        <button type="button" class="btn" id="taskEditorCancel">Скасувати</button>
+        <button type="submit" class="btn" id="taskEditorSave" style="background:var(--accent);color:#fff">Зберегти</button>
+      </div>
+    </form>
+  </div>
+</div>`);
+    document.getElementById('taskEditorTimeMount').innerHTML = taskTimePickerHtml();
+    initTaskTimePickers(document.getElementById('taskEditorTimeMount'));
+    let activeTaskEdit = null;
+    let taskEditorReturnFocus = null;
+    let taskEditorReturnTarget = null;
+    let taskEditorFromSheet = false;
+    let taskCalendarView = null;
+    let taskCalendarSignature = '';
+
+    function openTaskEditor(dateKey, taskId, mode = 'edit') {
+      const task = getDayTasks(dateKey).find(item => String(item.id) === String(taskId));
+      if (!task) return;
+      const row = document.activeElement?.closest('.active-task-item');
+      taskEditorReturnFocus = document.activeElement;
+      taskEditorReturnTarget = row ? { taskId: row.dataset.taskId } : null;
+      taskEditorFromSheet = activeTasksSheet.open;
+      if (taskEditorFromSheet) closeActiveTasksSheet(false, false);
+      activeTaskEdit = { dateKey, taskId: task.id, mode };
+      document.getElementById('taskEditorTitle').textContent = mode === 'move' ? 'Перенести завдання' : 'Редагувати завдання';
+      document.getElementById('taskEditorText').value = task.text;
+      document.getElementById('taskEditorText').readOnly = task.repairId != null;
+      document.getElementById('taskEditorText').maxLength = task.repairId != null ? Math.max(140, task.text.length) : 140;
+      const picker = document.querySelector('#taskEditorTimeMount .task-time-picker');
+      window.SZVKShared.setTaskTimePicker(picker, task.time || '');
+      picker.open = false;
+      document.getElementById('taskEditorDate').value = dateKey;
+      document.getElementById('taskEditorSave').textContent = mode === 'move' ? 'Перенести на обрану зміну' : 'Зберегти';
+      const [year, month] = dateKey.split('-').map(Number);
+      taskCalendarView = { year, month: month - 1 };
+      taskCalendarSignature = '';
+      updateTaskShiftPreview();
+      document.getElementById('taskEditorError').hidden = true;
+      window.SZVKShared.openModal(document.getElementById('taskEditorModal'));
+      if (mode === 'move') document.querySelector('#taskCalendarDays [aria-pressed="true"]').focus();
+      else document.getElementById('taskEditorText').focus();
+    }
+
+    function closeTaskEditor() {
+      const dismissed = window.SZVKShared.closeModal(document.getElementById('taskEditorModal'));
+      const fromSheet = taskEditorFromSheet;
+      const returnTarget = taskEditorReturnTarget;
+      const returnFocus = taskEditorReturnFocus;
+      activeTaskEdit = null;
+      taskEditorFromSheet = false;
+      const restoreFocus = () => {
+        if (activeTaskEdit || !options.isVisible()) return;
+        if (fromSheet && activeTasksCompact.matches) activeTasksDock.click();
+        const row = returnTarget && [...activeTasksPanel.querySelectorAll('.active-task-item')].find(item => item.dataset.taskId === returnTarget.taskId);
+        const target = row?.querySelector('.active-task-edit') || (returnFocus?.isConnected ? returnFocus : fromSheet ? activeTasksToggle : null);
+        target?.focus({ preventScroll: true });
+      };
+      if (dismissed?.then) dismissed.then(restoreFocus);
+      else restoreFocus();
+    }
+
+    function refreshTaskEditorSource() {
+      if (!activeTaskEdit || getDayTasks(activeTaskEdit.dateKey).some(task => String(task.id) === String(activeTaskEdit.taskId))) return;
+      const source = Object.entries(options.getDayNotes()).find(([, tasks]) => Array.isArray(tasks) && tasks.some(task => String(task.id) === String(activeTaskEdit.taskId)));
+      if (!source) return;
+      const previousDateKey = activeTaskEdit.dateKey;
+      activeTaskEdit.dateKey = source[0];
+      const dateInput = document.getElementById('taskEditorDate');
+      if (dateInput.value === previousDateKey) {
+        dateInput.value = source[0];
+        const [year, month] = source[0].split('-').map(Number);
+        taskCalendarView = { year, month: month - 1 };
+        taskCalendarSignature = '';
+      }
+    }
+
+    function taskShiftLabel(dateKey) {
+      if (!window.SZVKShared.isValidDateKey(dateKey)) return '';
+      const [year, month, day] = dateKey.split('-').map(Number);
+      const assignment = window.SZVKShared.shiftInfo(dateKey, options.getOverrides());
+      const label = new Date(year, month - 1, day).toLocaleDateString('uk-UA', {
+        weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric'
+      });
+      return `${label} · ${assignment.worker}${assignment.isEdited ? ' (підміна)' : ''} · зміна №${assignment.shiftNum} з 3`;
+    }
+
+    function updateTaskShiftPreview() {
+      const dateKey = document.getElementById('taskEditorDate').value;
+      const label = taskShiftLabel(dateKey);
+      const preview = document.getElementById('taskEditorShift');
+      const info = window.SZVKShared.shiftInfo(dateKey, options.getOverrides());
+      preview.className = 'task-shift-preview' + (info ? info.worker === 'Артем' ? ' artem' : ' oleksandr' : '');
+      preview.textContent = label || 'Оберіть дату, щоб побачити працівника зміни.';
+      if (activeTaskEdit) renderTaskCalendar();
+    }
+
+    function renderTaskCalendar() {
+      if (!taskCalendarView || !activeTaskEdit) return;
+      const { year, month } = taskCalendarView;
+      const days = document.getElementById('taskCalendarDays');
+      const selectedDate = document.getElementById('taskEditorDate').value;
+      const todayKey = window.SZVKShared.kyivDateKey();
+      const signature = JSON.stringify([year, month, selectedDate, todayKey, activeTaskEdit.dateKey, options.getOverrides()]);
+      if (taskCalendarSignature === signature) return;
+      taskCalendarSignature = signature;
+      document.getElementById('taskCalendarMonth').textContent = MONTH_NAMES[month] + ' ' + year;
+      document.getElementById('taskCalendarPrev').disabled = year === 1000 && month === 0;
+      document.getElementById('taskCalendarNext').disabled = year === 9999 && month === 11;
+      days.replaceChildren();
+      for (const entry of window.SZVKShared.calendarMonthDays(year, month)) {
+        const key = entry.dateKey;
+        const info = window.SZVKShared.shiftInfo(key, options.getOverrides());
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'task-calendar-day' + (!entry.inMonth ? ' other-month' : '') + (info ? info.worker === 'Артем' ? ' artem' : ' oleksandr' : '');
+        button.dataset.date = key;
+        button.disabled = !info;
+        button.innerHTML = `<span class="task-calendar-day-number">${entry.day}</span>${info ? `<span class="task-calendar-worker">${info.worker === 'Артем' ? 'А' : 'О'}·${info.shiftNum}</span>${info.isEdited ? '<span class="task-calendar-substitution" aria-hidden="true">↔</span>' : ''}` : ''}`;
+        button.setAttribute('aria-label', info ? taskShiftLabel(key) + (key === activeTaskEdit.dateKey ? ' · Поточний день завдання' : '') : 'Дата недоступна');
+        button.title = button.getAttribute('aria-label');
+        button.setAttribute('aria-pressed', String(key === selectedDate));
+        button.tabIndex = key === selectedDate ? 0 : -1;
+        if (key === todayKey) { button.classList.add('today'); button.setAttribute('aria-current', 'date'); }
+        if (key === activeTaskEdit.dateKey) button.classList.add('source-day');
+        days.appendChild(button);
+      }
+      if (!days.querySelector('[tabindex="0"]')) days.querySelector('button:not(.other-month):not(:disabled)').tabIndex = 0;
+    }
+
+    function selectTaskDate(dateKey) {
+      if (!window.SZVKShared.isValidDateKey(dateKey)) return;
+      document.getElementById('taskEditorDate').value = dateKey;
+      const [year, month] = dateKey.split('-').map(Number);
+      taskCalendarView = { year, month: month - 1 };
+      updateTaskShiftPreview();
+      document.querySelector('#taskCalendarDays [aria-pressed="true"]').focus();
+    }
+
+    document.getElementById('taskCalendarDays').addEventListener('click', event => {
+      const button = event.target.closest('[data-date]');
+      if (button && !button.disabled) selectTaskDate(button.dataset.date);
+    });
+    document.getElementById('taskCalendarDays').addEventListener('keydown', event => {
+      const button = event.target.closest('[data-date]');
+      const offsets = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 };
+      if (!button || !(event.key in offsets)) return;
+      event.preventDefault();
+      const [year, month, day] = button.dataset.date.split('-').map(Number);
+      const date = new Date(year, month - 1, day + offsets[event.key]);
+      selectTaskDate(formatDateKey(date.getFullYear(), date.getMonth(), date.getDate()));
+    });
+    function navigateTaskMonth(offset) {
+      const next = new Date(taskCalendarView.year, taskCalendarView.month + offset, 1);
+      if (next.getFullYear() < 1000 || next.getFullYear() > 9999) return;
+      taskCalendarView = { year: next.getFullYear(), month: next.getMonth() };
+      renderTaskCalendar();
+    }
+    document.getElementById('taskCalendarPrev').onclick = () => navigateTaskMonth(-1);
+    document.getElementById('taskCalendarNext').onclick = () => navigateTaskMonth(1);
+    document.getElementById('taskEditorDate').addEventListener('input', () => selectTaskDate(document.getElementById('taskEditorDate').value));
+
+
+    document.getElementById('taskEditorClose').onclick = closeTaskEditor;
+    document.getElementById('taskEditorCancel').onclick = closeTaskEditor;
+    document.getElementById('taskEditorModal').addEventListener('click', event => {
+      if (event.target === event.currentTarget) closeTaskEditor();
+    });
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape' && activeTaskEdit) { event.preventDefault(); closeTaskEditor(); }
+    });
+    document.getElementById('taskEditorForm').addEventListener('submit', event => {
+      event.preventDefault();
+      if (!activeTaskEdit || !event.currentTarget.reportValidity()) return;
+      const { dateKey, taskId } = activeTaskEdit;
+      const targetDateKey = document.getElementById('taskEditorDate').value;
+      try {
+        if (activeTaskEdit.mode === 'move' && targetDateKey === dateKey) throw new Error('Оберіть інший день для перенесення завдання.');
+        const result = window.SZVKShared.updateTask(options.getDayNotes(), dateKey, taskId, document.getElementById('taskEditorText').value, targetDateKey, document.querySelector('#taskEditorTimeMount .task-time-input').value);
+        if (result.changed) {
+          options.logAction({
+            module: 'schedule', tab: 'day_tasks', type: result.moved ? 'task_move' : 'task_edit',
+            description: result.moved ? 'Перенесено завдання: ' + dateKey + ' → ' + taskShiftLabel(targetDateKey) : 'Оновлено завдання на ' + dateKey,
+            details: '«' + result.task.text + '»' + (result.task.time ? ' · ' + result.task.time : ''),
+            restoreData: result.moved
+              ? { fromDateKey: dateKey, toDateKey: targetDateKey, taskId: result.task.id, previous: result.previous }
+              : { dateKey, taskId: result.task.id, prevText: result.previous.text, prevTime: result.previous.time || '' },
+            editRef: { module: 'schedule', type: 'task', dateKey: targetDateKey, taskId: result.task.id }
+          });
+          options.onSave({ kind: 'edit', dateKey, targetDateKey, taskId, text: result.task.text, time: result.task.time || '' });
+        }
+        closeTaskEditor();
+        options.onChange();
+      } catch (error) {
+        const message = document.getElementById('taskEditorError');
+        message.textContent = error.message;
+        message.hidden = false;
+      }
+    });
+
+
+    const activeTasksHost = document.getElementById('activeTasksHost');
+    const activeTasksPanel = document.getElementById('activeTasksPanel');
+    const activeTasksSheet = document.getElementById('activeTasksSheet');
+    const activeTasksDock = document.getElementById('activeTasksDock');
+    const activeTasksToggle = document.getElementById('activeTasksToggle');
+    const activeTasksRail = document.getElementById('activeTasksRail');
+    const activeTasksCompact = window.matchMedia('(max-width: 1099px)');
+    const activeTasksReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let activeTasksExpanded = true;
+    let activeTasksPreviousOverflow = '';
+    let activeTasksSheetClosing = null;
+    let activeTasksPlannedMotion = null;
+    try { activeTasksExpanded = localStorage.getItem('szvk_active_tasks_expanded') !== 'false'; } catch (error) {}
+
+    function closeActiveTasksSheet(restoreFocus = true, animate = true) {
+      if (!activeTasksSheet.open) return;
+      if (activeTasksSheetClosing) {
+        if (!animate || activeTasksReducedMotion.matches) activeTasksSheetClosing.finish(restoreFocus);
+        return;
+      }
+      const state = {
+        finish(focus = restoreFocus) {
+          if (activeTasksSheetClosing !== state) return;
+          activeTasksSheetClosing = null;
+          activeTasksSheet.close();
+          activeTasksSheet.classList.remove('is-closing');
+          activeTasksSheet.style.removeProperty('--sheet-exit-start');
+          activeTasksSheet.inert = false;
+          activeTasksHost.appendChild(activeTasksPanel);
+          document.body.style.overflow = activeTasksPreviousOverflow;
+          activeTasksDock.setAttribute('aria-expanded', 'false');
+          syncActiveTasksPresentation();
+          if (focus && !activeTasksDock.hidden) activeTasksDock.focus({ preventScroll: true });
+        }
+      };
+      activeTasksSheetClosing = state;
+      if (!animate || activeTasksReducedMotion.matches) { state.finish(); return; }
+      // Continue from the current position if the user closes during entry.
+      const transform = getComputedStyle(activeTasksSheet).transform;
+      const offset = transform === 'none' ? 0 : new DOMMatrixReadOnly(transform).m42;
+      activeTasksSheet.style.setProperty('--sheet-exit-start', offset + 'px');
+      activeTasksSheet.inert = true;
+      activeTasksSheet.classList.add('is-closing');
+      Promise.allSettled(activeTasksSheet.getAnimations().map(animation => animation.finished)).then(() => state.finish());
+    }
+
+    function syncActiveTasksPresentation() {
+      const visible = options.isVisible();
+      const compact = activeTasksCompact.matches;
+      if (activeTasksSheet.open && (!visible || !compact)) closeActiveTasksSheet(false, false);
+      options.container.classList.toggle('showing-history', !visible);
+      activeTasksHost.hidden = !visible || compact;
+      activeTasksDock.hidden = !visible || !compact;
+      activeTasksHost.classList.toggle('is-collapsed', !compact && !activeTasksExpanded);
+      activeTasksPanel.inert = !compact && !activeTasksExpanded;
+      activeTasksRail.inert = compact || activeTasksExpanded;
+      activeTasksRail.setAttribute('aria-hidden', String(compact || activeTasksExpanded));
+      activeTasksRail.setAttribute('aria-expanded', String(activeTasksExpanded));
+      activeTasksToggle.setAttribute('aria-expanded', String(compact || activeTasksExpanded));
+      activeTasksToggle.title = compact || activeTasksExpanded ? 'Згорнути список завдань' : 'Розгорнути список завдань';
+      document.getElementById('activeTasksChevron').textContent = compact ? '⌃' : '›';
+    }
+
+    activeTasksDock.addEventListener('click', () => {
+      if (!options.isVisible() || !activeTasksCompact.matches || activeTasksSheet.open) return;
+      activeTasksSheet.appendChild(activeTasksPanel);
+      syncActiveTasksPresentation();
+      activeTasksPreviousOverflow = document.body.style.overflow;
+      activeTasksSheet.showModal();
+      document.body.style.overflow = 'hidden';
+      activeTasksDock.setAttribute('aria-expanded', 'true');
+    });
+    function toggleActiveTasksPanel() {
+      if (activeTasksCompact.matches) { closeActiveTasksSheet(); return; }
+      activeTasksExpanded = !activeTasksExpanded;
+      try { localStorage.setItem('szvk_active_tasks_expanded', String(activeTasksExpanded)); } catch (error) {}
+      syncActiveTasksPresentation();
+      (activeTasksExpanded ? activeTasksToggle : activeTasksRail).focus({ preventScroll: true });
+    }
+    activeTasksToggle.addEventListener('click', toggleActiveTasksPanel);
+    activeTasksRail.addEventListener('click', toggleActiveTasksPanel);
+    activeTasksCompact.addEventListener('change', syncActiveTasksPresentation);
+    activeTasksReducedMotion.addEventListener('change', event => {
+      if (!event.matches) return;
+      activeTasksSheetClosing?.finish();
+      activeTasksPlannedMotion?.finish();
+    });
+    activeTasksSheet.addEventListener('cancel', event => {
+      event.preventDefault();
+      closeActiveTasksSheet();
+    });
+    activeTasksSheet.addEventListener('click', event => {
+      const bounds = activeTasksSheet.getBoundingClientRect();
+      if (event.target === activeTasksSheet && (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom)) closeActiveTasksSheet();
+    });
+
+    document.querySelector('#activeTasksPlanned > summary').addEventListener('click', event => {
+      event.preventDefault();
+      const details = document.getElementById('activeTasksPlanned');
+      const list = document.getElementById('activeTasksPlannedList');
+      const opening = !(activeTasksPlannedMotion?.opening ?? details.open);
+      const height = details.open ? list.getBoundingClientRect().height : 0;
+      const opacity = details.open ? getComputedStyle(list).opacity : 0;
+      activeTasksPlannedMotion?.animation.cancel();
+      if (activeTasksReducedMotion.matches) {
+        activeTasksPlannedMotion = null;
+        list.style.removeProperty('overflow');
+        details.open = opening;
+        return;
+      }
+      details.open = true;
+      list.style.overflow = 'hidden';
+      const animation = list.animate([
+        { height: height + 'px', opacity },
+        { height: (opening ? list.scrollHeight : 0) + 'px', opacity: opening ? 1 : 0 }
+      ], { duration: 220, easing: 'cubic-bezier(0.4, 0, 0.2, 1)', fill: 'both' });
+      const state = { opening, animation, finish() {
+        if (activeTasksPlannedMotion !== state) return;
+        activeTasksPlannedMotion = null;
+        details.open = opening;
+        animation.cancel();
+        list.style.removeProperty('overflow');
+      } };
+      activeTasksPlannedMotion = state;
+      animation.finished.then(state.finish, state.finish);
+    });
+
+    function activeTaskHtml({ dateKey, task }, todayKey) {
+      const assignment = window.SZVKShared.shiftInfo(dateKey, options.getOverrides());
+      const dateLabel = dateKey === todayKey ? 'Сьогодні' : dateKey.split('-').reverse().join('.');
+      return `<li class="active-task-item" data-date="${dateKey}" data-task-id="${escapeHtml(task.id)}">
+        <label class="active-task-check" title="Позначити виконаним">
+          <input type="checkbox" aria-label="Виконати: ${escapeHtml(task.text)}">
+        </label>
+        <div class="active-task-content">
+          <button type="button" class="active-task-open" title="Відкрити день із цим завданням">
+            <span class="active-task-text">${task.time ? `<span class="task-time-badge">${escapeHtml(task.time)}</span> ` : ''}${escapeHtml(task.text)}</span>
+            ${taskCarryLabel(task)}
+            <span class="active-task-meta"><span>${dateLabel}</span><span class="active-task-worker ${assignment.worker === 'Артем' ? 'artem' : 'oleksandr'}">Чергує: ${escapeHtml(assignment.worker)}</span></span>
+          </button>
+          ${task.repairId != null ? `<a class="task-repair-link" href="trackers.html?editRepair=${encodeURIComponent(task.repairId)}">↗ Ремонт</a>` : ''}
+        </div>
+        <button type="button" class="active-task-edit" title="Редагувати завдання" aria-label="Редагувати: ${escapeHtml(task.text)}">✎</button>
+      </li>`;
+    }
+
+    function renderActiveTasks(todayKey) {
+      if (activeTaskEdit) { refreshTaskEditorSource(); updateTaskShiftPreview(); }
+      const { active, planned } = window.SZVKShared.activeTaskGroups(options.getDayNotes(), todayKey);
+      document.getElementById('activeTasksCount').textContent = active.length;
+      document.getElementById('activeTasksDockCount').textContent = active.length;
+      document.getElementById('activeTasksRailCount').textContent = active.length;
+      const first = active[0]?.task;
+      const preview = first ? (first.time ? first.time + ' · ' : '') + first.text : 'На сьогодні все виконано';
+      activeTasksRail.title = 'Розгорнути список завдань · ' + preview;
+      activeTasksRail.setAttribute('aria-label', `Розгорнути список завдань (${active.length}). ${preview}`);
+      for (const id of ['activeTasksPreview', 'activeTasksDockPreview']) {
+        const element = document.getElementById(id);
+        element.textContent = preview;
+        element.title = preview;
+      }
+      window.SZVKShared.setHtmlIfChanged(document.getElementById('activeTasksList'), active.length
+        ? active.map(entry => activeTaskHtml(entry, todayKey)).join('')
+        : '<li class="active-tasks-empty"><strong>На сьогодні все виконано</strong>Нові та перенесені завдання з’являться тут.</li>');
+      document.getElementById('activeTasksPlanned').hidden = planned.length === 0;
+      document.getElementById('activeTasksPlannedCount').textContent = planned.length;
+      window.SZVKShared.setHtmlIfChanged(document.getElementById('activeTasksPlannedList'), planned.map(entry => activeTaskHtml(entry, todayKey)).join(''));
+      syncActiveTasksPresentation();
+    }
+
+
+    activeTasksPanel.addEventListener('change', async event => {
+      if (!event.target.matches('.active-task-check input')) return;
+      const checkbox = event.target;
+      const row = checkbox.closest('.active-task-item');
+      const list = row.parentElement;
+      const index = [...list.children].indexOf(row);
+      const hadFocus = document.activeElement === checkbox;
+      checkbox.disabled = true;
+      try { await options.setTaskDone(row.dataset.date, row.dataset.taskId, checkbox.checked); }
+      catch (error) { options.onError?.(error); }
+      finally { checkbox.disabled = false; }
+      if (checkbox.isConnected) checkbox.checked = false;
+      if (hadFocus && (activeTasksSheet.open || !activeTasksCompact.matches)) {
+        const inputs = list.querySelectorAll('input');
+        (inputs[Math.min(index, inputs.length - 1)] || activeTasksToggle).focus({ preventScroll: true });
+      }
+    });
+    activeTasksPanel.addEventListener('click', event => {
+      const edit = event.target.closest('.active-task-edit');
+      if (edit) {
+        const row = edit.closest('.active-task-item');
+        openTaskEditor(row.dataset.date, row.dataset.taskId);
+        return;
+      }
+      const button = event.target.closest('.active-task-open');
+      if (!button) return;
+      const dateKey = button.closest('.active-task-item').dataset.date;
+      closeActiveTasksSheet(false, false);
+      options.openDay(dateKey);
+    });
+
+
+    return { openTaskEditor, closeActiveTasksSheet, syncActiveTasksPresentation, renderActiveTasks };
+  }
+
+  function taskCarryLabel(task) {
+    if (!window.SZVKShared.isValidDateKey(task.carriedFrom)) return '';
+    return '<span class="task-carried-from">↪ З ' + task.carriedFrom.split('-').reverse().join('.') + '</span>';
+  }
+
 
   function initTheme() {
     try {
@@ -1095,6 +1678,12 @@
     reconcileRepairTasks,
     syncLocalRepairTasks,
     activeTaskGroups,
+    applyScheduleTaskChange,
+    applyPendingScheduleTaskChanges,
+    flushScheduleTaskChanges,
+    createScheduleTaskStore,
+    mountTaskWorkspace,
+    taskCarryLabel,
     carryForwardTasks,
     rollOverTasksInCloud,
     setRepairCompletion,
