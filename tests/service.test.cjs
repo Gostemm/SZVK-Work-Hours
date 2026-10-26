@@ -595,3 +595,27 @@ test('mini calendars align Monday-first weeks and include leap days and adjacent
   assert.equal(january[41].dateKey,'2027-02-07');
   assert.equal(shared.calendarMonthDays(2026,12).length,0);
 });
+
+test('live tasks separate future work across seasons, prioritize carried work and preserve source data', () => {
+  const notes = {
+    '2026-10-26': [
+      { id: 'untimed', text: 'Без часу', done: false },
+      { id: 'later', time: '16:00', done: false },
+      { id: 'carried', carriedFrom: '2026-09-01', done: false },
+      { id: 'early', time: '09:00', done: false },
+      { id: 'done', done: true }, null
+    ],
+    '2026-10-25': [{ id: 'overdue-repair', repairId: 1, done: false }],
+    '2027-01-01': [{ id: 'next-season', done: false }],
+    '2026-11-01': [{ id: 'planned-late', time: '15:00' }, { id: 'planned-early', time: '08:00' }],
+    invalid: [{ id: 'invalid-date', done: false }],
+    '2026-10-24': { id: 'invalid-list' }
+  };
+  const before = copy(notes);
+  const { active, planned } = shared.activeTaskGroups(notes, '2026-10-26');
+  assert.deepEqual(copy(active.map(entry => entry.task.id)), ['carried', 'overdue-repair', 'early', 'later', 'untimed']);
+  assert.deepEqual(copy(planned.map(entry => entry.task.id)), ['planned-early', 'planned-late', 'next-season']);
+  assert.equal(active[1].dateKey, '2026-10-25');
+  assert.deepEqual(notes, before, 'displaying the panel never transfers or reorders stored tasks');
+  assert.deepEqual(copy(shared.activeTaskGroups({}, '2026-10-26')), { active: [], planned: [] });
+});

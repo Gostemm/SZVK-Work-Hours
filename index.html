@@ -8,7 +8,7 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg" sizes="any">
   <link rel="apple-touch-icon" href="apple-touch-icon.png" sizes="180x180">
 
-  <script src="shared.js?v=673fd065494d"></script>
+  <script src="shared.js?v=e2682b806837"></script>
 
   <link rel="stylesheet" href="shared.css?v=03ac1b6b4d21">
 
@@ -1501,6 +1501,103 @@
     @media (max-width: 380px) {
       .day-task-counters { --day-counter-gap: 1px; }
     }
+    /* Live work stays beside the calendar; compact screens use a bottom sheet. */
+    .active-tasks-host { flex: 0 0 320px; min-width: 0; position: sticky; top: 12px; }
+    .active-tasks-panel {
+      display: flex; flex-direction: column; min-height: 0;
+      max-height: calc(var(--viewport-height) - 24px - var(--safe-area-top) - var(--safe-area-bottom));
+      border: 1px solid var(--border); border-radius: 14px;
+      background: var(--card-bg); color: var(--text); overflow: hidden;
+    }
+    .active-tasks-toggle {
+      display: flex; align-items: center; gap: 9px; width: 100%; min-height: 58px;
+      padding: 14px; border: 0; background: transparent; color: inherit;
+      font: inherit; text-align: left; cursor: pointer; flex-shrink: 0;
+    }
+    .active-tasks-mark { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+    .active-tasks-title { font-size: 14px; font-weight: 800; }
+    .active-tasks-count {
+      display: inline-grid; place-items: center; min-width: 26px; min-height: 24px;
+      padding: 2px 7px; border-radius: 8px; color: var(--accent);
+      background: rgba(59, 130, 246, 0.12); font-size: 12px; font-weight: 800;
+    }
+    .active-tasks-chevron { margin-left: auto; color: var(--text-muted); font-size: 18px; }
+    .active-tasks-preview {
+      padding: 0 14px 14px; color: var(--text-muted); font-size: 12px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .active-tasks-body { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0 12px 12px; }
+    .active-tasks-hint { padding: 0 2px 10px; color: var(--text-muted); font-size: 11px; line-height: 1.5; }
+    .active-tasks-list { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+    .active-task-item {
+      display: flex; align-items: flex-start; gap: 3px; min-width: 0;
+      border: 1px solid var(--border); border-radius: 10px; padding: 6px;
+      background: var(--bg);
+    }
+    .active-task-check { display: grid; place-items: center; flex: 0 0 34px; min-height: 44px; cursor: pointer; }
+    .active-task-check input { width: 17px; height: 17px; accent-color: var(--accent); cursor: pointer; }
+    .active-task-content { flex: 1; min-width: 0; }
+    .active-task-open {
+      display: block; width: 100%; min-height: 44px; padding: 6px 3px;
+      border: 0; border-radius: 6px; background: transparent; color: var(--text);
+      font: inherit; font-size: 13px; line-height: 1.5; text-align: left; cursor: pointer;
+      overflow-wrap: anywhere;
+    }
+    .active-task-open:hover { background: var(--card-bg); }
+    .active-task-text { font-weight: 650; }
+    .active-task-meta { display: flex; flex-wrap: wrap; gap: 3px 8px; margin-top: 6px; font-size: 10px; color: var(--text-muted); }
+    .active-task-worker.artem { color: var(--artem); }
+    .active-task-worker.oleksandr { color: var(--oleksandr); }
+    .active-task-item .task-carried-from { color: #fbbf24; font-size: 10px; }
+    [data-theme="light"] .active-task-item .task-carried-from { color: #a16207; }
+    .active-task-content > .task-repair-link { display: inline-block; margin: 0 3px 6px; font-size: 11px; padding: 5px 0; }
+    .active-tasks-empty { padding: 20px 10px; text-align: center; color: var(--text-muted); font-size: 12px; line-height: 1.6; }
+    .active-tasks-empty strong { display: block; margin-bottom: 3px; color: var(--text); font-size: 13px; }
+    .active-tasks-planned { margin-top: 12px; border-top: 1px solid var(--border); }
+    .active-tasks-planned > summary { padding: 14px 2px; color: var(--text-muted); font-size: 12px; font-weight: 700; cursor: pointer; }
+    .active-tasks-planned > summary span { margin-left: 5px; color: var(--text); }
+    :is(.active-tasks-toggle, .active-task-open, .active-tasks-dock, .active-tasks-planned > summary):focus-visible,
+    .active-task-check:has(:focus-visible) { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 8px; }
+    .active-tasks-dock {
+      position: fixed; z-index: 60; bottom: calc(10px + var(--safe-area-bottom));
+      left: calc(10px + var(--safe-area-left)); right: calc(10px + var(--safe-area-right));
+      display: flex; align-items: center; gap: 10px; max-width: 560px; min-height: 66px;
+      margin: 0 auto; padding: 12px 14px; border: 1px solid var(--border); border-radius: 14px;
+      background: var(--card-bg); color: var(--text); text-align: left; font: inherit;
+      box-shadow: 0 6px 26px rgba(0, 0, 0, 0.22); cursor: pointer;
+    }
+    .active-tasks-dock-copy { flex: 1; min-width: 0; }
+    .active-tasks-dock-title { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 800; }
+    .active-tasks-dock-preview { display: block; margin-top: 4px; font-size: 11px; color: var(--text-muted); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+    .active-tasks-sheet {
+      position: fixed; inset: auto 0 0; margin: 0 auto; width: min(100%, 560px);
+      height: min(72dvh, 680px); max-height: calc(var(--viewport-height) - 16px - var(--safe-area-top));
+      max-width: 100%; padding: 0 0 var(--safe-area-bottom); overflow: hidden;
+      border: 1px solid var(--border); border-bottom: 0; border-radius: 20px 20px 0 0;
+      background: var(--card-bg); color: var(--text);
+    }
+    .active-tasks-sheet[open] { display: flex; flex-direction: column; }
+    .active-tasks-sheet::backdrop { background: rgba(0, 0, 0, 0.5); }
+    .active-tasks-handle { width: 36px; height: 4px; border-radius: 4px; background: var(--text-muted); opacity: 0.5; margin: 9px auto 0; flex-shrink: 0; }
+    .active-tasks-sheet .active-tasks-panel { flex: 1; max-height: none; border: 0; border-radius: 0; }
+    .active-tasks-sheet .active-tasks-body { padding: 0 14px 18px; }
+    .active-tasks-sheet .active-tasks-toggle { padding-top: 10px; }
+    @media (min-width: 1100px) {
+      #mainAppContainer { flex-direction: row; flex-wrap: wrap; align-items: flex-start; }
+      #mainAppContainer > :is(.top-header-bar, .nav-toolbar, #historyView) { width: 100%; }
+      #mainCalendarView { flex: 1; min-width: 0; }
+      .active-tasks-dock { display: none; }
+    }
+    @media (max-width: 1099px) {
+      .active-tasks-host { display: none; }
+      #mainAppContainer:not(.showing-history) { padding-bottom: calc(90px + var(--safe-area-bottom)); }
+      body:has(.active-tasks-dock:not([hidden])) .toast-container { bottom: calc(96px + var(--safe-area-bottom)); }
+    }
+    @media (prefers-reduced-motion: no-preference) {
+      .active-tasks-sheet[open] { animation: active-tasks-rise 200ms ease-out; }
+      .active-tasks-planned[open] > .active-tasks-list { animation: active-tasks-rise 160ms ease-out; }
+    }
+    @keyframes active-tasks-rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
 </style>
 </head>
 <body>
@@ -1593,6 +1690,38 @@
 
     <div class="days-grid" id="daysGrid"></div>
   </div>
+
+  <aside class="active-tasks-host" id="activeTasksHost" aria-label="Поточні завдання" hidden>
+    <section class="active-tasks-panel" id="activeTasksPanel" aria-labelledby="activeTasksTitle">
+      <button type="button" class="active-tasks-toggle" id="activeTasksToggle" aria-expanded="true" aria-controls="activeTasksBody">
+        <span class="active-tasks-mark" aria-hidden="true"></span>
+        <span class="active-tasks-title" id="activeTasksTitle">Зараз у роботі</span>
+        <span class="active-tasks-count" id="activeTasksCount" aria-live="polite" aria-atomic="true">0</span>
+        <span class="active-tasks-chevron" id="activeTasksChevron" aria-hidden="true">⌃</span>
+      </button>
+      <p class="active-tasks-preview" id="activeTasksPreview" hidden></p>
+      <div class="active-tasks-body" id="activeTasksBody">
+        <p class="active-tasks-hint">На сьогодні та перенесені з попередніх днів</p>
+        <ul class="active-tasks-list" id="activeTasksList" aria-label="Завдання у роботі"></ul>
+        <details class="active-tasks-planned" id="activeTasksPlanned" hidden>
+          <summary>Заплановані <span id="activeTasksPlannedCount">0</span></summary>
+          <ul class="active-tasks-list" id="activeTasksPlannedList" aria-label="Майбутні завдання"></ul>
+        </details>
+      </div>
+    </section>
+  </aside>
+
+  <button type="button" class="active-tasks-dock" id="activeTasksDock" aria-haspopup="dialog" aria-controls="activeTasksSheet" aria-expanded="false" hidden>
+    <span class="active-tasks-mark" aria-hidden="true"></span>
+    <span class="active-tasks-dock-copy">
+      <span class="active-tasks-dock-title">У роботі <span class="active-tasks-count" id="activeTasksDockCount">0</span></span>
+      <span class="active-tasks-dock-preview" id="activeTasksDockPreview"></span>
+    </span>
+    <span class="active-tasks-chevron" aria-hidden="true">⌃</span>
+  </button>
+  <dialog class="active-tasks-sheet" id="activeTasksSheet" aria-labelledby="activeTasksTitle">
+    <div class="active-tasks-handle" aria-hidden="true"></div>
+  </dialog>
 
   <div class="view-card" id="historyView" style="display: none;">
     <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
@@ -1773,7 +1902,7 @@
 <script>
 document.addEventListener("DOMContentLoaded", function () {
   const requiredSharedMethods = ['readAuthSession', 'saveAuthSession', 'clearAuthSession', 'fetchLoginAccounts', 'mountAccountMenu', 'updateAccount', 'escapeHtml', 'formatHistoryTime', 'initThemeSwitcher', 'updateTask', 'restoreTaskMove', 'debounce', 'setHtmlIfChanged', 'shiftInfo', 'calendarMonthDays', 'taskTimePickerHtml', 'initTaskTimePickers', 'reconcileRepairTasks', 'setRepairCompletion', 'flushRepairCompletions', 'syncRepairTasksToCloud', 'carryForwardTasks', 'rollOverTasksInCloud'];
-  requiredSharedMethods.push('openModal', 'closeModal', 'transitionViews');
+  requiredSharedMethods.push('openModal', 'closeModal', 'transitionViews', 'activeTaskGroups');
   if (!window.SZVKShared || requiredSharedMethods.some(name => typeof window.SZVKShared[name] !== 'function')) {
     const message = document.getElementById('loginErrorMessage');
     message.textContent = 'Не вдалося завантажити оновлення сервісу. Оновіть сторінку.';
@@ -2206,6 +2335,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const btnOpenAdmin = document.getElementById("btnOpenAdminPanel");
 
     if (!currentUser) {
+      closeActiveTasksSheet(false);
       gateScreen.style.display = "flex";
       mainApp.style.display = "none";
       return;
@@ -3548,6 +3678,145 @@ document.addEventListener("DOMContentLoaded", function () {
     return '<span class="task-carried-from">↪ З ' + task.carriedFrom.split('-').reverse().join('.') + '</span>';
   }
 
+  const activeTasksHost = document.getElementById('activeTasksHost');
+  const activeTasksPanel = document.getElementById('activeTasksPanel');
+  const activeTasksSheet = document.getElementById('activeTasksSheet');
+  const activeTasksDock = document.getElementById('activeTasksDock');
+  const activeTasksToggle = document.getElementById('activeTasksToggle');
+  const activeTasksCompact = window.matchMedia('(max-width: 1099px)');
+  let activeTasksExpanded = true;
+  let activeTasksPreviousOverflow = '';
+  try { activeTasksExpanded = localStorage.getItem('szvk_active_tasks_expanded') !== 'false'; } catch (error) {}
+
+  function closeActiveTasksSheet(restoreFocus = true) {
+    if (!activeTasksSheet.open) return;
+    activeTasksSheet.close();
+    activeTasksHost.appendChild(activeTasksPanel);
+    document.body.style.overflow = activeTasksPreviousOverflow;
+    activeTasksDock.setAttribute('aria-expanded', 'false');
+    syncActiveTasksPresentation();
+    if (restoreFocus && !activeTasksDock.hidden) activeTasksDock.focus({ preventScroll: true });
+  }
+
+  function syncActiveTasksPresentation() {
+    const visible = Boolean(currentUser) && activeTab === 'calendar';
+    const compact = activeTasksCompact.matches;
+    if (activeTasksSheet.open && (!visible || !compact)) closeActiveTasksSheet(false);
+    document.getElementById('mainAppContainer').classList.toggle('showing-history', activeTab === 'history');
+    activeTasksHost.hidden = !visible || compact;
+    activeTasksDock.hidden = !visible || !compact;
+    document.getElementById('activeTasksBody').hidden = !compact && !activeTasksExpanded;
+    document.getElementById('activeTasksPreview').hidden = compact || activeTasksExpanded;
+    activeTasksToggle.setAttribute('aria-expanded', String(compact || activeTasksExpanded));
+    activeTasksToggle.title = compact || activeTasksExpanded ? 'Згорнути список завдань' : 'Розгорнути список завдань';
+    document.getElementById('activeTasksChevron').textContent = compact || activeTasksExpanded ? '⌃' : '⌄';
+  }
+
+  activeTasksDock.addEventListener('click', () => {
+    if (!currentUser || !activeTasksCompact.matches || activeTasksSheet.open) return;
+    activeTasksSheet.appendChild(activeTasksPanel);
+    syncActiveTasksPresentation();
+    activeTasksPreviousOverflow = document.body.style.overflow;
+    activeTasksSheet.showModal();
+    document.body.style.overflow = 'hidden';
+    activeTasksDock.setAttribute('aria-expanded', 'true');
+  });
+  activeTasksToggle.addEventListener('click', () => {
+    if (activeTasksCompact.matches) { closeActiveTasksSheet(); return; }
+    activeTasksExpanded = !activeTasksExpanded;
+    try { localStorage.setItem('szvk_active_tasks_expanded', String(activeTasksExpanded)); } catch (error) {}
+    syncActiveTasksPresentation();
+  });
+  activeTasksCompact.addEventListener('change', syncActiveTasksPresentation);
+  activeTasksSheet.addEventListener('cancel', event => {
+    event.preventDefault();
+    closeActiveTasksSheet();
+  });
+  activeTasksSheet.addEventListener('click', event => {
+    const bounds = activeTasksSheet.getBoundingClientRect();
+    if (event.target === activeTasksSheet && (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom)) closeActiveTasksSheet();
+  });
+
+  function activeTaskHtml({ dateKey, task }, todayKey) {
+    const assignment = window.SZVKShared.shiftInfo(dateKey, window.overrides || {});
+    const dateLabel = dateKey === todayKey ? 'Сьогодні' : dateKey.split('-').reverse().join('.');
+    return `<li class="active-task-item" data-date="${dateKey}" data-task-id="${escapeHtml(task.id)}">
+      <label class="active-task-check" title="Позначити виконаним">
+        <input type="checkbox" aria-label="Виконати: ${escapeHtml(task.text)}">
+      </label>
+      <div class="active-task-content">
+        <button type="button" class="active-task-open" title="Відкрити день із цим завданням">
+          <span class="active-task-text">${task.time ? `<span class="task-time-badge">${escapeHtml(task.time)}</span> ` : ''}${escapeHtml(task.text)}</span>
+          ${taskCarryLabel(task)}
+          <span class="active-task-meta"><span>${dateLabel}</span><span class="active-task-worker ${assignment.worker === 'Артем' ? 'artem' : 'oleksandr'}">Чергує: ${escapeHtml(assignment.worker)}</span></span>
+        </button>
+        ${task.repairId != null ? `<a class="task-repair-link" href="trackers.html?editRepair=${encodeURIComponent(task.repairId)}">↗ Ремонт</a>` : ''}
+      </div>
+    </li>`;
+  }
+
+  function renderActiveTasks(todayKey) {
+    const { active, planned } = window.SZVKShared.activeTaskGroups(window.dayNotes, todayKey);
+    document.getElementById('activeTasksCount').textContent = active.length;
+    document.getElementById('activeTasksDockCount').textContent = active.length;
+    const first = active[0]?.task;
+    const preview = first ? (first.time ? first.time + ' · ' : '') + first.text : 'На сьогодні все виконано';
+    for (const id of ['activeTasksPreview', 'activeTasksDockPreview']) {
+      const element = document.getElementById(id);
+      element.textContent = preview;
+      element.title = preview;
+    }
+    window.SZVKShared.setHtmlIfChanged(document.getElementById('activeTasksList'), active.length
+      ? active.map(entry => activeTaskHtml(entry, todayKey)).join('')
+      : '<li class="active-tasks-empty"><strong>На сьогодні все виконано</strong>Нові та перенесені завдання з’являться тут.</li>');
+    document.getElementById('activeTasksPlanned').hidden = planned.length === 0;
+    document.getElementById('activeTasksPlannedCount').textContent = planned.length;
+    window.SZVKShared.setHtmlIfChanged(document.getElementById('activeTasksPlannedList'), planned.map(entry => activeTaskHtml(entry, todayKey)).join(''));
+    syncActiveTasksPresentation();
+  }
+
+  function setDayTaskDone(dateKey, taskId, done) {
+    if (!currentUser) return;
+    const task = getDayTasks(dateKey).find(item => String(item.id) === String(taskId));
+    if (!task || Boolean(task.done) === done) return;
+    if (task.repairId != null) return toggleRepairTask(dateKey, task.id, done);
+    task.done = done;
+    logAction('task_toggle', `${done ? 'Виконано' : 'Повернуто в роботу'} завдання на ${dateKey}`, `«${task.text}»`, {
+      dateKey, taskId: task.id, prevDone: !done
+    }, { editRef: { module: 'schedule', type: 'task', dateKey, taskId: task.id } });
+    saveLocalData();
+    refreshOpenDayTasks();
+    renderApp();
+  }
+
+  activeTasksPanel.addEventListener('change', async event => {
+    if (!event.target.matches('.active-task-check input')) return;
+    const checkbox = event.target;
+    const row = checkbox.closest('.active-task-item');
+    const list = row.parentElement;
+    const index = [...list.children].indexOf(row);
+    const hadFocus = document.activeElement === checkbox;
+    await setDayTaskDone(row.dataset.date, row.dataset.taskId, checkbox.checked);
+    if (checkbox.isConnected) checkbox.checked = false;
+    if (hadFocus && (activeTasksSheet.open || !activeTasksCompact.matches)) {
+      const inputs = list.querySelectorAll('input');
+      (inputs[Math.min(index, inputs.length - 1)] || activeTasksToggle).focus({ preventScroll: true });
+    }
+  });
+  activeTasksPanel.addEventListener('click', event => {
+    const button = event.target.closest('.active-task-open');
+    if (!button) return;
+    const dateKey = button.closest('.active-task-item').dataset.date;
+    closeActiveTasksSheet(false);
+    const [year, month, day] = dateKey.split('-').map(Number);
+    const offset = (year - 2026) * 12 + month - 1 - 8;
+    currentSeasonIndex = Math.floor(offset / 3);
+    selectedMonthRelative = ((offset % 3) + 3) % 3;
+    activeTab = 'calendar';
+    renderApp();
+    openDayModal(year, month - 1, day);
+  });
+
   function renderModalTasks(tasks, dateKey) {
     const listEl = document.getElementById("modalDayTasksList");
     const countEl = document.getElementById("modalTasksCount");
@@ -3595,15 +3864,7 @@ document.addEventListener("DOMContentLoaded", function () {
       `;
 
       item.querySelector(".task-modal-checkbox").onchange = (e) => {
-        if (task.repairId != null) { toggleRepairTask(dateKey, task.id, e.target.checked); return; }
-        task.done = e.target.checked;
-        window.dayNotes[dateKey] = tasks;
-        logAction('task_toggle', `${task.done ? 'Виконано' : 'Повернуто в роботу'} завдання на ${dateKey}`, `«${task.text}»`, {
-          dateKey, taskId: task.id, prevDone: !task.done
-        }, { editRef: { module: 'schedule', type: 'task', dateKey, taskId: task.id } });
-        saveLocalData();
-        refreshOpenDayTasks();
-        renderApp();
+        setDayTaskDone(dateKey, task.id, e.target.checked);
       };
 
       item.querySelector('.edit-task').onclick = () => openTaskEditor(dateKey, task.id);
@@ -3773,6 +4034,7 @@ document.addEventListener("DOMContentLoaded", function () {
   };
 
   function renderApp() {
+    syncActiveTasksPresentation();
     const viewKey = activeTab === 'history' ? 'history' : 'calendar:' + currentSeasonIndex + ':' + selectedMonthRelative;
     if (renderedViewKey && renderedViewKey !== viewKey) {
       const previousView = document.getElementById(renderedViewKey === 'history' ? 'historyView' : 'mainCalendarView');
@@ -3787,6 +4049,7 @@ document.addEventListener("DOMContentLoaded", function () {
       updateTaskShiftPreview();
     }
     const todayKey = window.SZVKShared.kyivDateKey();
+    renderActiveTasks(todayKey);
 
     const season = getSeasonDetails(currentSeasonIndex);
     const seasonLabel = document.getElementById('currentSeasonLabel');

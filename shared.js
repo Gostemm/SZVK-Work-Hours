@@ -610,6 +610,24 @@
     }
   }
 
+  // The live work list spans all months, independently of the calendar being viewed.
+  function activeTaskGroups(dayNotes, todayKey = kyivDateKey()) {
+    const active = [], planned = [];
+    for (const [dateKey, tasks] of Object.entries(dayNotes || {})) {
+      if (!isValidDateKey(dateKey) || !Array.isArray(tasks)) continue;
+      for (const task of tasks) {
+        if (!task || task.done) continue;
+        (dateKey <= todayKey ? active : planned).push({ dateKey, task });
+      }
+    }
+    const bySchedule = (a, b) => a.dateKey.localeCompare(b.dateKey) ||
+      (a.task.time || '24:00').localeCompare(b.task.time || '24:00');
+    const origin = entry => isValidDateKey(entry.task.carriedFrom) ? entry.task.carriedFrom : entry.dateKey;
+    active.sort((a, b) => origin(a).localeCompare(origin(b)) || bySchedule(a, b));
+    planned.sort(bySchedule);
+    return { active, planned };
+  }
+
   // Every calendar day has an active shift. Catch up overdue work directly to
   // the current Kyiv day, keeping completed work on its actual scheduled day.
   function carryForwardTasks(dayNotes, todayKey = kyivDateKey(), includeRepairs = true) {
@@ -1076,6 +1094,7 @@
     repairTaskDateKey,
     reconcileRepairTasks,
     syncLocalRepairTasks,
+    activeTaskGroups,
     carryForwardTasks,
     rollOverTasksInCloud,
     setRepairCompletion,

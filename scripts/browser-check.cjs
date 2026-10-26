@@ -434,6 +434,89 @@ async function main() {
     await call('Emulation.setDeviceMetricsOverride', { width:320,height:800,deviceScaleFactor:1,mobile:true });
     await navigate('index.html');
     await waitFor("document.querySelector('#mainAppContainer').style.display==='flex'");
+    // Exercise the live list through its real controls, using temporary local tasks.
+    await evaluate(`(()=>{
+      window.dayNotes['2026-10-14'].push({id:'panel-action',text:'Панель: <перевірити> & завершити',time:'08:15',done:false});
+      window.dayNotes['2027-01-04']=[{id:'panel-next-season',text:'Запланована справа іншого сезону',done:false}];
+      document.querySelector('#btnGoToToday').click();
+    })()`);
+    assert.deepEqual(await evaluate(`(()=>{
+      const active=document.querySelectorAll('#activeTasksList .active-task-item');
+      const planned=document.querySelectorAll('#activeTasksPlannedList .active-task-item');
+      return {dock:!document.querySelector('#activeTasksDock').hidden,
+        active:[...active].every(row=>row.dataset.date<='2026-10-14'),planned:[...planned].every(row=>row.dataset.date>'2026-10-14'),
+        carried:active[0].dataset.taskId==='overdue-task',count:Number(document.querySelector('#activeTasksDockCount').textContent)===active.length,
+        preview:document.querySelector('#activeTasksDockPreview').textContent==='Незавершена справа'};
+    })()`),{dock:true,active:true,planned:true,carried:true,count:true,preview:true},'the compact preview shows current work, prioritizes carried tasks and separates future dates');
+    await clickPointer('#activeTasksDock');
+    assert.deepEqual(await evaluate(`(()=>{
+      const sheet=document.querySelector('#activeTasksSheet');const row=sheet.querySelector('[data-task-id="panel-action"]');
+      return {modal:sheet.matches(':modal'),single:document.querySelectorAll('#activeTasksPanel').length===1,
+        escaped:row.querySelector('.active-task-text').textContent.includes('<перевірити> & завершити') && !row.querySelector('перевірити'),
+        scrollLocked:document.body.style.overflow==='hidden'};
+    })()`),{modal:true,single:true,escaped:true,scrollLocked:true},'the mobile sheet uses one accessible modal panel, locks background scrolling and escapes task text');
+    await evaluate("Promise.allSettled(document.querySelector('#activeTasksSheet').getAnimations().map(animation=>animation.finished))");
+    for(const [width,height] of [[320,480],[390,800],[740,320]]) {
+      await call('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:true});
+      await evaluate("document.documentElement.style.setProperty('--safe-area-bottom','34px')");
+      const sheetGeometry=await evaluate(`(()=>{
+        const sheet=document.querySelector('#activeTasksSheet').getBoundingClientRect();
+        const list=document.querySelector('#activeTasksBody');
+        return {left:sheet.left,right:sheet.right,top:sheet.top,bottom:sheet.bottom,listBottom:list.getBoundingClientRect().bottom,
+          width:innerWidth,height:innerHeight,pageWidth:document.documentElement.scrollWidth};
+      })()`);
+      assert.equal(sheetGeometry.left>=0 && sheetGeometry.right<=sheetGeometry.width && sheetGeometry.top>=0 && sheetGeometry.bottom<=sheetGeometry.height &&
+        sheetGeometry.listBottom<=sheetGeometry.height-34 && sheetGeometry.pageWidth<=sheetGeometry.width,true,
+        'the sheet fits small phones and short landscape screens above the safe area: '+JSON.stringify(sheetGeometry));
+    }
+    await evaluate("document.documentElement.style.removeProperty('--safe-area-bottom')");
+    await call('Emulation.setDeviceMetricsOverride',{width:390,height:800,deviceScaleFactor:1,mobile:true});
+    await evaluate("document.querySelector('#activeTasksPlanned').open=true");
+    const liveMobileShot=await captureScreenshot();
+    fs.writeFileSync(path.join(artifacts,'active-tasks-mobile.png'),Buffer.from(liveMobileShot.data,'base64'));
+    await evaluate("document.querySelector('#activeTasksPlanned').open=false;document.querySelector('#activeTasksList [data-task-id=\"panel-action\"] input').click()");
+    await waitFor("!document.querySelector('#activeTasksList [data-task-id=\"panel-action\"]')");
+    assert.equal(await evaluate("JSON.parse(localStorage.getItem('szvk_schedule_local_data')).dayNotes['2026-10-14'].find(task=>task.id==='panel-action').done"),true,'completing in the panel persists through the existing schedule save');
+    await pressEscape();
+    assert.equal(await evaluate("!document.querySelector('#activeTasksSheet').open && document.body.style.overflow==='' && document.activeElement===document.querySelector('#activeTasksDock')"),true,'Escape closes the sheet, unlocks scrolling and restores focus');
+    await clickPointer('#activeTasksDock');
+    await clickBackdrop();
+    assert.equal(await evaluate("!document.querySelector('#activeTasksSheet').open"),true,'tapping the backdrop closes the mobile sheet');
+    await clickPointer('#activeTasksDock');
+    await call('Emulation.setDeviceMetricsOverride',{width:1440,height:900,deviceScaleFactor:1,mobile:false});
+    await waitFor("!document.querySelector('#activeTasksSheet').open && !document.querySelector('#activeTasksHost').hidden");
+    assert.equal(await evaluate(`(()=>{
+      const calendar=document.querySelector('#mainCalendarView').getBoundingClientRect();
+      const panel=document.querySelector('#activeTasksPanel').getBoundingClientRect();
+      return panel.left>=calendar.right && Math.abs(panel.top-calendar.top)<1 &&
+        document.querySelector('#activeTasksPanel').parentElement.id==='activeTasksHost' && document.body.style.overflow==='';
+    })()`),true,'resizing moves the single panel beside the calendar and releases the mobile scroll lock');
+    const liveDesktopShot=await captureScreenshot();
+    fs.writeFileSync(path.join(artifacts,'active-tasks-desktop.png'),Buffer.from(liveDesktopShot.data,'base64'));
+    await evaluate("document.documentElement.setAttribute('data-theme','light')");
+    const liveLightShot=await captureScreenshot();
+    fs.writeFileSync(path.join(artifacts,'active-tasks-light.png'),Buffer.from(liveLightShot.data,'base64'));
+    await evaluate("document.documentElement.setAttribute('data-theme','dark')");
+    await clickPointer('#activeTasksToggle');
+    assert.equal(await evaluate("document.querySelector('#activeTasksBody').hidden && !document.querySelector('#activeTasksPreview').hidden && document.querySelector('#activeTasksPreview').textContent==='Незавершена справа'"),true,'the collapsed desktop panel keeps a task preview');
+    await navigate('index.html');
+    assert.equal(await evaluate("document.querySelector('#activeTasksBody').hidden && document.querySelector('#activeTasksToggle').getAttribute('aria-expanded')==='false'"),true,'desktop expansion preference survives reloading');
+    await clickPointer('#activeTasksToggle');
+    await evaluate("document.querySelector('#btnTabHistory').click()");
+    assert.equal(await evaluate("document.querySelector('#activeTasksHost').hidden && document.querySelector('#activeTasksDock').hidden"),true,'the task panel hides while viewing history');
+    await evaluate("document.querySelector('#btnCloseHistory').click();document.querySelector('#activeTasksPlanned').open=true;document.querySelector('#activeTasksPlannedList [data-task-id=\"panel-next-season\"] .active-task-open').click()");
+    assert.equal(await evaluate("document.querySelector('#currentMonthTitle').textContent.includes('Січень') && document.querySelector('#dayActionModal').classList.contains('active') && document.querySelector('#modalDayTasksList').dataset.dateKey==='2027-01-04'"),true,'a planned task opens the correct day and calendar in another season');
+    await evaluate(`(()=>{
+      document.querySelector('#modalDayCloseX').click();
+      delete window.dayNotes['2027-01-04'];
+      window.dayNotes['2026-10-14']=window.dayNotes['2026-10-14'].filter(task=>task.id!=='panel-action');
+      const data=JSON.parse(localStorage.getItem('szvk_schedule_local_data'));
+      data.dayNotes=window.dayNotes;localStorage.setItem('szvk_schedule_local_data',JSON.stringify(data));
+      document.querySelector('#activeTasksPlanned').open=false;
+      document.querySelector('#btnGoToToday').click();
+    })()`);
+    await call('Emulation.setDeviceMetricsOverride',{width:320,height:800,deviceScaleFactor:1,mobile:true});
+    await evaluate("Promise.allSettled(document.getAnimations().map(animation=>animation.finished))");
     assert.equal(await evaluate("!document.querySelector('#btnToggleCycleTasks, #cycleTasksBlock, #btnOpenResetModal, #resetPeriodModal, .month-daily-badge')"),true,'retired controls and monthly task badges are removed');
     assert.equal(await evaluate("document.querySelector('#monthTabsContainer .active').textContent"),'Жовтень (31)','month labels retain the number of days');
     await call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'no-preference'}]});
@@ -575,12 +658,12 @@ async function main() {
     await evaluate("[...document.querySelectorAll('.task-modal-item')].find(row=>row.textContent.includes('Запланований виклик')).querySelector('.edit-task').click();document.querySelector('#taskEditorTimeMount details').open=true;document.querySelector('#taskEditorTimeMount .task-time-clear').click();document.querySelector('#taskEditorSave').click();document.querySelector('#modalNewTaskInput').value='Завдання без часу';document.querySelector('#modalAddNewTaskBtn').click()");
     assert.equal(await evaluate("window.dayNotes['2026-10-14'].filter(task=>task.repairId==null).every(task=>!Object.hasOwn(task,'time'))"), true);
 
-    const repairLink = await evaluate("document.querySelector('.task-repair-link').getAttribute('href')");
+    const repairLink = await evaluate("document.querySelector('#modalDayTasksList .task-repair-link').getAttribute('href')");
     assert.equal(repairLink, 'trackers.html?editRepair=' + linkedRepairId);
-    assert.equal(await evaluate("document.querySelector('.task-repair-link').closest('.task-modal-item').querySelector('.task-modal-checkbox').disabled"), false);
-    assert.equal(await evaluate("document.querySelector('.task-repair-link').closest('.task-modal-item').querySelector('.delete-task')"), null);
+    assert.equal(await evaluate("document.querySelector('#modalDayTasksList .task-repair-link').closest('.task-modal-item').querySelector('.task-modal-checkbox').disabled"), false);
+    assert.equal(await evaluate("document.querySelector('#modalDayTasksList .task-repair-link').closest('.task-modal-item').querySelector('.delete-task')"), null);
     assert.equal(await evaluate("document.querySelector('#modalDayTasksList').scrollWidth<=document.querySelector('#modalDayTasksList').clientWidth"), true, 'repair actions must fit on mobile');
-    await evaluate("document.querySelector('.task-repair-link').closest('.task-modal-item').querySelector('.move-task').click();document.querySelector('#taskCalendarDays [data-date=\"2026-10-15\"]').click();document.querySelector('#taskEditorTimeMount .task-time-input').value='14:30';document.querySelector('#taskEditorSave').click()");
+    await evaluate("document.querySelector('#modalDayTasksList .task-repair-link').closest('.task-modal-item').querySelector('.move-task').click();document.querySelector('#taskCalendarDays [data-date=\"2026-10-15\"]').click();document.querySelector('#taskEditorTimeMount .task-time-input').value='14:30';document.querySelector('#taskEditorSave').click()");
     assert.equal(await evaluate("window.dayNotes['2026-10-14'].some(task=>task.repairId===" + linkedRepairId + ")"), false);
     assert.equal(await evaluate("window.dayNotes['2026-10-15'].find(task=>task.repairId!=null).time"), '14:30');
     await navigate(repairLink);
@@ -592,14 +675,14 @@ async function main() {
     await waitFor("document.querySelector('#mainAppContainer').style.display==='flex'");
     assert.equal(await evaluate("Object.values(window.dayNotes).flat().filter(task=>task.repairId===" + linkedRepairId + ").length"), 1);
     await evaluate("[...document.querySelectorAll('.day-card')].find(card=>card.querySelector('.day-num')?.textContent==='15').click()");
-    assert.equal(await evaluate("document.querySelector('.task-repair-link').closest('.task-modal-item').querySelector('.task-modal-checkbox').checked"), true);
-    assert.equal(await evaluate("document.querySelector('.task-repair-link').closest('.completed-tasks').open"),false,'completed repair notes are collapsed too');
-    assert.equal(await evaluate("document.querySelector('.task-repair-link').closest('.task-modal-item').querySelector('.task-time-badge').textContent"), '14:30');
+    assert.equal(await evaluate("document.querySelector('#modalDayTasksList .task-repair-link').closest('.task-modal-item').querySelector('.task-modal-checkbox').checked"), true);
+    assert.equal(await evaluate("document.querySelector('#modalDayTasksList .task-repair-link').closest('.completed-tasks').open"),false,'completed repair notes are collapsed too');
+    assert.equal(await evaluate("document.querySelector('#modalDayTasksList .task-repair-link').closest('.task-modal-item').querySelector('.task-time-badge').textContent"), '14:30');
     assert.equal(await evaluate("document.documentElement.scrollWidth<=window.innerWidth"), true);
 
     // Emulate a journal update in another tab while Work Hours stays open.
     await evaluate("{ const data=JSON.parse(localStorage.getItem('szvk_trackers_data'));const repair=data.repairs.find(item=>item.id===" + linkedRepairId + ");repair.repairDate='';localStorage.setItem('szvk_trackers_data',JSON.stringify(data));window.dispatchEvent(new StorageEvent('storage',{key:'szvk_trackers_data'})); }");
-    assert.equal(await evaluate("document.querySelector('.task-repair-link').closest('.task-modal-item').querySelector('.task-modal-checkbox').checked"), false);
+    assert.equal(await evaluate("document.querySelector('#modalDayTasksList .task-repair-link').closest('.task-modal-item').querySelector('.task-modal-checkbox').checked"), false);
     assert.equal(await evaluate("window.dayNotes['2026-10-15'].find(task=>task.repairId!=null).time"), '14:30');
 
     await evaluate("document.querySelector('#modalDayCloseX').click()");
@@ -681,7 +764,7 @@ async function main() {
     assert.equal(await evaluate("window.dayNotes['2026-10-15'].find(task=>task.repairId===" + linkedRepairId + ").done"), true);
     await evaluate("window.__emitCloud('schedule',window.__cloudData.schedule)");
     assert.equal(await evaluate("window.dayNotes['2026-10-15'].find(task=>task.repairId===" + linkedRepairId + ").done"), true, 'late schedule snapshots cannot undo journal completion');
-    assert.equal(await evaluate("document.querySelector('.task-repair-link').closest('.task-modal-item').querySelector('.task-time-badge').textContent"), '14:30');
+    assert.equal(await evaluate("document.querySelector('#modalDayTasksList .task-repair-link').closest('.task-modal-item').querySelector('.task-time-badge').textContent"), '14:30');
     await evaluate("window.__emitCloud('trackers',null,true,false)");
     assert.equal(await evaluate("window.dayNotes['2026-10-15'].find(task=>task.repairId===" + linkedRepairId + ").time"), '14:30', 'empty offline cache must not remove linked notes');
 
@@ -710,24 +793,26 @@ async function main() {
     await waitFor("document.querySelector('#workHoursPeer').contentWindow.dayNotes['2026-10-14']?.some(task=>task.repairId===" + twoWayId + ")");
     assert.equal(await evaluate("window.__cloudData.schedule.dayNotes['2026-10-14']?.find(task=>task.repairId===" + twoWayId + ")?.done"), false, 'new repair writes a real cloud note while Work Hours is already open');
     assert.equal(await peer("w.dayNotes['2026-10-14'].find(task=>task.repairId===" + twoWayId + ").author"), 'Артем');
-    await peer("([...d.querySelectorAll('.day-card')].find(card=>card.querySelector('.day-num')?.textContent==='14').click(),d.querySelector('a[href=\"trackers.html?editRepair=" + twoWayId + "\"]').closest('.task-modal-item').querySelector('.move-task').click(),d.querySelector('#taskCalendarDays [data-date=\"2026-10-15\"]').click(),d.querySelector('#taskEditorTimeMount .task-time-input').value='17:10',d.querySelector('#taskEditorSave').click())");
+    assert.equal(await peer("!!d.querySelector('#activeTasksList a[href=\"trackers.html?editRepair=" + twoWayId + "\"]')"),true,'a remotely created repair appears in the live panel');
+    await peer("([...d.querySelectorAll('.day-card')].find(card=>card.querySelector('.day-num')?.textContent==='14').click(),d.querySelector('#modalDayTasksList a[href=\"trackers.html?editRepair=" + twoWayId + "\"]').closest('.task-modal-item').querySelector('.move-task').click(),d.querySelector('#taskCalendarDays [data-date=\"2026-10-15\"]').click(),d.querySelector('#taskEditorTimeMount .task-time-input').value='17:10',d.querySelector('#taskEditorSave').click())");
     await waitFor("window.__cloudData.schedule.dayNotes['2026-10-15']?.some(task=>task.repairId===" + twoWayId + ")");
-    await peer("(d.querySelector('#modalDayCloseX').click(),[...d.querySelectorAll('.day-card')].find(card=>card.querySelector('.day-num')?.textContent==='15').click(),d.querySelector('a[href=\"trackers.html?editRepair=" + twoWayId + "\"]').closest('.task-modal-item').querySelector('.task-modal-checkbox').click())");
+    await peer("(d.querySelector('#modalDayCloseX').click(),[...d.querySelectorAll('.day-card')].find(card=>card.querySelector('.day-num')?.textContent==='15').click(),d.querySelector('#activeTasksPlannedList a[href=\"trackers.html?editRepair=" + twoWayId + "\"]').closest('.active-task-item').querySelector('input').click())");
     await waitFor("window.__cloudData.trackers.repairs.find(repair=>repair.id===" + twoWayId + ").specialist==='Костянтин'");
     assert.equal(await evaluate("window.__cloudData.trackers.repairs.find(repair=>repair.id===" + twoWayId + ").repairDate"), '15.10.2026', 'completion uses the transferred note day, not the current day');
     assert.equal(await evaluate("window.__cloudData.schedule.dayNotes['2026-10-15'].find(task=>task.repairId===" + twoWayId + ").done"), true);
+    assert.equal(await peer("!d.querySelector('#activeTasksPanel a[href=\"trackers.html?editRepair=" + twoWayId + "\"]')"),true,'completion from the live panel removes the repair from both active and planned lists');
     await evaluate("document.querySelector('#globalSearchInput').value='CLOUD-TWO-WAY';document.querySelector('#globalSearchInput').dispatchEvent(new Event('input'))");
     await waitFor("document.querySelector('#recentRepairTableBody [data-repair-id=\"" + twoWayId + "\"]') && !document.querySelector('#recentRepairTableBody [data-repair-id=\"" + twoWayId + "\"]').classList.contains('row-pending')");
-    await peer("d.querySelector('a[href=\"trackers.html?editRepair=" + twoWayId + "\"]').closest('.task-modal-item').querySelector('.task-modal-checkbox').click()");
+    await peer("d.querySelector('#modalDayTasksList a[href=\"trackers.html?editRepair=" + twoWayId + "\"]').closest('.task-modal-item').querySelector('.task-modal-checkbox').click()");
     await waitFor("window.__cloudData.trackers.repairs.find(repair=>repair.id===" + twoWayId + ").repairDate===''");
     assert.equal(await evaluate("window.__cloudData.schedule.dayNotes['2026-10-15'].find(task=>task.repairId===" + twoWayId + ").time"), '17:10');
     await evaluate("window.finishRepair(" + twoWayId + ");document.querySelector('#inputRepairDate').value='16.10.2026';document.querySelector('#inputSolution').value='Відновлено GSM';document.querySelector('#btnSaveRepairModal').click()");
     await waitFor("document.querySelector('#workHoursPeer').contentWindow.dayNotes['2026-10-15']?.find(task=>task.repairId===" + twoWayId + ")?.done===true");
     assert.equal(await evaluate("window.__cloudData.trackers.repairs.find(repair=>repair.id===" + twoWayId + ").repairDate"), '16.10.2026');
-    await peer("d.querySelector('a[href=\"trackers.html?editRepair=" + twoWayId + "\"]').closest('.task-modal-item').querySelector('.task-modal-checkbox').click()");
+    await peer("d.querySelector('#modalDayTasksList a[href=\"trackers.html?editRepair=" + twoWayId + "\"]').closest('.task-modal-item').querySelector('.task-modal-checkbox').click()");
     await waitFor("window.__cloudData.trackers.repairs.find(repair=>repair.id===" + twoWayId + ").repairDate===''");
     await evaluate("window.__cloudOffline=true;document.querySelector('#workHoursPeer').contentWindow.__cloudOffline=true");
-    await peer("d.querySelector('a[href=\"trackers.html?editRepair=" + twoWayId + "\"]').closest('.task-modal-item').querySelector('.task-modal-checkbox').click()");
+    await peer("d.querySelector('#modalDayTasksList a[href=\"trackers.html?editRepair=" + twoWayId + "\"]').closest('.task-modal-item').querySelector('.task-modal-checkbox').click()");
     assert.equal(await peer("w.dayNotes['2026-10-15'].find(task=>task.repairId===" + twoWayId + ").done"), true);
     assert.equal(await evaluate("Object.keys(JSON.parse(localStorage.getItem('szvk_pending_repair_completions'))).length"), 1);
     await peer("w.__emitCloud('trackers',w.__cloudData.trackers,true)");
@@ -769,8 +854,9 @@ async function main() {
     assert.equal(await evaluate("window.__cloudData.schedule.dayNotes['2026-10-15'].find(task=>task.repairId===" + twoWayId + ").done"), true, 'completed repair stays on its transferred day');
     await peer("w.dispatchEvent(new w.Event('focus'))");
     assert.equal(await peer("Object.values(w.dayNotes).flat().filter(task=>task.id==='test-task').length"), 1, 'repeated activation does not duplicate tasks');
+    assert.equal(await peer("d.querySelector('#activeTasksList [data-task-id=\"test-task\"]').dataset.date==='2026-10-17'"),true,'the live panel follows carried work across Kyiv midnight');
     assert.equal(errors.length,0,JSON.stringify(errors));
-    console.log('Browser checks passed: simplified navigation, view animations and reduced motion, repair tables/search, calendars, warehouse/references, optional time, cloud note creation, simultaneous Tracker Hub and Work Hours, bidirectional completion/reopening, transferred-day and clicking-account attribution, offline retry, responsive notes, history.');
+    console.log('Browser checks passed: live task panel and mobile sheet, previews, safe areas, saved expansion, cross-season navigation, manual and repair completion, simplified navigation, view animations and reduced motion, repair tables/search, calendars, warehouse/references, optional time, cloud note creation, simultaneous Tracker Hub and Work Hours, bidirectional completion/reopening, transferred-day and clicking-account attribution, offline retry, responsive notes, history.');
     console.log('Screenshots: ' + artifacts);
   } finally {
     if (socket) socket.close();
