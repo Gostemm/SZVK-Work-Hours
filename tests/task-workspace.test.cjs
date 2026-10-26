@@ -133,3 +133,38 @@ test('Work Hours can display and flush edits queued offline in Tracker Hub after
   assert.equal(f.cloud.dayNotes['2099-01-06'][0].time, '17:30');
   assert.deepEqual(JSON.parse(f.storage.get('szvk_pending_schedule_tasks')), []);
 });
+
+test('manual note deletion preserves undo data and cannot delete linked repair notes', () => {
+  const { shared } = fixture(seed());
+  const notes = seed().dayNotes;
+  const original = copy(notes['2099-01-04'][0]);
+  assert.deepEqual(copy(shared.deleteManualTask(notes, '2099-01-04', '7')), original);
+  assert.equal(notes['2099-01-04'], undefined, 'empty day buckets are removed');
+  assert.equal(shared.deleteManualTask(notes, '2099-01-04', 7), null, 'deleting twice is harmless');
+  notes['2099-01-04'] = [{ id: 'repair-9', repairId: 9, text: 'Linked repair', done: false }];
+  const before = copy(notes);
+  assert.equal(shared.deleteManualTask(notes, '2099-01-04', 'repair-9'), null);
+  assert.equal(shared.applyScheduleTaskChange(notes, { kind: 'delete', taskId: 'repair-9' }), false);
+  assert.deepEqual(notes, before);
+});
+
+test('offline deletion survives stale snapshots and removes the moved cloud note without losing concurrent tasks', async () => {
+  const remote = seed();
+  remote.dayNotes['2099-02-01'] = remote.dayNotes['2099-01-04'];
+  remote.dayNotes['2099-01-04'] = [{ id: 'concurrent', text: 'Added elsewhere', done: false }];
+  const f = fixture(seed(), remote);
+  const store = f.createStore();
+  f.setOffline(true);
+  f.shared.deleteManualTask(store.getData().dayNotes, '2099-01-04', 7);
+  await store.save({ kind: 'delete', taskId: 7, dateKey: '2099-01-04' });
+  f.snapshot(remote);
+  assert.equal(Object.values(store.getData().dayNotes).flat().some(task => task.id === 7), false);
+  assert.equal(JSON.parse(f.storage.get('szvk_pending_schedule_tasks')).length, 1);
+  f.setOffline(false);
+  await f.shared.flushScheduleTaskChanges(f.db, f.doc);
+  assert.equal(f.cloud.dayNotes['2099-02-01'], undefined);
+  assert.equal(f.cloud.dayNotes['2099-01-04'][0].id, 'concurrent');
+  assert.deepEqual(f.cloud.overrides, remote.overrides);
+  assert.deepEqual(f.cloud.monthlyDebts, remote.monthlyDebts);
+  assert.deepEqual(JSON.parse(f.storage.get('szvk_pending_schedule_tasks')), []);
+});

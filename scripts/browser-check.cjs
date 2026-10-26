@@ -197,11 +197,13 @@ async function main() {
             const collapsed=await evaluate(`(()=>{
               const host=document.querySelector('#activeTasksHost').getBoundingClientRect();
               const rail=document.querySelector('#activeTasksRail');const bounds=rail.getBoundingClientRect();
+              const style=getComputedStyle(rail);
               const children=[...rail.children].map(element=>{const rect=element.getBoundingClientRect();return {name:element.className,left:rect.left,right:rect.right,top:rect.top,bottom:rect.bottom};});
               return {width:host.width,height:host.height,contained:children.every(rect=>rect.left>=bounds.left && rect.right<=bounds.right && rect.top>=bounds.top && rect.bottom<=bounds.bottom+1),
+                compact:Math.abs(bounds.bottom-children[children.length-1].bottom-parseFloat(style.paddingBottom)-parseFloat(style.borderBottomWidth))<2,
                 separate:children.every((rect,index)=>!index || rect.top>=children[index-1].bottom),pageFits:document.documentElement.scrollWidth<=innerWidth,children};
             })()`);
-            assert.ok(collapsed.width===56 && collapsed.height<=Math.min(280,height-24)+1 && collapsed.contained && collapsed.separate && collapsed.pageFits,module+': collapsed title and count remain inside a rail whose size is independent of task count '+JSON.stringify({width,height,count,...collapsed}));
+            assert.ok(collapsed.width===56 && collapsed.compact && collapsed.contained && collapsed.separate && collapsed.pageFits,module+': collapsed rail height follows its title and count without an empty tail '+JSON.stringify({width,height,count,...collapsed}));
             if(width===1440 && [1,250].includes(count)) {
               const shot=await captureScreenshot();
               fs.writeFileSync(path.join(artifacts,`task-rail-${module}-${count}.png`),Buffer.from(shot.data,'base64'));
@@ -217,6 +219,7 @@ async function main() {
     };
     const checkTaskWorkspace = async module => {
       console.log('Checking direct task editing in ' + module);
+      await navigate(module==='tracker' ? 'trackers.html' : 'index.html');
       await evaluate("Promise.allSettled(document.getAnimations().map(animation=>animation.finished))");
       const taskId = 'workspace-' + module;
       const row = `.active-task-item[data-task-id="${taskId}"]`;
@@ -233,6 +236,7 @@ async function main() {
       await clickPointer(row+' .active-task-edit');
       assert.equal(await evaluate("document.querySelector('#taskEditorModal').classList.contains('active') && !document.querySelector('#activeTasksSheet').open && !document.querySelector('#dayActionModal')?.classList.contains('active')"),true,module+': edit opens directly from the work list without the day dialog');
       assert.equal(await evaluate("document.querySelector('#taskEditorText').value"),'Редагування <тест> & час');
+      assert.equal(await evaluate("(()=>{const button=document.querySelector('#taskEditorTimeMount summary');const style=getComputedStyle(button);return button.getBoundingClientRect().height>=42 && parseFloat(style.borderTopWidth)>=1 && style.backgroundColor!=='rgba(0, 0, 0, 0)' && button.textContent.includes('08:15');})()"),true,module+': time selection has a prominent button with the selected time');
       await checkModalGeometry('taskEditorModal','taskEditorSave');
       const editorShot=await captureScreenshot();
       fs.writeFileSync(path.join(artifacts,'task-editor-'+module+'-mobile.png'),Buffer.from(editorShot.data,'base64'));
@@ -262,6 +266,20 @@ async function main() {
       fs.writeFileSync(path.join(artifacts,'task-workspace-'+module+'.png'),Buffer.from(shot.data,'base64'));
       await assertAnimatedDismissal("document.querySelector('"+row+" .active-task-edit').click()",'taskEditorModal',pressEscape);
       await evaluate("Promise.allSettled(document.getAnimations().map(animation=>animation.finished))");
+      assert.equal(await evaluate("[...document.querySelectorAll('#activeTasksPanel [data-repair-mode=\"request\"]')].every(link=>!link.closest('.active-task-item').querySelector('.active-task-delete'))"),true,module+': linked repair notes have no delete action');
+      await clickPointer(row+' .active-task-delete');
+      assert.equal(await evaluate(`!Object.values(JSON.parse(localStorage.getItem('szvk_schedule_local_data')).dayNotes).flat().some(task=>task.id===${JSON.stringify(taskId)})`),true,module+': planned notes can be deleted directly');
+      assert.equal(await evaluate(`JSON.parse(localStorage.getItem('szvk_action_history_unified')).some(entry=>entry.type==='task_delete' && entry.restoreData.task.id===${JSON.stringify(taskId)} && entry.restoreData.task.time==='16:45')`),true,module+': deletion records the complete note for undo');
+      const activeDeleteId=taskId+'-active-delete';
+      await evaluate(`(()=>{const data=JSON.parse(localStorage.getItem('szvk_schedule_local_data'));data.dayNotes['2026-10-14'].push({id:${JSON.stringify(activeDeleteId)},text:'Видалити з мобільного списку',done:false});localStorage.setItem('szvk_schedule_local_data',JSON.stringify(data));window.dispatchEvent(new StorageEvent('storage',{key:'szvk_schedule_local_data'}));})()`);
+      await call('Emulation.setDeviceMetricsOverride',{width:390,height:800,deviceScaleFactor:1,mobile:true});
+      await waitFor("!document.querySelector('#activeTasksDock').hidden");
+      await clickPointer('#activeTasksDock');
+      await evaluate("Promise.allSettled(document.querySelector('#activeTasksSheet').getAnimations({subtree:true}).map(animation=>animation.finished))");
+      await clickPointer(`.active-task-item[data-task-id="${activeDeleteId}"] .active-task-delete`);
+      assert.equal(await evaluate(`document.querySelector('#activeTasksSheet').open && !Object.values(JSON.parse(localStorage.getItem('szvk_schedule_local_data')).dayNotes).flat().some(task=>task.id===${JSON.stringify(activeDeleteId)})`),true,module+': deleting an active note keeps the mobile list open');
+      await pressEscape();
+      await waitFor("!document.querySelector('#activeTasksSheet').open");
       await evaluate(`(()=>{
         const data=JSON.parse(localStorage.getItem('szvk_schedule_local_data'));
         for(const tasks of Object.values(data.dayNotes)) if(Array.isArray(tasks)) {
@@ -878,6 +896,7 @@ async function main() {
     await evaluate("[...document.querySelectorAll('.day-card')].find(card=>card.querySelector('.day-num')?.textContent==='14').click()");
     assert.equal(await evaluate("document.querySelector('#modalNewTaskTimeMount details').open"), false, 'time picker starts collapsed');
     assert.equal(await evaluate("document.querySelector('#modalNewTaskTimeMount input').required"), false);
+    assert.equal(await evaluate("document.querySelector('#modalNewTaskTimeMount summary').textContent.includes('Обрати час') && document.querySelector('#modalNewTaskTimeMount summary').getBoundingClientRect().height>=42"),true,'the day note form also shows a prominent time selection button');
     await evaluate("document.querySelector('#modalNewTaskTimeMount details').open=true;document.querySelector('#modalNewTaskTimeMount [data-task-time=\"14:00\"]').click();document.querySelector('#modalNewTaskInput').value='Запланований виклик';document.querySelector('#modalAddNewTaskBtn').click()");
     assert.equal(await evaluate("window.dayNotes['2026-10-14'].find(task=>task.text==='Запланований виклик').time"), '14:00');
     assert.equal(await evaluate("document.querySelector('#modalNewTaskTimeMount .task-time-input').value"), '', 'adding resets optional time');

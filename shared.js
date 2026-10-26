@@ -517,7 +517,7 @@
 
   function taskTimePickerHtml() {
     return `<details class="task-time-picker">
-      <summary>◷ Час</summary>
+      <summary>◷ Обрати час</summary>
       <div class="task-time-controls">
         <label>Час завдання <input type="time" class="task-time-input" step="60"></label>
         <button type="button" class="task-time-clear">Без часу</button>
@@ -530,7 +530,7 @@
 
   function setTaskTimePicker(picker, value = '') {
     picker.querySelector('.task-time-input').value = value;
-    picker.querySelector('summary').textContent = value ? '◷ ' + value : '◷ Час';
+    picker.querySelector('summary').textContent = value ? '◷ Час: ' + value : '◷ Обрати час';
     picker.querySelectorAll('[data-task-time]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.taskTime === value)));
   }
 
@@ -875,6 +875,16 @@
   }
 
 
+  function deleteManualTask(dayNotes, dateKey, taskId) {
+    const tasks = dayNotes[dateKey];
+    if (!Array.isArray(tasks)) return null;
+    const index = tasks.findIndex(task => String(task.id) === String(taskId));
+    if (index === -1 || tasks[index].repairId != null) return null;
+    const [task] = tasks.splice(index, 1);
+    if (!tasks.length) delete dayNotes[dateKey];
+    return task;
+  }
+
   // Replay only the intended task change against fresh cloud data. Other days,
   // task metadata and schedule fields remain owned by their existing writers.
   function applyScheduleTaskChange(dayNotes, change) {
@@ -883,6 +893,8 @@
     if (!entry) return false;
     if (change.kind === 'edit') {
       updateTask(dayNotes, entry[0], change.taskId, change.text, change.targetDateKey, change.time);
+    } else if (change.kind === 'delete') {
+      return Boolean(deleteManualTask(dayNotes, entry[0], change.taskId));
     } else if (change.kind === 'done') {
       const task = entry[1].find(task => String(task.id) === String(change.taskId));
       task.done = change.done;
@@ -1378,7 +1390,10 @@
           </button>
           ${task.repairId != null ? `<a class="task-repair-link" href="${repairTaskHref(task.repairId)}" data-repair-id="${escapeHtml(task.repairId)}" data-repair-mode="request">🔧 Відкрити ремонт <span aria-hidden="true">↗</span></a>` : ''}
         </div>
-        <button type="button" class="active-task-edit" title="Редагувати завдання" aria-label="Редагувати: ${escapeHtml(task.text)}">✎</button>
+        <div class="active-task-actions">
+          <button type="button" class="active-task-edit" title="Редагувати завдання" aria-label="Редагувати: ${escapeHtml(task.text)}">✎</button>
+          ${task.repairId == null ? `<button type="button" class="active-task-delete" title="Видалити нотатку" aria-label="Видалити нотатку: ${escapeHtml(task.text)}">🗑</button>` : ''}
+        </div>
       </li>`;
     }
 
@@ -1423,6 +1438,27 @@
       }
     });
     activeTasksPanel.addEventListener('click', event => {
+      const remove = event.target.closest('.active-task-delete');
+      if (remove) {
+        const row = remove.closest('.active-task-item');
+        const list = row.parentElement;
+        const index = [...list.children].indexOf(row);
+        const restoreFocus = row.contains(document.activeElement);
+        const dateKey = row.dataset.date;
+        const task = deleteManualTask(options.getDayNotes(), dateKey, row.dataset.taskId);
+        if (!task) return;
+        options.logAction({ module: 'schedule', tab: 'day_tasks', type: 'task_delete',
+          description: 'Видалено завдання на ' + dateKey, details: '«' + task.text + '»',
+          restoreData: { dateKey, task } });
+        options.onSave({ kind: 'delete', dateKey, taskId: task.id });
+        options.onChange();
+        if (restoreFocus) {
+          const rows = list.querySelectorAll('.active-task-item');
+          const next = rows[Math.min(index, rows.length - 1)];
+          (next?.querySelector('.active-task-delete, .active-task-edit') || activeTasksToggle).focus({ preventScroll: true });
+        }
+        return;
+      }
       const repairLink = event.target.closest('[data-repair-mode]');
       if (repairLink) {
         if (event.button > 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
@@ -1711,6 +1747,7 @@
     syncLocalRepairTasks,
     activeTaskGroups,
     applyScheduleTaskChange,
+    deleteManualTask,
     applyPendingScheduleTaskChanges,
     flushScheduleTaskChanges,
     createScheduleTaskStore,
