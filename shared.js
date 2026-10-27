@@ -254,7 +254,7 @@
   }
 
   const rowCache = new WeakMap();
-  // Reuse unchanged rows and their controls; parse only new or changed records.
+  // Reuse unchanged table/list rows and their controls, including running animations.
   function reconcileRows(container, items, buildHtml) {
     htmlCache.delete(container);
     let entries = rowCache.get(container);
@@ -266,9 +266,9 @@
       const signature = JSON.stringify(item);
       let entry = entries.get(key);
       if (!entry || entry.signature !== signature) {
-        const parser = document.createElement('tbody');
+        const parser = document.createElement(container.tagName === 'TBODY' ? 'tbody' : 'template');
         parser.innerHTML = buildHtml(item);
-        entry = { signature, element: parser.firstElementChild };
+        entry = { signature, element: (parser.content || parser).firstElementChild };
         entries.set(key, entry);
       }
       keys.add(key);
@@ -400,7 +400,9 @@
     }).filter(Boolean);
     const sizeHost = container.tagName === 'TBODY' ? container.closest('table').parentElement : container;
     const startHeight = sizeHost.getBoundingClientRect().height;
-    listTransitions.get(container)?.cleanup();
+    for (const state of activeListTransitions) {
+      if (state.container === container && changes.some(change => state.keys.has(change.id))) state.cleanup();
+    }
     const result = update();
     const after = new Map([...container.querySelectorAll(selector)].map(element => [element.getAttribute(keyAttribute), element]));
     const entries = changes.filter(change => after.has(change.id) &&
@@ -474,7 +476,7 @@
     const endHeight = sizeHost.getBoundingClientRect().height;
     if (!revealed && Math.abs(startHeight - endHeight) > 1) animations.push(sizeHost.animate([{ height: startHeight + 'px' }, { height: endHeight + 'px' }], layoutTiming));
     let timer;
-    const state = { cleanup() {
+    const state = { container, keys: new Set([...entries, ...statusChanges, ...removals.map(item => item.change)].map(change => change.id)), cleanup() {
       window.clearTimeout(timer);
       animations.forEach(animation => animation.cancel());
       ghosts.forEach(ghost => ghost.remove());
@@ -1632,13 +1634,14 @@
       dockPreview.textContent = preview;
       dockPreview.title = preview;
       const activeList = document.getElementById('activeTasksList');
-      animateListUpdate(activeList, 'task', '[data-task-id]', 'data-task-id', () => setHtmlIfChanged(activeList, active.length
-        ? active.map(entry => activeTaskHtml(entry, todayKey)).join('')
-        : '<li class="active-tasks-empty"><strong>На сьогодні все виконано</strong>Нові та перенесені завдання з’являться тут.</li>'));
+      const activeRows = active.map(entry => ({ id: entry.task.id, html: activeTaskHtml(entry, todayKey) }));
+      if (!activeRows.length) activeRows.push({ id: 'empty', html: '<li class="active-tasks-empty"><strong>На сьогодні все виконано</strong>Нові та перенесені завдання з’являться тут.</li>' });
+      animateListUpdate(activeList, 'task', '[data-task-id]', 'data-task-id', () => reconcileRows(activeList, activeRows, row => row.html));
       document.getElementById('activeTasksPlannedCount').textContent = planned.length;
       const plannedList = document.getElementById('activeTasksPlannedList');
       if (planned.length) document.getElementById('activeTasksPlanned').hidden = false;
-      animateListUpdate(plannedList, 'task', '[data-task-id]', 'data-task-id', () => setHtmlIfChanged(plannedList, planned.map(entry => activeTaskHtml(entry, todayKey)).join('')));
+      const plannedRows = planned.map(entry => ({ id: entry.task.id, html: activeTaskHtml(entry, todayKey) }));
+      animateListUpdate(plannedList, 'task', '[data-task-id]', 'data-task-id', () => reconcileRows(plannedList, plannedRows, row => row.html));
       document.getElementById('activeTasksPlanned').hidden = planned.length === 0;
       syncActiveTasksPresentation();
     }

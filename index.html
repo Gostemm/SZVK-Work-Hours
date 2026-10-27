@@ -8,7 +8,7 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg" sizes="any">
   <link rel="apple-touch-icon" href="apple-touch-icon.png" sizes="180x180">
 
-  <script src="shared.js?v=9005b5ebaff7"></script>
+  <script src="shared.js?v=2c4dd88bf156"></script>
 
   <link rel="stylesheet" href="shared.css?v=e259a52277cd">
 
@@ -3242,10 +3242,26 @@ document.addEventListener("DOMContentLoaded", function () {
     renderApp();
   }
 
+  let modalTasksSignature = '';
+  const modalTaskRows = new Map();
+
   function renderModalTasks(tasks, dateKey) {
     const list = document.getElementById('modalDayTasksList');
     if (!list) return;
-    return window.SZVKShared.animateListUpdate(list, 'task', '[data-task-id]', 'data-task-id', () => renderModalTaskContents(tasks, dateKey));
+    const signature = JSON.stringify([dateKey, tasks]);
+    if (modalTasksSignature === signature) return;
+    const result = window.SZVKShared.animateListUpdate(list, 'task', '[data-task-id]', 'data-task-id', () => renderModalTaskContents(tasks, dateKey));
+    modalTasksSignature = signature;
+    return result;
+  }
+
+  function reconcileTaskChildren(container, elements) {
+    const keep = new Set(elements);
+    [...container.children].forEach(element => { if (!keep.has(element)) element.remove(); });
+    elements.forEach((element, index) => {
+      const current = container.children[index];
+      if (current !== element) container.insertBefore(element, current || null);
+    });
   }
 
   function renderModalTaskContents(tasks, dateKey) {
@@ -3253,30 +3269,47 @@ document.addEventListener("DOMContentLoaded", function () {
     const countEl = document.getElementById("modalTasksCount");
     if (!listEl || !countEl) return;
 
-    const completedOpen = listEl.dataset.dateKey === dateKey && Boolean(listEl.querySelector('.completed-tasks')?.open);
+    if (listEl.dataset.dateKey !== dateKey) {
+      modalTaskRows.clear();
+      listEl.replaceChildren();
+    }
     listEl.dataset.dateKey = dateKey;
-    listEl.innerHTML = "";
     const activeTasksCount = tasks.filter(t => !t.done).length;
     countEl.textContent = `${activeTasksCount} активних (з ${tasks.length})`;
 
     if (tasks.length === 0) {
+      modalTaskRows.clear();
       listEl.innerHTML = '<div style="font-size: 12px; color: var(--text-muted); font-style: italic; padding: 6px 0;">Завдань ще немає.</div>';
       return;
     }
 
     const completedCount = tasks.length - activeTasksCount;
-    let completedGroup = null;
+    let completedGroup = listEl.querySelector('.completed-tasks');
     let completedList = null;
     if (completedCount) {
-      completedGroup = document.createElement('details');
-      completedGroup.className = 'completed-tasks';
-      completedGroup.open = completedOpen;
-      completedGroup.innerHTML = `<summary>Виконані завдання (${completedCount})</summary><div class="completed-tasks-list"></div>`;
+      if (!completedGroup) {
+        completedGroup = document.createElement('details');
+        completedGroup.className = 'completed-tasks';
+        completedGroup.innerHTML = '<summary></summary><div class="completed-tasks-list"></div>';
+      }
+      completedGroup.querySelector('summary').textContent = `Виконані завдання (${completedCount})`;
       completedList = completedGroup.querySelector('.completed-tasks-list');
     }
 
-    tasks.forEach((task, idx) => {
-      const item = document.createElement("div");
+    const activeElements = [];
+    const completedElements = [];
+    const currentIds = new Set();
+    tasks.forEach(task => {
+      const key = String(task.id);
+      currentIds.add(key);
+      const signature = JSON.stringify(task);
+      const previous = modalTaskRows.get(key);
+      // Cloud refreshes must keep unchanged controls and their running animations.
+      if (previous?.signature === signature) {
+        (task.done ? completedElements : activeElements).push(previous.element);
+        return;
+      }
+      const item = previous?.element || document.createElement("div");
       item.className = `task-modal-item ${task.done ? 'done' : ''}`;
       item.dataset.taskId = String(task.id);
       const authorText = task.author && task.repairId == null ? `<span class="task-modal-author">(${escapeHtml(task.author)})</span>` : '';
@@ -3304,21 +3337,29 @@ document.addEventListener("DOMContentLoaded", function () {
       item.querySelector('.move-task').onclick = () => openTaskEditor(dateKey, task.id, 'move');
       const deleteButton = item.querySelector('.delete-task');
       if (deleteButton) deleteButton.onclick = () => {
+        const currentTasks = getDayTasks(dateKey);
+        const index = currentTasks.findIndex(current => String(current.id) === String(task.id));
+        if (index === -1) return;
         window.SZVKShared.markListChange('task', task.id, 'delete');
-        const deletedTask = tasks.splice(idx, 1)[0];
-        if (tasks.length === 0) delete window.dayNotes[dateKey];
-        else window.dayNotes[dateKey] = tasks;
+        const deletedTask = currentTasks.splice(index, 1)[0];
+        if (currentTasks.length === 0) delete window.dayNotes[dateKey];
         logAction('task_delete', `Видалено завдання на ${dateKey}`, `«${deletedTask.text}» (автор: ${deletedTask.author || '—'})`, {
           dateKey, task: deletedTask
         });
         saveLocalData();
-        renderModalTasks(tasks, dateKey);
+        renderModalTasks(currentTasks, dateKey);
         renderApp();
       };
 
-      (task.done ? completedList : listEl).appendChild(item);
+      modalTaskRows.set(key, { signature, element: item });
+      (task.done ? completedElements : activeElements).push(item);
     });
-    if (completedGroup) listEl.appendChild(completedGroup);
+    for (const key of modalTaskRows.keys()) if (!currentIds.has(key)) modalTaskRows.delete(key);
+    if (completedList) {
+      reconcileTaskChildren(completedList, completedElements);
+      activeElements.push(completedGroup);
+    }
+    reconcileTaskChildren(listEl, activeElements);
   }
 
   function openDayModal(year, month, day) {

@@ -299,6 +299,15 @@ async function main() {
       assert.equal(await evaluate(`JSON.parse(localStorage.getItem('szvk_action_history_unified')).some(entry=>entry.type==='task_delete' && entry.restoreData.task.id===${JSON.stringify(taskId)} && entry.restoreData.task.time==='16:45')`),true,module+': deletion records the complete note for undo');
       const completedId=taskId+'-complete';
       await evaluate(`(()=>{const data=JSON.parse(localStorage.getItem('szvk_schedule_local_data'));data.dayNotes['2026-10-14'].push({id:${JSON.stringify(completedId)},text:'Виконати з бічної панелі',done:false});localStorage.setItem('szvk_schedule_local_data',JSON.stringify(data));window.dispatchEvent(new StorageEvent('storage',{key:'szvk_schedule_local_data'}));})()`);
+      const siblingId=completedId+'-sibling';
+      assert.equal(await evaluate(`(()=>{
+        const selector='.active-task-item[data-task-id="'+${JSON.stringify(completedId)}+'"]';
+        const row=document.querySelector(selector);const animation=row.getAnimations()[0];
+        const data=JSON.parse(localStorage.getItem('szvk_schedule_local_data'));
+        data.dayNotes['2026-10-14'].push({id:${JSON.stringify(siblingId)},text:'Паралельне оновлення списку',done:false});
+        localStorage.setItem('szvk_schedule_local_data',JSON.stringify(data));window.dispatchEvent(new StorageEvent('storage',{key:'szvk_schedule_local_data'}));
+        return !!animation && document.querySelector(selector)===row && row.getAnimations().includes(animation) && animation.playState!=='idle';
+      })()`),true,module+': a concurrent task update preserves the row and its appearance animation');
       await evaluate("Promise.allSettled(document.getAnimations().map(animation=>animation.finished))");
       await clickPointer(`.active-task-item[data-task-id="${completedId}"] input`);
       await assertListExit('task',completedId,'task-complete-'+module+'-desktop.png','complete');
@@ -322,7 +331,7 @@ async function main() {
       await evaluate(`(()=>{
         const data=JSON.parse(localStorage.getItem('szvk_schedule_local_data'));
         for(const tasks of Object.values(data.dayNotes)) if(Array.isArray(tasks)) {
-          for(let index=tasks.length-1;index>=0;index--) if(${JSON.stringify([taskId,completedId])}.includes(tasks[index].id)) tasks.splice(index,1);
+          for(let index=tasks.length-1;index>=0;index--) if(${JSON.stringify([taskId,completedId,siblingId])}.includes(tasks[index].id)) tasks.splice(index,1);
         }
         localStorage.setItem('szvk_schedule_local_data',JSON.stringify(data));
         window.dispatchEvent(new StorageEvent('storage',{key:'szvk_schedule_local_data'}));
@@ -348,8 +357,33 @@ async function main() {
       await call('Emulation.setDeviceMetricsOverride', { width:320,height:800,deviceScaleFactor:1,mobile:true });
     };
     await call('Emulation.setDeviceMetricsOverride', { width:320,height:800,deviceScaleFactor:1,mobile:true });
+    console.log('Default browser reduced motion: ' + await evaluate("matchMedia('(prefers-reduced-motion: reduce)').matches"));
     await call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'no-preference'}]});
     await navigate('index.html');
+    const originalMotionSchedule=await evaluate("localStorage.getItem('szvk_schedule_local_data')");
+    await evaluate("document.querySelector('.day-card[data-date=\"2026-10-14\"]').click();Promise.allSettled(document.getAnimations().map(animation=>animation.finished))");
+    await evaluate("document.querySelector('#modalNewTaskInput').value='Анімація під час синхронізації'");
+    await clickPointer('#modalAddNewTaskBtn');
+    const syncedNoteId=await evaluate("[...document.querySelectorAll('#modalDayTasksList [data-task-id]')].find(row=>row.textContent.includes('Анімація під час синхронізації')).dataset.taskId");
+    assert.equal(await evaluate(`(()=>{
+      const row=document.querySelector('#modalDayTasksList [data-task-id="'+${JSON.stringify(syncedNoteId)}+'"]');
+      const animation=row.getAnimations()[0];
+      window.dispatchEvent(new StorageEvent('storage',{key:'szvk_schedule_local_data'}));
+      const current=document.querySelector('#modalDayTasksList [data-task-id="'+${JSON.stringify(syncedNoteId)}+'"]');
+      return current===row && current.getAnimations().includes(animation);
+    })()`),true,'a repeated saved snapshot must preserve the note and its running appearance animation');
+    assert.equal(await evaluate(`(()=>{
+      const row=document.querySelector('#modalDayTasksList [data-task-id="'+${JSON.stringify(syncedNoteId)}+'"]');
+      const animation=row.getAnimations()[0];
+      document.querySelector('#modalNewTaskInput').value='Інша нотатка під час появи';document.querySelector('#modalAddNewTaskBtn').click();
+      const current=document.querySelector('#modalDayTasksList [data-task-id="'+${JSON.stringify(syncedNoteId)}+'"]');
+      return current===row && current.getAnimations().includes(animation) && animation.playState!=='idle';
+    })()`),true,'adding another note must not cancel the first note appearance animation');
+    await assertListEntry('#modalDayTasksList [data-task-id="'+syncedNoteId+'"]',0,'note-sync-midway.png');
+    await evaluate(`document.querySelector('#modalDayTasksList [data-task-id="'+${JSON.stringify(syncedNoteId)}+'"] .delete-task').click()`);
+    await assertListExit('task',syncedNoteId);
+    assert.equal(await evaluate(`!window.dayNotes['2026-10-14'].some(task=>String(task.id)===${JSON.stringify(syncedNoteId)}) && window.dayNotes['2026-10-14'].some(task=>task.text==='Інша нотатка під час появи')`),true,'a reused note deletes from the latest saved array without deleting concurrent notes');
+    await evaluate(`localStorage.setItem('szvk_schedule_local_data',${JSON.stringify(originalMotionSchedule)});window.dispatchEvent(new StorageEvent('storage',{key:'szvk_schedule_local_data'}));document.querySelector('#modalDayCloseX').click();Promise.allSettled(document.getAnimations().map(animation=>animation.finished))`);
     assert.equal(await evaluate(`(()=>{
       const list=document.createElement('ul');list.id='emptyMotionList';
       list.style.cssText='position:fixed;left:20px;top:100px;width:200px;margin:0;padding:0;overflow:hidden;z-index:200';
