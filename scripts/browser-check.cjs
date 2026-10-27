@@ -130,8 +130,8 @@ async function main() {
       await evaluate(`Promise.allSettled(document.querySelector(${JSON.stringify(selector)}).getAnimations().map(animation=>animation.finished))`);
       assert.equal(await evaluate(`getComputedStyle(document.querySelector(${JSON.stringify(selector)})).opacity`),'1','the added record ends fully visible');
     };
-    const assertRepairStatus = async (id, kind) => {
-      const status=await evaluate(`new Promise(resolve=>setTimeout(resolve,350)).then(()=>{
+    const assertRepairStatus = async (id, kind, delay = 280) => {
+      const status=await evaluate(`new Promise(resolve=>setTimeout(resolve,${delay+70})).then(()=>{
         const row=document.querySelector('#recentRepairTableBody [data-repair-id="'+${JSON.stringify(String(id))}+'"]');
         return {closing:document.querySelector('#repairModalOverlay').classList.contains('is-closing'),opacity:row && getComputedStyle(row).opacity,
           animations:row?.getAnimations().map(animation=>({time:animation.currentTime,frames:animation.effect.getKeyframes()})),bounds:row?.getBoundingClientRect().toJSON()};
@@ -193,6 +193,61 @@ async function main() {
       console.log('Checking ' + page);
       await call('Page.navigate', { url: url + '/' + page });
       await waitFor("document.readyState==='complete' && !!document.querySelector('#accountMount button')");
+    };
+    const checkCalendarTaskMotions = async () => {
+      const original=await evaluate("localStorage.getItem('szvk_schedule_local_data')");
+      const card='.day-card[data-date="2026-10-20"]';
+      const assertCalendarMotion = async (kind, view, width) => {
+        await waitFor(`document.querySelector(${JSON.stringify(card)}).dataset.taskMotion===${JSON.stringify(kind)}`);
+        const sample=await evaluate(`new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))).then(()=>{
+          const card=document.querySelector(${JSON.stringify(card)});const counter=card.querySelector('.day-task-counter.${view}');
+          const ghost=card.querySelector('.calendar-task-ghost');
+          return {highlight:card.getAnimations().length>0,counter:counter?counter.getAnimations().length>0:true,
+            exit:${kind==='add'?'true':"!!ghost && Number(getComputedStyle(ghost).opacity)>0 && Number(getComputedStyle(ghost).opacity)<1"},
+            safe:!ghost || (ghost.inert && ghost.getAttribute('aria-hidden')==='true' && !ghost.matches('.day-task-counter') && !ghost.querySelector('[id], [data-task-view], .counter-value'))};
+        })`);
+        assert.deepEqual(sample,{highlight:true,counter:true,exit:true,safe:true},kind+': calendar highlights the changed day and animates its counters after the dialog closes');
+        const shot=await call('Page.captureScreenshot',{format:'png'});
+        fs.writeFileSync(path.join(artifacts,'calendar-'+kind+'-'+width+'.png'),Buffer.from(shot.data,'base64'));
+        await waitFor(`!document.querySelector(${JSON.stringify(card)}).dataset.taskMotion`);
+      };
+      for(const width of [390,1440]) {
+        await call('Emulation.setDeviceMetricsOverride',{width,height:900,deviceScaleFactor:1,mobile:width<768});
+        await navigate('index.html');
+        await evaluate(`document.querySelector(${JSON.stringify(card)}).scrollIntoView({block:'center'});Promise.allSettled(document.getAnimations().map(animation=>animation.finished))`);
+        await clickPointer(card);
+        await evaluate("Promise.allSettled(document.getAnimations().map(animation=>animation.finished));document.querySelector('#modalNewTaskInput').value='Анімація календаря';document.querySelector('#modalAddNewTaskBtn').click()");
+        const id=await evaluate("document.querySelector('#modalDayTasksList [data-task-id]').dataset.taskId");
+        await assertListEntry('#modalDayTasksList [data-task-id="'+id+'"]',0);
+        assert.equal(await evaluate(`document.querySelector(${JSON.stringify(card)}).getAnimations().length`),0,'calendar animation waits while the day dialog covers it');
+        await clickPointer('#modalDayCloseX');
+        await assertCalendarMotion('add','active',width);
+        await clickPointer(card);
+        await evaluate("Promise.allSettled(document.getAnimations().map(animation=>animation.finished));document.querySelector('#modalDayTasksList .task-modal-checkbox').click()");
+        await assertListExit('task',id,null,'complete');
+        await clickPointer('#modalDayCloseX');
+        await assertCalendarMotion('complete','done',width);
+        assert.equal(await evaluate(`!!document.querySelector(${JSON.stringify(card)}).querySelector('.day-task-counter.active')`),false,'completion removes the live active counter');
+        await clickPointer(card);
+        await evaluate("Promise.allSettled(document.getAnimations().map(animation=>animation.finished));document.querySelector('#modalDayTasksList .completed-tasks').open=true;document.querySelector('#modalDayTasksList .task-modal-checkbox').click()");
+        await assertListEntry('#modalDayTasksList [data-task-id="'+id+'"]',0);
+        await clickPointer('#modalDayCloseX');
+        await assertCalendarMotion('reopen','active',width);
+        await clickPointer(card);
+        await evaluate("Promise.allSettled(document.getAnimations().map(animation=>animation.finished));document.querySelector('#modalDayTasksList .delete-task').click()");
+        await assertListExit('task',id);
+        await clickPointer('#modalDayCloseX');
+        await assertCalendarMotion('delete','active',width);
+        assert.equal(await evaluate(`document.querySelector(${JSON.stringify(card)}).querySelectorAll('.day-task-counter, .calendar-task-ghost').length`),0,'deleting the last note leaves no counters or decorative copies');
+      }
+      await call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
+      await clickPointer(card);
+      await evaluate("document.querySelector('#modalNewTaskInput').value='Без руху';document.querySelector('#modalAddNewTaskBtn').click();document.querySelector('#modalDayCloseX').click()");
+      assert.equal(await evaluate(`document.querySelector(${JSON.stringify(card)}).getAnimations().length===0 && !document.querySelector('.calendar-task-ghost')`),true,'reduced motion updates the calendar immediately without queued animations');
+      await evaluate(`localStorage.setItem('szvk_schedule_local_data',${JSON.stringify(original)});window.dispatchEvent(new StorageEvent('storage',{key:'szvk_schedule_local_data'}))`);
+      await call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'no-preference'}]});
+      await call('Emulation.setDeviceMetricsOverride',{width:320,height:800,deviceScaleFactor:1,mobile:true});
+      await navigate('index.html');
     };
     const checkTaskPanelLayout = async module => {
       console.log('Checking task panel layout in ' + module);
@@ -396,6 +451,7 @@ async function main() {
     })()`),0,'an empty list starts with zero height');
     await assertListEntry('#emptyMotionList [data-task-id="empty-first"]',0);
     await evaluate("document.querySelector('#emptyMotionList').remove()");
+    await checkCalendarTaskMotions();
     assert.equal(await evaluate("!!document.querySelector('.module-transition')"), false, 'direct visits do not show a module loader');
     holdModuleLoad = true;
     assert.deepEqual(await evaluate(`(()=>{
@@ -1187,6 +1243,16 @@ async function main() {
 
     await navigate('trackers.html');
     await waitFor("!!window.__cloudListeners.trackers && !!document.querySelector('#recentRepairTableBody [data-repair-id]')");
+    await evaluate("document.querySelector('#globalSearchInput').value='CLOUD-MOTION';document.querySelector('#globalSearchInput').dispatchEvent(new Event('input'))");
+    await waitFor("!document.querySelector('#recentRepairTableBody [data-repair-id]')");
+    await evaluate("document.querySelector('#recentRepairTableBody').closest('.table-container').scrollIntoView({block:'center'})");
+    await evaluate("{const data=structuredClone(window.__cloudData.trackers);data.repairs.push({id:987655,date:'14.10.2026',vehicle:'CLOUD-MOTION',carrier:'Тестовий перевізник',issue:'Перевірка анімації синхронізації',workHoursTask:{dateKey:'2026-10-14'}});window.__emitCloud('trackers',data);}");
+    await assertListEntry('#recentRepairTableBody [data-repair-id="987655"]',0,'repair-cloud-add.png');
+    await evaluate("{const data=structuredClone(window.__cloudData.trackers);const repair=data.repairs.find(repair=>repair.id===987655);repair.repairDate='14.10.2026';repair.specialist='Артем';window.__emitCloud('trackers',data);}");
+    await assertRepairStatus(987655,'complete',0);
+    await evaluate("{const data=structuredClone(window.__cloudData.trackers);data.repairs=data.repairs.filter(repair=>repair.id!==987655);window.__emitCloud('trackers',data);}");
+    await assertListExit('repair',987655,'repair-cloud-delete.png','delete',0);
+    await evaluate("document.querySelector('#searchClearBtn').click()");
     await evaluate("window.SZVKShared.saveAuthSession({username:'kostas',name:'Костянтин',role:'user'},true);const frame=document.createElement('iframe');frame.id='workHoursPeer';frame.src='index.html';frame.hidden=true;document.body.appendChild(frame)");
     await waitFor("document.querySelector('#workHoursPeer').contentWindow.__cloudListeners?.trackers && document.querySelector('#workHoursPeer').contentDocument.querySelector('#mainAppContainer')?.style.display==='flex'");
     const peer = expression => evaluate("(()=>{const w=document.querySelector('#workHoursPeer').contentWindow;const d=w.document;return (" + expression + ");})()");

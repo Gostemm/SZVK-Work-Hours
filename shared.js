@@ -152,7 +152,11 @@
     };
     modalAnimations.set(modal, state);
     activeModalAnimations.add(state);
-    const finish = () => { if (modalAnimations.get(modal) === state) state.cleanup(); };
+    const finish = () => {
+      if (modalAnimations.get(modal) !== state) return;
+      state.cleanup();
+      if (!opening) modal.dispatchEvent(new Event('szvk-modal-closed', { bubbles: true }));
+    };
     state.finished = fade.finished.then(finish, finish);
     return state.finished;
   }
@@ -492,6 +496,100 @@
 
   modalMotionPreference.addEventListener?.('change', event => {
     if (event.matches) [...activeListTransitions].forEach(state => state.cleanup());
+  });
+
+  const taskCounterCounts = new WeakMap();
+  const pendingTaskCounterMotions = new Map();
+  const taskCounterMotions = new WeakMap();
+  const activeTaskCounterMotions = new Set();
+
+  function flushTaskCounterMotions() {
+    if (document.querySelector('.modal-overlay.active, .modal-overlay.is-closing, dialog[open]')) return;
+    for (const [card, job] of pendingTaskCounterMotions) {
+      pendingTaskCounterMotions.delete(card);
+      if (!card.isConnected || modalMotionPreference.matches) continue;
+      const bounds = card.getBoundingClientRect();
+      const clip = listClipBounds(card);
+      if (!bounds.width || !bounds.height || bounds.bottom <= clip.top || bounds.top >= clip.bottom || bounds.right <= clip.left || bounds.left >= clip.right) continue;
+      taskCounterMotions.get(card)?.cleanup();
+      const timing = { duration: 380, easing: 'cubic-bezier(0.2, 0.65, 0.3, 1)', fill: 'both' };
+      const color = job.kind === 'complete' ? '#10b981' : job.kind === 'delete' ? '#ef4444' : '#38bdf8';
+      const shadow = getComputedStyle(card).boxShadow;
+      const highlight = 'inset 0 0 0 2px ' + color + ', 0 0 12px ' + color;
+      const animations = [card.animate([
+        { boxShadow: shadow },
+        { boxShadow: highlight, offset: 0.25 },
+        { boxShadow: highlight, offset: 0.55 },
+        { boxShadow: shadow }
+      ], { ...timing, duration: 480, easing: 'ease-in-out' })];
+      card.dataset.taskMotion = job.kind;
+      card.querySelectorAll('.day-task-counter').forEach(counter => {
+        if (job.previous[counter.dataset.taskView] === job.next[counter.dataset.taskView]) return;
+        animations.push(counter.animate([
+          { opacity: 0, scale: '0.75', translate: '0 6px' },
+          { opacity: 1, scale: '1.08', translate: '0 0', offset: 0.65 },
+          { opacity: 1, scale: '1', translate: '0 0' }
+        ], timing));
+      });
+      const ghosts = job.snapshots.map(snapshot => {
+        const copy = snapshot.element;
+        copy.classList.add('calendar-task-ghost');
+        Object.assign(copy.style, { position: 'absolute', left: snapshot.left + 'px', top: snapshot.top + 'px', width: snapshot.width + 'px', height: snapshot.height + 'px', zIndex: '2' });
+        card.appendChild(copy);
+        animations.push(copy.animate([
+          { opacity: snapshot.opacity, scale: '1', translate: '0 0' },
+          { opacity: 0, scale: '0.8', translate: '0 -6px' }
+        ], { ...timing, duration: 260 }));
+        return copy;
+      });
+      const state = { cleanup() {
+        animations.forEach(animation => animation.cancel());
+        ghosts.forEach(ghost => ghost.remove());
+        activeTaskCounterMotions.delete(state);
+        if (taskCounterMotions.get(card) === state) {
+          taskCounterMotions.delete(card);
+          delete card.dataset.taskMotion;
+        }
+      } };
+      taskCounterMotions.set(card, state);
+      activeTaskCounterMotions.add(state);
+      Promise.allSettled(animations.map(animation => animation.finished)).then(state.cleanup);
+    }
+  }
+
+  function animateTaskCounters(card, next, update) {
+    const previous = taskCounterCounts.get(card);
+    taskCounterCounts.set(card, next);
+    if (!previous || (previous.active === next.active && previous.done === next.done) || modalMotionPreference.matches || typeof card.animate !== 'function') return update();
+    const bounds = card.getBoundingClientRect();
+    const snapshots = [...card.querySelectorAll('.day-task-counter')].filter(counter =>
+      previous[counter.dataset.taskView] !== next[counter.dataset.taskView]).map(counter => {
+        const rect = counter.getBoundingClientRect();
+        const snapshot = listExitSnapshot(counter);
+        snapshot.element.style.background = getComputedStyle(counter).background;
+        snapshot.element.classList.remove('day-task-counter', 'active', 'done');
+        const children = counter.querySelectorAll('.counter-icon, .counter-value');
+        snapshot.element.querySelectorAll('.counter-icon, .counter-value').forEach((child, index) => {
+          child.style.display = getComputedStyle(children[index]).display;
+          child.className = '';
+        });
+        return { ...snapshot, left: rect.left - bounds.left - card.clientLeft, top: rect.top - bounds.top - card.clientTop, width: rect.width, height: rect.height };
+      });
+    const result = update();
+    const kind = next.done > previous.done ? 'complete' : next.active + next.done < previous.active + previous.done ? 'delete' : next.done < previous.done ? 'reopen' : 'add';
+    pendingTaskCounterMotions.set(card, { previous, next, kind, snapshots });
+    flushTaskCounterMotions();
+    return result;
+  }
+
+  // Focus restoration may reopen a task sheet; wait for it before revealing the calendar effect.
+  const scheduleTaskCounterMotions = () => window.requestAnimationFrame(flushTaskCounterMotions);
+  document.addEventListener?.('szvk-modal-closed', scheduleTaskCounterMotions);
+  document.addEventListener?.('close', scheduleTaskCounterMotions, true);
+  modalMotionPreference.addEventListener?.('change', event => {
+    if (!event.matches) return;
+    pendingTaskCounterMotions.clear();
+    [...activeTaskCounterMotions].forEach(state => state.cleanup());
   });
 
   function mountUsefulLinks() {
@@ -1954,6 +2052,7 @@
     transitionViews,
     markListChange,
     animateListUpdate,
+    animateTaskCounters,
     reconcileRows,
     updateAccount,
     mountAccountMenu,

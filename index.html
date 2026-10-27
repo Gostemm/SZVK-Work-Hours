@@ -8,7 +8,7 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg" sizes="any">
   <link rel="apple-touch-icon" href="apple-touch-icon.png" sizes="180x180">
 
-  <script src="shared.js?v=2c4dd88bf156"></script>
+  <script src="shared.js?v=8b711cd2dca1"></script>
 
   <link rel="stylesheet" href="shared.css?v=e259a52277cd">
 
@@ -1616,7 +1616,7 @@
 <script>
 document.addEventListener("DOMContentLoaded", function () {
   const requiredSharedMethods = ['readAuthSession', 'saveAuthSession', 'clearAuthSession', 'fetchLoginAccounts', 'mountAccountMenu', 'updateAccount', 'escapeHtml', 'formatHistoryTime', 'initThemeSwitcher', 'updateTask', 'restoreTaskMove', 'debounce', 'setHtmlIfChanged', 'shiftInfo', 'calendarMonthDays', 'taskTimePickerHtml', 'initTaskTimePickers', 'reconcileRepairTasks', 'setRepairCompletion', 'flushRepairCompletions', 'syncRepairTasksToCloud', 'carryForwardTasks', 'rollOverTasksInCloud'];
-  requiredSharedMethods.push('openModal', 'closeModal', 'transitionViews', 'activeTaskGroups', 'mountTaskWorkspace', 'taskCarryLabel', 'applyPendingScheduleTaskChanges', 'flushScheduleTaskChanges', 'repairTaskHref', 'repairTaskControlHtml', 'markListChange', 'animateListUpdate');
+  requiredSharedMethods.push('openModal', 'closeModal', 'transitionViews', 'activeTaskGroups', 'mountTaskWorkspace', 'taskCarryLabel', 'applyPendingScheduleTaskChanges', 'flushScheduleTaskChanges', 'repairTaskHref', 'repairTaskControlHtml', 'markListChange', 'animateListUpdate', 'animateTaskCounters');
   if (!window.SZVKShared || requiredSharedMethods.some(name => typeof window.SZVKShared[name] !== 'function')) {
     const message = document.getElementById('loginErrorMessage');
     message.textContent = 'Не вдалося завантажити оновлення сервісу. Оновіть сторінку.';
@@ -3591,7 +3591,7 @@ document.addEventListener("DOMContentLoaded", function () {
         </div>
       `;
 
-      window.SZVKShared.setHtmlIfChanged(card, inner);
+      window.SZVKShared.animateTaskCounters(card, { active: activeTasksCount, done: tasks.length - activeTasksCount }, () => window.SZVKShared.setHtmlIfChanged(card, inner));
       if (!card.parentNode) daysGrid.appendChild(card);
     }
 

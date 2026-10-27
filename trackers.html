@@ -8,7 +8,7 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg" sizes="any">
   <link rel="apple-touch-icon" href="apple-touch-icon.png" sizes="180x180">
 
-  <script src="shared.js?v=2c4dd88bf156"></script>
+  <script src="shared.js?v=8b711cd2dca1"></script>
   <script>
     // Auth guard
     (function() {
@@ -3598,7 +3598,17 @@
         `;
   }
 
+  let renderedRepairStates = null;
   function renderRepairRows(container, items, emptyText) {
+    const states = new Map(appData.repairs.map(repair => [String(repair.id), isRepairPending(repair)]));
+    if (renderedRepairStates) {
+      for (const [id, pending] of states) {
+        if (!renderedRepairStates.has(id)) window.SZVKShared.markListChange('repair', id, 'add');
+        else if (renderedRepairStates.get(id) !== pending) window.SZVKShared.markListChange('repair', id, pending ? 'reopen' : 'complete');
+      }
+      for (const id of renderedRepairStates.keys()) if (!states.has(id)) window.SZVKShared.markListChange('repair', id, 'delete');
+    }
+    renderedRepairStates = states;
     window.SZVKShared.animateListUpdate(container, 'repair', '[data-repair-id]', 'data-repair-id', () => {
       window.SZVKShared.reconcileRows(container, items, buildRepairRow);
       if (!items.length) container.innerHTML = '<tr><td colspan="10" class="repair-table-empty">' + escapeHtml(emptyText) + '</td></tr>';
