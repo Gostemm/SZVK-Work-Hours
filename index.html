@@ -8,7 +8,7 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg" sizes="any">
   <link rel="apple-touch-icon" href="apple-touch-icon.png" sizes="180x180">
 
-  <script src="shared.js?v=80f0eb6c1903"></script>
+  <script src="shared.js?v=9005b5ebaff7"></script>
 
   <link rel="stylesheet" href="shared.css?v=e259a52277cd">
 
@@ -3232,6 +3232,7 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!task) return;
     if (task.repairId != null) return window.SZVKShared.navigateModule(window.SZVKShared.repairTaskHref(task.repairId, true, dateKey));
     if (Boolean(task.done) === done) return;
+    window.SZVKShared.markListChange('task', task.id, done ? 'complete' : 'reopen');
     task.done = done;
     logAction('task_toggle', `${done ? 'Виконано' : 'Повернуто в роботу'} завдання на ${dateKey}`, `«${task.text}»`, {
       dateKey, taskId: task.id, prevDone: !done

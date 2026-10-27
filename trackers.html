@@ -8,7 +8,7 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg" sizes="any">
   <link rel="apple-touch-icon" href="apple-touch-icon.png" sizes="180x180">
 
-  <script src="shared.js?v=80f0eb6c1903"></script>
+  <script src="shared.js?v=9005b5ebaff7"></script>
   <script>
     // Auth guard
     (function() {
@@ -3066,6 +3066,8 @@
         return;
       }
       const previousDone = Boolean(task.done);
+      if (previousDone === done) return;
+      window.SZVKShared.markListChange('task', task.id, done ? 'complete' : 'reopen');
       task.done = done;
       logAction({ module: 'schedule', tab: 'day_tasks', type: 'task_toggle',
         description: `${done ? 'Виконано' : 'Повернуто в роботу'} завдання на ${dateKey}`, details: '«' + task.text + '»',
@@ -4632,8 +4634,8 @@
       showToast('Цей запис уже видалено');
       return;
     }
-    window.SZVKShared.markListChange?.('repair', toDelete.id, 'delete', 160);
-    window.SZVKShared.markListChange?.('task', 'repair-' + toDelete.id, 'delete', 160);
+    window.SZVKShared.markListChange?.('repair', toDelete.id, 'delete', 280);
+    window.SZVKShared.markListChange?.('task', 'repair-' + toDelete.id, 'delete', 280);
     appData.repairs = appData.repairs.filter(r => String(r.id) !== pendingDeleteRepairId);
     closeDeleteRepairModal();
     logAction({
@@ -4924,6 +4926,12 @@
         rec.notes = notes;
         rec.needInvoice = needInvoice;
 
+        if (isRepairPending(rec) !== isRepairPending(prevRepair)) {
+          const kind = isRepairPending(rec) ? 'reopen' : 'complete';
+          window.SZVKShared.markListChange('repair', rec.id, kind, 280);
+          window.SZVKShared.markListChange('task', 'repair-' + rec.id, kind, 280);
+        }
+
         if (rec.workHoursTask) {
           const pending = isRepairPending(rec);
           if (pending) delete rec.workHoursTask.completedBy;
@@ -4966,8 +4974,8 @@
         needInvoice,
         workHoursTask: { dateKey: window.SZVKShared.kyivDateKey(), author: currentUser ? currentUser.name : 'Користувач' }
       };
-      window.SZVKShared.markListChange('repair', newRec.id, 'add', 160);
-      window.SZVKShared.markListChange('task', 'repair-' + newRec.id, 'add', 160);
+      window.SZVKShared.markListChange('repair', newRec.id, 'add', 280);
+      window.SZVKShared.markListChange('task', 'repair-' + newRec.id, 'add', 280);
       appData.repairs.unshift(newRec);
 
       logAction({

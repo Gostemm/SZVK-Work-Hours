@@ -293,7 +293,10 @@
   function markListChange(category, id, kind, delay = 0) {
     const now = listMotionNow();
     for (const [key, change] of listChanges) if (change.expires <= now) listChanges.delete(key);
-    listChanges.set(category + ':' + String(id), { category, id: String(id), kind, delay, sequence: ++listChangeSequence, expires: now + 1200 });
+    const key = category + ':' + String(id);
+    // A live-list refresh must preserve the action's delay while its dialog closes.
+    if (listChanges.get(key)?.kind === kind) return;
+    listChanges.set(key, { category, id: String(id), kind, delay, sequence: ++listChangeSequence, expires: now + 1200 });
   }
 
   function listClipBounds(container) {
@@ -380,17 +383,18 @@
     for (const sequence of seen) if (!liveSequences.has(sequence)) seen.delete(sequence);
     changes.forEach(change => seen.add(change.sequence));
     listChangeSeen.set(container, seen);
-    const bounds = container.getBoundingClientRect();
-    if (!bounds.width || !bounds.height || getComputedStyle(container).visibility !== 'visible' || container.closest('[inert]')) return update();
+    if (getComputedStyle(container).visibility !== 'visible' || container.closest('[inert]')) return update();
     const clip = listClipBounds(container);
-    const visible = rect => clip.right > clip.left && clip.bottom > clip.top && rect.width > 0 && rect.height > 0 && rect.right > clip.left && rect.left < clip.right && rect.bottom > clip.top && rect.top < clip.bottom;
+    const visible = (rect, area = clip) => area.right > area.left && area.bottom > area.top && rect.width > 0 && rect.height > 0 && rect.right > area.left && rect.left < area.right && rect.bottom > area.top && rect.top < area.bottom;
     const before = new Map([...container.querySelectorAll(selector)].map(element => [element.getAttribute(keyAttribute), { element, bounds: element.getBoundingClientRect() }]));
+    const previousMessage = container.querySelector('.completed-tasks > summary, .active-tasks-empty');
+    const previousMessageBounds = previousMessage?.getBoundingClientRect();
     if (modalMotionPreference.matches) {
       const result = update();
-      revealListEntry(container, category, changes.filter(change => change.kind === 'add' && !before.has(change.id)), selector, keyAttribute);
+      revealListEntry(container, category, changes.filter(change => change.kind === 'reopen' || (change.kind === 'add' && !before.has(change.id))), selector, keyAttribute);
       return result;
     }
-    const exits = changes.filter(change => change.kind === 'delete' && before.has(change.id)).map(change => {
+    const exits = changes.filter(change => (change.kind === 'delete' || (category === 'task' && change.kind === 'complete')) && before.has(change.id)).map(change => {
       const item = before.get(change.id);
       return visible(item.bounds) ? { ...item, change, snapshot: listExitSnapshot(item.element) } : null;
     }).filter(Boolean);
@@ -399,27 +403,33 @@
     listTransitions.get(container)?.cleanup();
     const result = update();
     const after = new Map([...container.querySelectorAll(selector)].map(element => [element.getAttribute(keyAttribute), element]));
-    const entries = changes.filter(change => change.kind === 'add' && !before.has(change.id) && after.has(change.id));
-    const revealed = revealListEntry(container, category, entries, selector, keyAttribute);
-    const removals = exits.filter(item => !after.has(item.change.id));
-    if (!entries.length && !removals.length) return result;
-    const delay = Math.max(...entries.map(change => change.delay), ...removals.map(item => item.change.delay), 0);
-    const timing = { duration: 280, delay, easing: 'cubic-bezier(0.2, 0.65, 0.3, 1)', fill: 'both' };
+    const entries = changes.filter(change => after.has(change.id) &&
+      ((change.kind === 'add' && !before.has(change.id)) || change.kind === 'reopen' || (category === 'task' && change.kind === 'complete')));
+    const revealed = revealListEntry(container, category, entries.filter(change => change.kind !== 'complete'), selector, keyAttribute);
+    const removals = exits.filter(item => item.change.kind === 'complete' || !after.has(item.change.id));
+    const statusChanges = category === 'repair' ? changes.filter(change => ['complete', 'reopen'].includes(change.kind) && after.has(change.id)) : [];
+    if (!entries.length && !removals.length && !statusChanges.length) return result;
+    const delay = Math.max(...entries.map(change => change.delay), ...removals.map(item => item.change.delay), ...statusChanges.map(change => change.delay), 0);
+    const timing = { duration: 320, delay, easing: 'cubic-bezier(0.2, 0.65, 0.3, 1)', fill: 'both' };
+    // Let an outgoing task fade before its neighbours and the form fill its space.
+    const layoutTiming = category === 'task' && removals.length ? { ...timing, delay: delay + 160, duration: 240 } : timing;
+    const entryClip = listClipBounds(container);
     const animations = [];
     const ghosts = [];
     for (const change of entries) {
       const element = after.get(change.id);
-      if (!visible(element.getBoundingClientRect())) continue;
+      if (!visible(element.getBoundingClientRect(), entryClip)) continue;
       animations.push(element.animate([
-        { opacity: 0, translate: '0 8px', filter: 'brightness(1.16)' },
-        { opacity: 1, translate: '0 0', filter: 'brightness(1)' }
-      ], timing));
+        { opacity: 0, translate: '0 12px', filter: 'brightness(1.16)' },
+        { opacity: getComputedStyle(element).opacity, translate: '0 0', filter: 'brightness(1)' }
+      ], change.kind === 'complete' ? layoutTiming : timing));
     }
     for (const item of removals) {
       const ghost = document.createElement('div');
       ghost.className = 'list-motion-ghost';
       ghost.dataset.listMotion = category;
       ghost.dataset.motionKey = item.change.id;
+      ghost.dataset.motionKind = item.change.kind;
       ghost.inert = true;
       ghost.setAttribute('aria-hidden', 'true');
       Object.assign(ghost.style, { position: 'fixed', left: clip.left + 'px', top: clip.top + 'px', width: Math.max(0, clip.right - clip.left) + 'px', height: Math.max(0, clip.bottom - clip.top) + 'px', overflow: 'hidden', pointerEvents: 'none', zIndex: '50' });
@@ -428,19 +438,41 @@
       ghost.appendChild(copy);
       (container.closest('dialog[open], .modal-overlay.active') || document.body).appendChild(ghost);
       ghosts.push(ghost);
-      animations.push(copy.animate([
+      const completed = item.change.kind === 'complete';
+      if (completed) copy.querySelectorAll('.active-task-text, .task-modal-text').forEach(text => { text.style.textDecoration = 'line-through'; });
+      animations.push(copy.animate(completed ? [
+        { opacity: item.snapshot.opacity, translate: '0 0', boxShadow: 'inset 3px 0 #10b981' },
+        { opacity: item.snapshot.opacity, translate: '0 0', boxShadow: 'inset 3px 0 #10b981', offset: 0.3 },
+        { opacity: 0, translate: '12px 0', boxShadow: 'inset 3px 0 #10b981' }
+      ] : [
         { opacity: item.snapshot.opacity, translate: '0 0' },
-        { opacity: 0, translate: '8px 0' }
-      ], { ...timing, duration: 240 }));
+        { opacity: 0, translate: '12px 0' }
+      ], { ...timing, duration: completed ? 380 : 280 }));
+    }
+    for (const change of statusChanges) {
+      const element = after.get(change.id);
+      if (!visible(element.getBoundingClientRect(), entryClip)) continue;
+      animations.push(element.animate([
+        { opacity: 0.45, filter: 'brightness(1.3)', boxShadow: 'inset 3px 0 ' + (change.kind === 'complete' ? '#10b981' : 'var(--accent)') },
+        { opacity: 1, filter: 'brightness(1)', boxShadow: 'inset 0 0 transparent' }
+      ], { ...timing, duration: 380 }));
     }
     for (const [key, element] of after) {
-      if (!before.has(key)) continue;
+      if (!before.has(key) || entries.some(change => change.id === key)) continue;
       const rect = element.getBoundingClientRect();
       const offset = before.get(key).bounds.top - rect.top;
-      if (!revealed && Math.abs(offset) > 1 && visible(rect)) animations.push(element.animate([{ translate: '0 ' + offset + 'px' }, { translate: '0 0' }], timing));
+      if (!revealed && Math.abs(offset) > 1 && visible(rect)) animations.push(element.animate([{ translate: '0 ' + offset + 'px' }, { translate: '0 0' }], layoutTiming));
+    }
+    const message = container.querySelector('.completed-tasks > summary, .active-tasks-empty');
+    if (message && removals.length && visible(message.getBoundingClientRect(), entryClip)) {
+      const offset = previousMessageBounds ? previousMessageBounds.top - message.getBoundingClientRect().top : 8;
+      animations.push(message.animate([
+        { opacity: previousMessageBounds ? 1 : 0, translate: '0 ' + offset + 'px' },
+        { opacity: 1, translate: '0 0' }
+      ], layoutTiming));
     }
     const endHeight = sizeHost.getBoundingClientRect().height;
-    if (!revealed && Math.abs(startHeight - endHeight) > 1) animations.push(sizeHost.animate([{ height: startHeight + 'px' }, { height: endHeight + 'px' }], timing));
+    if (!revealed && Math.abs(startHeight - endHeight) > 1) animations.push(sizeHost.animate([{ height: startHeight + 'px' }, { height: endHeight + 'px' }], layoutTiming));
     let timer;
     const state = { cleanup() {
       window.clearTimeout(timer);
@@ -451,7 +483,7 @@
     } };
     listTransitions.set(container, state);
     activeListTransitions.add(state);
-    timer = window.setTimeout(state.cleanup, delay + 420);
+    timer = window.setTimeout(state.cleanup, delay + 520);
     Promise.allSettled(animations.map(animation => animation.finished)).then(state.cleanup);
     return result;
   }
@@ -1574,8 +1606,20 @@
       </li>`;
     }
 
+    let renderedTaskStates = null;
     function renderActiveTasks(todayKey) {
       if (activeTaskEdit) { refreshTaskEditorSource(); updateTaskShiftPreview(); }
+      // Observe saved changes from other tabs and cloud snapshots as well as local actions.
+      const taskStates = new Map(Object.values(options.getDayNotes()).filter(Array.isArray).flat()
+        .filter(task => task && task.id != null).map(task => [String(task.id), Boolean(task.done)]));
+      if (renderedTaskStates) {
+        for (const [id, done] of taskStates) {
+          if (!renderedTaskStates.has(id)) markListChange('task', id, 'add');
+          else if (renderedTaskStates.get(id) !== done) markListChange('task', id, done ? 'complete' : 'reopen');
+        }
+        for (const id of renderedTaskStates.keys()) if (!taskStates.has(id)) markListChange('task', id, 'delete');
+      }
+      renderedTaskStates = taskStates;
       const { active, planned } = window.SZVKShared.activeTaskGroups(options.getDayNotes(), todayKey);
       document.getElementById('activeTasksCount').textContent = active.length;
       document.getElementById('activeTasksDockCount').textContent = active.length;
@@ -1593,6 +1637,7 @@
         : '<li class="active-tasks-empty"><strong>На сьогодні все виконано</strong>Нові та перенесені завдання з’являться тут.</li>'));
       document.getElementById('activeTasksPlannedCount').textContent = planned.length;
       const plannedList = document.getElementById('activeTasksPlannedList');
+      if (planned.length) document.getElementById('activeTasksPlanned').hidden = false;
       animateListUpdate(plannedList, 'task', '[data-task-id]', 'data-task-id', () => setHtmlIfChanged(plannedList, planned.map(entry => activeTaskHtml(entry, todayKey)).join('')));
       document.getElementById('activeTasksPlanned').hidden = planned.length === 0;
       syncActiveTasksPresentation();
