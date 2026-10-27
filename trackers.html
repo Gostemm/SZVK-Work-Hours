@@ -8,7 +8,7 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg" sizes="any">
   <link rel="apple-touch-icon" href="apple-touch-icon.png" sizes="180x180">
 
-  <script src="shared.js?v=8953dbbe2ff1"></script>
+  <script src="shared.js?v=1aca45fd449d"></script>
   <script>
     // Auth guard
     (function() {
@@ -2512,7 +2512,7 @@
  */
 (function() {
   'use strict';
-  if (!window.SZVKShared || ['readAuthSession', 'mountTaskWorkspace', 'createScheduleTaskStore', 'markListChange', 'animateListUpdate'].some(name => typeof window.SZVKShared[name] !== 'function')) return;
+  if (!window.SZVKShared || ['readAuthSession', 'mountTaskWorkspace', 'createScheduleTaskStore'].some(name => typeof window.SZVKShared[name] !== 'function')) return;
   const currentUser = window.SZVKShared.readAuthSession();
   if (!currentUser) return;
   window.SZVKShared.mountAccountMenu({ backup: true, historyId: 'tabBtnHistory' });
@@ -3067,7 +3067,6 @@
       }
       const previousDone = Boolean(task.done);
       if (previousDone === done) return;
-      window.SZVKShared.markListChange('task', task.id, done ? 'complete' : 'reopen');
       task.done = done;
       logAction({ module: 'schedule', tab: 'day_tasks', type: 'task_toggle',
         description: `${done ? 'Виконано' : 'Повернуто в роботу'} завдання на ${dateKey}`, details: '«' + task.text + '»',
@@ -3598,21 +3597,9 @@
         `;
   }
 
-  let renderedRepairStates = null;
   function renderRepairRows(container, items, emptyText) {
-    const states = new Map(appData.repairs.map(repair => [String(repair.id), isRepairPending(repair)]));
-    if (renderedRepairStates) {
-      for (const [id, pending] of states) {
-        if (!renderedRepairStates.has(id)) window.SZVKShared.markListChange('repair', id, 'add');
-        else if (renderedRepairStates.get(id) !== pending) window.SZVKShared.markListChange('repair', id, pending ? 'reopen' : 'complete');
-      }
-      for (const id of renderedRepairStates.keys()) if (!states.has(id)) window.SZVKShared.markListChange('repair', id, 'delete');
-    }
-    renderedRepairStates = states;
-    window.SZVKShared.animateListUpdate(container, 'repair', '[data-repair-id]', 'data-repair-id', () => {
-      window.SZVKShared.reconcileRows(container, items, buildRepairRow);
-      if (!items.length) container.innerHTML = '<tr><td colspan="10" class="repair-table-empty">' + escapeHtml(emptyText) + '</td></tr>';
-    });
+    window.SZVKShared.reconcileRows(container, items, buildRepairRow);
+    if (!items.length) container.innerHTML = '<tr><td colspan="10" class="repair-table-empty">' + escapeHtml(emptyText) + '</td></tr>';
   }
 
   document.querySelectorAll('[data-repair-table]').forEach(table => {
@@ -4644,8 +4631,6 @@
       showToast('Цей запис уже видалено');
       return;
     }
-    window.SZVKShared.markListChange?.('repair', toDelete.id, 'delete', 280);
-    window.SZVKShared.markListChange?.('task', 'repair-' + toDelete.id, 'delete', 280);
     appData.repairs = appData.repairs.filter(r => String(r.id) !== pendingDeleteRepairId);
     closeDeleteRepairModal();
     logAction({
@@ -4936,12 +4921,6 @@
         rec.notes = notes;
         rec.needInvoice = needInvoice;
 
-        if (isRepairPending(rec) !== isRepairPending(prevRepair)) {
-          const kind = isRepairPending(rec) ? 'reopen' : 'complete';
-          window.SZVKShared.markListChange('repair', rec.id, kind, 280);
-          window.SZVKShared.markListChange('task', 'repair-' + rec.id, kind, 280);
-        }
-
         if (rec.workHoursTask) {
           const pending = isRepairPending(rec);
           if (pending) delete rec.workHoursTask.completedBy;
@@ -4984,8 +4963,6 @@
         needInvoice,
         workHoursTask: { dateKey: window.SZVKShared.kyivDateKey(), author: currentUser ? currentUser.name : 'Користувач' }
       };
-      window.SZVKShared.markListChange('repair', newRec.id, 'add', 280);
-      window.SZVKShared.markListChange('task', 'repair-' + newRec.id, 'add', 280);
       appData.repairs.unshift(newRec);
 
       logAction({

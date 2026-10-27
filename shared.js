@@ -155,7 +155,6 @@
     const finish = () => {
       if (modalAnimations.get(modal) !== state) return;
       state.cleanup();
-      if (!opening) modal.dispatchEvent(new Event('szvk-modal-closed', { bubbles: true }));
     };
     state.finished = fade.finished.then(finish, finish);
     return state.finished;
@@ -163,32 +162,6 @@
 
   function openModal(modal) { return animateModal(modal, true); }
   function closeModal(modal) { return animateModal(modal, false); }
-
-  function stabilizeTaskControls(container) {
-    let pressed = false;
-    container.addEventListener('pointerdown', event => {
-      const control = event.target.closest('.task-modal-checkbox, .active-task-check');
-      if (pressed || !control) return;
-      const animations = document.getAnimations().filter(animation => animation.playState === 'running' &&
-        animation.effect?.target?.contains?.(control));
-      if (!animations.length) return;
-      pressed = true;
-      animations.forEach(animation => animation.pause());
-      const release = () => {
-        document.removeEventListener('pointerup', release, true);
-        document.removeEventListener('pointercancel', release, true);
-        window.removeEventListener('blur', release);
-        pressed = false;
-        // Let the native click/change finish before moving its hit target again.
-        window.requestAnimationFrame(() => animations.forEach(animation => {
-          if (animation.playState === 'paused') animation.play();
-        }));
-      };
-      document.addEventListener('pointerup', release, true);
-      document.addEventListener('pointercancel', release, true);
-      window.addEventListener('blur', release);
-    });
-  }
 
   const viewTransitions = new WeakMap();
   function transitionViews(previousView, nextView, update, { retainPrevious = false } = {}) {
@@ -312,328 +285,6 @@
     });
     for (const key of entries.keys()) if (!keys.has(key)) entries.delete(key);
   }
-
-  const listChanges = new Map();
-  const listChangeSeen = new WeakMap();
-  const listTransitions = new WeakMap();
-  const activeListTransitions = new Set();
-  const taskMotionTiming = { duration: 340, easing: 'cubic-bezier(0.4, 0, 0.2, 1)' };
-  let listChangeSequence = 0;
-  const listMotionNow = () => window.performance?.now() ?? Date.now();
-
-  function markListChange(category, id, kind, delay = 0) {
-    const now = listMotionNow();
-    for (const [key, change] of listChanges) if (change.expires <= now) listChanges.delete(key);
-    const key = category + ':' + String(id);
-    // A live-list refresh must preserve the action's delay while its dialog closes.
-    if (listChanges.get(key)?.kind === kind) return;
-    listChanges.set(key, { category, id: String(id), kind, delay, sequence: ++listChangeSequence, expires: now + 1200 });
-  }
-
-  function listClipBounds(container) {
-    const clip = { left: 0, top: 0, right: window.innerWidth, bottom: window.innerHeight };
-    for (let parent = container; parent && parent !== document.body; parent = parent.parentElement) {
-      const style = getComputedStyle(parent);
-      const bounds = parent.getBoundingClientRect();
-      if (/auto|scroll|hidden|clip/.test(style.overflowX)) {
-        clip.left = Math.max(clip.left, bounds.left + parent.clientLeft);
-        clip.right = Math.min(clip.right, bounds.left + parent.clientLeft + parent.clientWidth);
-      }
-      if (/auto|scroll|hidden|clip/.test(style.overflowY)) {
-        clip.top = Math.max(clip.top, bounds.top + parent.clientTop);
-        clip.bottom = Math.min(clip.bottom, bounds.top + parent.clientTop + parent.clientHeight);
-      }
-    }
-    if (container.tagName === 'TBODY') {
-      const heading = container.closest('table').querySelector('thead th');
-      if (heading && getComputedStyle(heading).position === 'sticky') clip.top = Math.max(clip.top, heading.getBoundingClientRect().bottom);
-    }
-    return clip;
-  }
-
-  function listExitSnapshot(element) {
-    const style = getComputedStyle(element);
-    const copy = element.cloneNode(true);
-    // Decorative copies never duplicate live identifiers or accept interaction.
-    for (const node of [copy, ...copy.querySelectorAll('*')]) {
-      for (const attribute of [...node.attributes]) {
-        if (/^(id|name|for|autofocus|required)$/.test(attribute.name) || attribute.name.startsWith('data-')) node.removeAttribute(attribute.name);
-      }
-      if (node.matches('button, input, select, textarea, fieldset')) node.disabled = true;
-    }
-    copy.classList.remove('active-task-item', 'task-modal-item');
-    copy.inert = true;
-    copy.setAttribute('aria-hidden', 'true');
-    for (const property of ['display', 'box-sizing', 'padding', 'border', 'border-radius', 'background-color', 'color', 'font', 'gap', 'grid-template-columns', 'align-items', 'justify-content', 'list-style', 'box-shadow', 'opacity']) {
-      copy.style.setProperty(property, style.getPropertyValue(property));
-    }
-    const styledChildren = 'td, .task-modal-text, .task-carried-from';
-    const originalChildren = element.querySelectorAll(styledChildren);
-    copy.querySelectorAll(styledChildren).forEach((node, index) => {
-      const originalStyle = getComputedStyle(originalChildren[index]);
-      for (const property of ['color', 'background-color', 'font', 'text-decoration']) node.style.setProperty(property, originalStyle.getPropertyValue(property));
-    });
-    Object.assign(copy.style, { margin: '0', transform: 'none', translate: 'none', pointerEvents: 'none' });
-    if (element.tagName === 'TR') {
-      [...copy.cells].forEach((cell, index) => {
-        cell.style.width = element.cells[index].getBoundingClientRect().width + 'px';
-      });
-      const table = document.createElement('table');
-      table.className = element.closest('table').className;
-      Object.assign(table.style, { margin: '0', minWidth: '0', tableLayout: 'fixed' });
-      const body = document.createElement('tbody');
-      body.appendChild(copy);
-      table.appendChild(body);
-      return { element: table, opacity: style.opacity };
-    }
-    return { element: copy, opacity: style.opacity };
-  }
-
-  function revealListEntry(container, category, entries, selector, keyAttribute) {
-    if (category !== 'task' || !entries.length) return false;
-    const element = [...container.querySelectorAll(selector)].find(node => entries.some(change => node.getAttribute(keyAttribute) === change.id));
-    const scroller = container.closest('.active-tasks-body') || container;
-    if (!element || !/auto|scroll/.test(getComputedStyle(scroller).overflowY)) return false;
-    const previous = scroller.scrollTop;
-    const bounds = scroller.getBoundingClientRect();
-    const rect = element.getBoundingClientRect();
-    const top = bounds.top + scroller.clientTop;
-    const bottom = top + scroller.clientHeight;
-    if (rect.bottom > bottom) scroller.scrollTop += rect.bottom - bottom;
-    else if (rect.top < top) scroller.scrollTop += rect.top - top;
-    return scroller.scrollTop !== previous;
-  }
-
-  function animateListUpdate(container, category, selector, keyAttribute, update) {
-    if (!container || typeof container.animate !== 'function') return update();
-    const now = listMotionNow();
-    const seen = listChangeSeen.get(container) || new Set();
-    const changes = [...listChanges.values()].filter(change => change.category === category && change.expires > now && !seen.has(change.sequence));
-    if (!changes.length) return update();
-    const liveSequences = new Set([...listChanges.values()].filter(change => change.expires > now).map(change => change.sequence));
-    for (const sequence of seen) if (!liveSequences.has(sequence)) seen.delete(sequence);
-    changes.forEach(change => seen.add(change.sequence));
-    listChangeSeen.set(container, seen);
-    if (getComputedStyle(container).visibility !== 'visible' || container.closest('[inert]')) return update();
-    const clip = listClipBounds(container);
-    const visible = (rect, area = clip) => area.right > area.left && area.bottom > area.top && rect.width > 0 && rect.height > 0 && rect.right > area.left && rect.left < area.right && rect.bottom > area.top && rect.top < area.bottom;
-    const before = new Map([...container.querySelectorAll(selector)].map(element => [element.getAttribute(keyAttribute), { element, bounds: element.getBoundingClientRect() }]));
-    const previousMessage = container.querySelector('.completed-tasks > summary, .active-tasks-empty');
-    const previousMessageBounds = previousMessage?.getBoundingClientRect();
-    if (modalMotionPreference.matches) {
-      const result = update();
-      revealListEntry(container, category, changes.filter(change => change.kind === 'reopen' || (change.kind === 'add' && !before.has(change.id))), selector, keyAttribute);
-      return result;
-    }
-    const exits = changes.filter(change => (change.kind === 'delete' || (category === 'task' && change.kind === 'complete')) && before.has(change.id)).map(change => {
-      const item = before.get(change.id);
-      return visible(item.bounds) ? { ...item, change, snapshot: listExitSnapshot(item.element) } : null;
-    }).filter(Boolean);
-    const sizeHost = container.tagName === 'TBODY' ? container.closest('table').parentElement : container;
-    const startBounds = sizeHost.getBoundingClientRect();
-    const startHeight = startBounds.height;
-    const result = update();
-    const after = new Map([...container.querySelectorAll(selector)].map(element => [element.getAttribute(keyAttribute), element]));
-    const entries = changes.filter(change => after.has(change.id) &&
-      ((change.kind === 'add' && !before.has(change.id)) || change.kind === 'reopen' || (category === 'task' && change.kind === 'complete')));
-    const removals = exits.filter(item => item.change.kind === 'complete' || !after.has(item.change.id));
-    const statusChanges = category === 'repair' ? changes.filter(change => ['complete', 'reopen'].includes(change.kind) && after.has(change.id)) : [];
-    if (!entries.length && !removals.length && !statusChanges.length) return result;
-    // A change in another list must not interrupt this list's current layout.
-    listTransitions.get(container)?.cleanupLayout();
-    for (const state of activeListTransitions) {
-      if (state.container === container && changes.some(change => state.keys.has(change.id))) state.cleanup();
-    }
-    const revealed = revealListEntry(container, category, entries.filter(change => change.kind !== 'complete'), selector, keyAttribute);
-    const delay = Math.max(...entries.map(change => change.delay), ...removals.map(item => item.change.delay), ...statusChanges.map(change => change.delay), 0);
-    const timing = { ...taskMotionTiming, delay, fill: 'both' };
-    const animations = [];
-    const layoutAnimations = [];
-    const ghosts = [];
-    const entryClip = listClipBounds(container);
-    const entryBounds = new Map(entries.map(change => [change.id, after.get(change.id).getBoundingClientRect()]));
-    // Restore the displayed height before measuring row offsets. A centred dialog
-    // otherwise shifts once during measurement and a second time when height animates.
-    const endBounds = sizeHost.getBoundingClientRect();
-    const endHeight = endBounds.height;
-    if (!revealed && Math.abs(startHeight - endHeight) > 1) layoutAnimations.push(sizeHost.animate([{ height: startHeight + 'px' }, { height: endHeight + 'px' }], timing));
-    for (const change of entries) {
-      const element = after.get(change.id);
-      if (!visible(entryBounds.get(change.id), entryClip)) continue;
-      animations.push(element.animate([
-        { opacity: 0, translate: '0 4px' },
-        { opacity: getComputedStyle(element).opacity, translate: '0 0' }
-      ], timing));
-    }
-    for (const item of removals) {
-      const ghost = document.createElement('div');
-      ghost.className = 'list-motion-ghost';
-      ghost.dataset.listMotion = category;
-      ghost.dataset.motionKey = item.change.id;
-      ghost.dataset.motionKind = item.change.kind;
-      ghost.inert = true;
-      ghost.setAttribute('aria-hidden', 'true');
-      const ghostBounds = (area, bounds) => {
-        const left = Math.max(area.left, bounds.left);
-        const top = Math.max(area.top, bounds.top);
-        return { left: left + 'px', top: top + 'px', width: Math.max(0, Math.min(area.right, bounds.right) - left) + 'px', height: Math.max(0, Math.min(area.bottom, bounds.bottom) - top) + 'px' };
-      };
-      const from = ghostBounds(clip, startBounds);
-      const to = ghostBounds(entryClip, endBounds);
-      Object.assign(ghost.style, from, { position: 'fixed', overflow: 'hidden', pointerEvents: 'none', zIndex: '50' });
-      const copy = item.snapshot.element;
-      Object.assign(copy.style, { position: 'absolute', left: (item.bounds.left - parseFloat(from.left)) + 'px', top: (item.bounds.top - parseFloat(from.top)) + 'px', width: item.bounds.width + 'px', height: item.bounds.height + 'px' });
-      ghost.appendChild(copy);
-      (container.closest('dialog[open], .modal-overlay.active') || document.body).appendChild(ghost);
-      ghosts.push(ghost);
-      // Follow the list as a centred dialog resizes, clipping the fading row away
-      // from its heading and form instead of leaving a fixed copy over them.
-      animations.push(ghost.animate([from, to], timing));
-      const completed = item.change.kind === 'complete';
-      if (completed) {
-        copy.style.boxShadow = 'inset 2px 0 rgba(16, 185, 129, 0.35)';
-        copy.querySelectorAll('.active-task-text, .task-modal-text').forEach(text => { text.style.textDecoration = 'line-through'; });
-      }
-      animations.push(copy.animate([
-        { opacity: item.snapshot.opacity, translate: '0 0' },
-        { opacity: 0, translate: '0 -2px' }
-      ], timing));
-    }
-    for (const change of statusChanges) {
-      const element = after.get(change.id);
-      if (!visible(element.getBoundingClientRect(), entryClip)) continue;
-      animations.push(element.animate([
-        { opacity: 0.8, boxShadow: 'inset 2px 0 ' + (change.kind === 'complete' ? 'rgba(16, 185, 129, 0.35)' : 'rgba(59, 130, 246, 0.35)') },
-        { opacity: 1, boxShadow: 'inset 0 0 transparent' }
-      ], timing));
-    }
-    for (const [key, element] of after) {
-      if (!before.has(key) || entries.some(change => change.id === key)) continue;
-      const rect = element.getBoundingClientRect();
-      const offset = before.get(key).bounds.top - rect.top;
-      if (!revealed && Math.abs(offset) > 1 && visible(rect)) layoutAnimations.push(element.animate([{ translate: '0 ' + offset + 'px' }, { translate: '0 0' }], timing));
-    }
-    const message = container.querySelector('.completed-tasks > summary, .active-tasks-empty');
-    if (message && removals.length && visible(message.getBoundingClientRect(), entryClip)) {
-      const offset = previousMessageBounds ? previousMessageBounds.top - message.getBoundingClientRect().top : 8;
-      layoutAnimations.push(message.animate([
-        { opacity: previousMessageBounds ? 1 : 0, translate: '0 ' + offset + 'px' },
-        { opacity: 1, translate: '0 0' }
-      ], previousMessageBounds ? timing : { ...timing, delay: delay + 90, duration: timing.duration - 90 }));
-    }
-    let timer;
-    const state = { container, keys: new Set([...entries, ...statusChanges, ...removals.map(item => item.change)].map(change => change.id)), cleanupLayout() {
-      layoutAnimations.forEach(animation => animation.cancel());
-      if (listTransitions.get(container) === state) listTransitions.delete(container);
-    }, cleanup() {
-      window.clearTimeout(timer);
-      animations.forEach(animation => animation.cancel());
-      ghosts.forEach(ghost => ghost.remove());
-      activeListTransitions.delete(state);
-      state.cleanupLayout();
-    } };
-    listTransitions.set(container, state);
-    activeListTransitions.add(state);
-    timer = window.setTimeout(state.cleanup, delay + timing.duration + 120);
-    Promise.allSettled([...animations, ...layoutAnimations].map(animation => animation.finished)).then(state.cleanup);
-    return result;
-  }
-
-  modalMotionPreference.addEventListener?.('change', event => {
-    if (event.matches) [...activeListTransitions].forEach(state => state.cleanup());
-  });
-
-  const taskCounterCounts = new WeakMap();
-  const pendingTaskCounterMotions = new Map();
-  const taskCounterMotions = new WeakMap();
-  const activeTaskCounterMotions = new Set();
-
-  function flushTaskCounterMotions() {
-    if (document.querySelector('.modal-overlay.active, .modal-overlay.is-closing, dialog[open]')) return;
-    for (const [card, job] of pendingTaskCounterMotions) {
-      pendingTaskCounterMotions.delete(card);
-      if (!card.isConnected || modalMotionPreference.matches) continue;
-      const bounds = card.getBoundingClientRect();
-      const clip = listClipBounds(card);
-      if (!bounds.width || !bounds.height || bounds.bottom <= clip.top || bounds.top >= clip.bottom || bounds.right <= clip.left || bounds.left >= clip.right) continue;
-      taskCounterMotions.get(card)?.cleanup();
-      const timing = { ...taskMotionTiming, fill: 'both' };
-      const color = job.kind === 'complete' ? '16, 185, 129' : job.kind === 'delete' ? '239, 68, 68' : '56, 189, 248';
-      const shadow = getComputedStyle(card).boxShadow;
-      const highlight = 'inset 0 0 0 1px rgba(' + color + ', 0.28)';
-      const animations = [card.animate([
-        { boxShadow: shadow },
-        { boxShadow: highlight, offset: 0.45 },
-        { boxShadow: shadow }
-      ], timing)];
-      card.dataset.taskMotion = job.kind;
-      card.querySelectorAll('.day-task-counter').forEach(counter => {
-        if (job.previous[counter.dataset.taskView] === job.next[counter.dataset.taskView]) return;
-        animations.push(counter.animate([
-          { opacity: 0, translate: '0 2px' },
-          { opacity: 1, translate: '0 0' }
-        ], timing));
-      });
-      const ghosts = job.snapshots.map(snapshot => {
-        const copy = snapshot.element;
-        copy.classList.add('calendar-task-ghost');
-        Object.assign(copy.style, { position: 'absolute', left: snapshot.left + 'px', top: snapshot.top + 'px', width: snapshot.width + 'px', height: snapshot.height + 'px', zIndex: '2' });
-        card.appendChild(copy);
-        animations.push(copy.animate([
-          { opacity: snapshot.opacity, translate: '0 0' },
-          { opacity: 0, translate: '0 -2px' }
-        ], timing));
-        return copy;
-      });
-      const state = { cleanup() {
-        animations.forEach(animation => animation.cancel());
-        ghosts.forEach(ghost => ghost.remove());
-        activeTaskCounterMotions.delete(state);
-        if (taskCounterMotions.get(card) === state) {
-          taskCounterMotions.delete(card);
-          delete card.dataset.taskMotion;
-        }
-      } };
-      taskCounterMotions.set(card, state);
-      activeTaskCounterMotions.add(state);
-      Promise.allSettled(animations.map(animation => animation.finished)).then(state.cleanup);
-    }
-  }
-
-  function animateTaskCounters(card, next, update) {
-    const previous = taskCounterCounts.get(card);
-    taskCounterCounts.set(card, next);
-    if (!previous || (previous.active === next.active && previous.done === next.done) || modalMotionPreference.matches || typeof card.animate !== 'function') return update();
-    const bounds = card.getBoundingClientRect();
-    const snapshots = [...card.querySelectorAll('.day-task-counter')].filter(counter =>
-      previous[counter.dataset.taskView] !== next[counter.dataset.taskView]).map(counter => {
-        const rect = counter.getBoundingClientRect();
-        const snapshot = listExitSnapshot(counter);
-        snapshot.element.style.background = getComputedStyle(counter).background;
-        snapshot.element.classList.remove('day-task-counter', 'active', 'done');
-        const children = counter.querySelectorAll('.counter-icon, .counter-value');
-        snapshot.element.querySelectorAll('.counter-icon, .counter-value').forEach((child, index) => {
-          child.style.display = getComputedStyle(children[index]).display;
-          child.className = '';
-        });
-        return { ...snapshot, left: rect.left - bounds.left - card.clientLeft, top: rect.top - bounds.top - card.clientTop, width: rect.width, height: rect.height };
-      });
-    const result = update();
-    const kind = next.done > previous.done ? 'complete' : next.active + next.done < previous.active + previous.done ? 'delete' : next.done < previous.done ? 'reopen' : 'add';
-    pendingTaskCounterMotions.set(card, { previous, next, kind, snapshots });
-    flushTaskCounterMotions();
-    return result;
-  }
-
-  // Focus restoration may reopen a task sheet; wait for it before revealing the calendar effect.
-  const scheduleTaskCounterMotions = () => window.requestAnimationFrame(flushTaskCounterMotions);
-  document.addEventListener?.('szvk-modal-closed', scheduleTaskCounterMotions);
-  document.addEventListener?.('close', scheduleTaskCounterMotions, true);
-  modalMotionPreference.addEventListener?.('change', event => {
-    if (!event.matches) return;
-    pendingTaskCounterMotions.clear();
-    [...activeTaskCounterMotions].forEach(state => state.cleanup());
-  });
 
   function mountUsefulLinks() {
     const themeSwitcher = document.getElementById('themeSwitchGroup');
@@ -1624,7 +1275,6 @@
 
     const activeTasksHost = document.getElementById('activeTasksHost');
     const activeTasksPanel = document.getElementById('activeTasksPanel');
-    stabilizeTaskControls(activeTasksPanel);
     const activeTasksSheet = document.getElementById('activeTasksSheet');
     const activeTasksDock = document.getElementById('activeTasksDock');
     const activeTasksToggle = document.getElementById('activeTasksToggle');
@@ -1772,20 +1422,8 @@
       </li>`;
     }
 
-    let renderedTaskStates = null;
     function renderActiveTasks(todayKey) {
       if (activeTaskEdit) { refreshTaskEditorSource(); updateTaskShiftPreview(); }
-      // Observe saved changes from other tabs and cloud snapshots as well as local actions.
-      const taskStates = new Map(Object.values(options.getDayNotes()).filter(Array.isArray).flat()
-        .filter(task => task && task.id != null).map(task => [String(task.id), Boolean(task.done)]));
-      if (renderedTaskStates) {
-        for (const [id, done] of taskStates) {
-          if (!renderedTaskStates.has(id)) markListChange('task', id, 'add');
-          else if (renderedTaskStates.get(id) !== done) markListChange('task', id, done ? 'complete' : 'reopen');
-        }
-        for (const id of renderedTaskStates.keys()) if (!taskStates.has(id)) markListChange('task', id, 'delete');
-      }
-      renderedTaskStates = taskStates;
       const { active, planned } = window.SZVKShared.activeTaskGroups(options.getDayNotes(), todayKey);
       document.getElementById('activeTasksCount').textContent = active.length;
       document.getElementById('activeTasksDockCount').textContent = active.length;
@@ -1800,12 +1438,12 @@
       const activeList = document.getElementById('activeTasksList');
       const activeRows = active.map(entry => ({ id: entry.task.id, html: activeTaskHtml(entry, todayKey) }));
       if (!activeRows.length) activeRows.push({ id: 'empty', html: '<li class="active-tasks-empty"><strong>На сьогодні все виконано</strong>Нові та перенесені завдання з’являться тут.</li>' });
-      animateListUpdate(activeList, 'task', '[data-task-id]', 'data-task-id', () => reconcileRows(activeList, activeRows, row => row.html));
+      reconcileRows(activeList, activeRows, row => row.html);
       document.getElementById('activeTasksPlannedCount').textContent = planned.length;
       const plannedList = document.getElementById('activeTasksPlannedList');
       if (planned.length) document.getElementById('activeTasksPlanned').hidden = false;
       const plannedRows = planned.map(entry => ({ id: entry.task.id, html: activeTaskHtml(entry, todayKey) }));
-      animateListUpdate(plannedList, 'task', '[data-task-id]', 'data-task-id', () => reconcileRows(plannedList, plannedRows, row => row.html));
+      reconcileRows(plannedList, plannedRows, row => row.html);
       document.getElementById('activeTasksPlanned').hidden = planned.length === 0;
       syncActiveTasksPresentation();
     }
@@ -1836,7 +1474,6 @@
         const index = [...list.children].indexOf(row);
         const restoreFocus = row.contains(document.activeElement);
         const dateKey = row.dataset.date;
-        markListChange('task', row.dataset.taskId, 'delete');
         const task = deleteManualTask(options.getDayNotes(), dateKey, row.dataset.taskId);
         if (!task) return;
         options.logAction({ module: 'schedule', tab: 'day_tasks', type: 'task_delete',
@@ -2115,11 +1752,7 @@
     setHtmlIfChanged,
     openModal,
     closeModal,
-    stabilizeTaskControls,
     transitionViews,
-    markListChange,
-    animateListUpdate,
-    animateTaskCounters,
     reconcileRows,
     updateAccount,
     mountAccountMenu,

@@ -8,7 +8,7 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg" sizes="any">
   <link rel="apple-touch-icon" href="apple-touch-icon.png" sizes="180x180">
 
-  <script src="shared.js?v=8953dbbe2ff1"></script>
+  <script src="shared.js?v=1aca45fd449d"></script>
 
   <link rel="stylesheet" href="shared.css?v=e259a52277cd">
 
@@ -1616,7 +1616,7 @@
 <script>
 document.addEventListener("DOMContentLoaded", function () {
   const requiredSharedMethods = ['readAuthSession', 'saveAuthSession', 'clearAuthSession', 'fetchLoginAccounts', 'mountAccountMenu', 'updateAccount', 'escapeHtml', 'formatHistoryTime', 'initThemeSwitcher', 'updateTask', 'restoreTaskMove', 'debounce', 'setHtmlIfChanged', 'shiftInfo', 'calendarMonthDays', 'taskTimePickerHtml', 'initTaskTimePickers', 'reconcileRepairTasks', 'setRepairCompletion', 'flushRepairCompletions', 'syncRepairTasksToCloud', 'carryForwardTasks', 'rollOverTasksInCloud'];
-  requiredSharedMethods.push('openModal', 'closeModal', 'stabilizeTaskControls', 'transitionViews', 'activeTaskGroups', 'mountTaskWorkspace', 'taskCarryLabel', 'applyPendingScheduleTaskChanges', 'flushScheduleTaskChanges', 'queueScheduleTaskChange', 'mergeScheduleTaskCompletions', 'repairTaskHref', 'repairTaskControlHtml', 'markListChange', 'animateListUpdate', 'animateTaskCounters');
+  requiredSharedMethods.push('openModal', 'closeModal', 'transitionViews', 'activeTaskGroups', 'mountTaskWorkspace', 'taskCarryLabel', 'applyPendingScheduleTaskChanges', 'flushScheduleTaskChanges', 'queueScheduleTaskChange', 'mergeScheduleTaskCompletions', 'repairTaskHref', 'repairTaskControlHtml');
   if (!window.SZVKShared || requiredSharedMethods.some(name => typeof window.SZVKShared[name] !== 'function')) {
     const message = document.getElementById('loginErrorMessage');
     message.textContent = 'Не вдалося завантажити оновлення сервісу. Оновіть сторінку.';
@@ -3245,7 +3245,6 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!task) return;
     if (task.repairId != null) return window.SZVKShared.navigateModule(window.SZVKShared.repairTaskHref(task.repairId, true, dateKey));
     if (Boolean(task.done) === done) return;
-    window.SZVKShared.markListChange('task', task.id, done ? 'complete' : 'reopen');
     task.done = done;
     logAction('task_toggle', `${done ? 'Виконано' : 'Повернуто в роботу'} завдання на ${dateKey}`, `«${task.text}»`, {
       dateKey, taskId: task.id, prevDone: !done
@@ -3257,14 +3256,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
   let modalTasksSignature = '';
   const modalTaskRows = new Map();
-  window.SZVKShared.stabilizeTaskControls(document.getElementById('modalDayTasksList'));
 
   function renderModalTasks(tasks, dateKey) {
     const list = document.getElementById('modalDayTasksList');
     if (!list) return;
     const signature = JSON.stringify([dateKey, tasks]);
     if (modalTasksSignature === signature) return;
-    const result = window.SZVKShared.animateListUpdate(list, 'task', '[data-task-id]', 'data-task-id', () => renderModalTaskContents(tasks, dateKey));
+    const result = renderModalTaskContents(tasks, dateKey);
     modalTasksSignature = signature;
     return result;
   }
@@ -3354,7 +3352,6 @@ document.addEventListener("DOMContentLoaded", function () {
         const currentTasks = getDayTasks(dateKey);
         const index = currentTasks.findIndex(current => String(current.id) === String(task.id));
         if (index === -1) return;
-        window.SZVKShared.markListChange('task', task.id, 'delete');
         const deletedTask = currentTasks.splice(index, 1)[0];
         if (currentTasks.length === 0) delete window.dayNotes[dateKey];
         logAction('task_delete', `Видалено завдання на ${dateKey}`, `«${deletedTask.text}» (автор: ${deletedTask.author || '—'})`, {
@@ -3428,7 +3425,6 @@ document.addEventListener("DOMContentLoaded", function () {
     const picker = document.querySelector('#modalNewTaskTimeMount .task-time-picker');
     const time = picker.querySelector('.task-time-input').value;
     if (time) newTask.time = time;
-    window.SZVKShared.markListChange('task', newTask.id, 'add');
     tasks.push(newTask);
 
     window.dayNotes[dateKey] = tasks;
@@ -3605,7 +3601,7 @@ document.addEventListener("DOMContentLoaded", function () {
         </div>
       `;
 
-      window.SZVKShared.animateTaskCounters(card, { active: activeTasksCount, done: tasks.length - activeTasksCount }, () => window.SZVKShared.setHtmlIfChanged(card, inner));
+      window.SZVKShared.setHtmlIfChanged(card, inner);
       if (!card.parentNode) daysGrid.appendChild(card);
     }
 

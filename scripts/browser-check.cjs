@@ -112,32 +112,18 @@ async function main() {
       await call('Input.dispatchMouseEvent',{type:'mousePressed',x:2,y:2,button:'left',clickCount:1});
       await call('Input.dispatchMouseEvent',{type:'mouseReleased',x:2,y:2,button:'left',clickCount:1});
     };
-    const assertListExit = async (category, key, screenshot, kind = 'delete', delay = category === 'repair' ? 280 : 0) => {
-      const sample=await evaluate(`new Promise(resolve=>{const start=performance.now();const frame=now=>now-start>=${delay+90}?resolve():requestAnimationFrame(frame);requestAnimationFrame(frame);}).then(()=>{
-        const ghost=[...document.querySelectorAll('.list-motion-ghost')].find(element=>element.dataset.listMotion===${JSON.stringify(category)} && element.dataset.motionKey===${JSON.stringify(String(key))} && element.dataset.motionKind===${JSON.stringify(kind)});
-        if(!ghost) return null;
-        const copy=ghost.firstElementChild;const alpha=Number(getComputedStyle(copy).opacity);const bounds=copy.getBoundingClientRect();
-        return {fading:alpha>0 && alpha<1,visible:bounds.width>0 && bounds.height>0 && bounds.bottom>0 && bounds.top<innerHeight,
-          safe:ghost.inert && ghost.getAttribute('aria-hidden')==='true' && !ghost.querySelector('[id], [name], [data-task-id], [data-repair-id], [data-repair-action]')};
-      })`);
-      assert.deepEqual(sample,{fading:true,visible:true,safe:true},category+': '+kind+' visibly fades a decorative copy after saving the change');
-      if(screenshot) { const shot=await call('Page.captureScreenshot',{format:'png'});fs.writeFileSync(path.join(artifacts,screenshot),Buffer.from(shot.data,'base64')); }
-      await waitFor(`![...document.querySelectorAll('.list-motion-ghost')].some(element=>element.dataset.listMotion===${JSON.stringify(category)} && element.dataset.motionKey===${JSON.stringify(String(key))})`);
+    const assertListExit = async (category, key, screenshot, kind = 'delete') => {
+      const selector=category==='repair'?'#recentRepairTableBody [data-repair-id], #repairTableBody [data-repair-id]':kind==='complete'?'#activeTasksPanel [data-task-id], #modalDayTasksList > [data-task-id]':'#activeTasksPanel [data-task-id], #modalDayTasksList [data-task-id]';
+      assert.equal(await evaluate('Array.from(document.querySelectorAll('+JSON.stringify(selector)+')).some(row=>row.getAttribute('+JSON.stringify(category==='repair'?'data-repair-id':'data-task-id')+')==='+JSON.stringify(String(key))+')'),false,category+': '+kind+' updates the live list immediately');
+      assert.equal(await evaluate("!!document.querySelector('.list-motion-ghost, .calendar-task-ghost')"),false,'task updates leave no decorative copies');
+      if(screenshot) {const shot=await captureScreenshot();fs.writeFileSync(path.join(artifacts,screenshot),Buffer.from(shot.data,'base64'));}
     };
     const assertListEntry = async (selector, delay, screenshot) => {
-      assert.equal(await evaluate(`new Promise(resolve=>{const start=performance.now();const frame=now=>now-start>=${delay+80}?resolve():requestAnimationFrame(frame);requestAnimationFrame(frame);}).then(()=>{const element=document.querySelector(${JSON.stringify(selector)});const alpha=Number(getComputedStyle(element).opacity);return alpha>0 && alpha<1 && element.getAnimations().some(animation=>animation.effect.getKeyframes().some(frame=>Number(frame.opacity)===0));})`),true,'new records visibly fade into their actual list position');
-      if(screenshot) { const shot=await call('Page.captureScreenshot',{format:'png'});fs.writeFileSync(path.join(artifacts,screenshot),Buffer.from(shot.data,'base64')); }
-      await evaluate(`Promise.allSettled(document.querySelector(${JSON.stringify(selector)}).getAnimations().map(animation=>animation.finished))`);
-      assert.equal(await evaluate(`getComputedStyle(document.querySelector(${JSON.stringify(selector)})).opacity`),'1','the added record ends fully visible');
+      assert.equal(await evaluate('(()=>{const row=document.querySelector('+JSON.stringify(selector)+');return !!row && getComputedStyle(row).opacity===\'1\' && row.getAnimations().length===0;})()'),true,'new records are immediately visible without an entrance animation');
+      if(screenshot) {const shot=await captureScreenshot();fs.writeFileSync(path.join(artifacts,screenshot),Buffer.from(shot.data,'base64'));}
     };
-    const assertRepairStatus = async (id, kind, delay = 280) => {
-      const status=await evaluate(`new Promise(resolve=>setTimeout(resolve,${delay+70})).then(()=>{
-        const row=document.querySelector('#recentRepairTableBody [data-repair-id="'+${JSON.stringify(String(id))}+'"]');
-        return {closing:document.querySelector('#repairModalOverlay').classList.contains('is-closing'),opacity:row && getComputedStyle(row).opacity,
-          animations:row?.getAnimations().map(animation=>({time:animation.currentTime,frames:animation.effect.getKeyframes()})),bounds:row?.getBoundingClientRect().toJSON()};
-      })`);
-      assert.ok(!status.closing && Number(status.opacity)<1 && status.animations.some(animation=>animation.frames.some(frame=>frame.boxShadow?.includes(kind==='complete'?'16, 185, 129':'59, 130, 246'))),'repair '+kind+' remains visibly animated after its form closes: '+JSON.stringify(status));
-      await evaluate("Promise.allSettled(document.getAnimations().map(animation=>animation.finished))");
+    const assertRepairStatus = async (id, kind) => {
+      assert.equal(await evaluate('(()=>{const row=document.querySelector(\'#recentRepairTableBody [data-repair-id=\"'+String(id)+'\"]\');return !!row && row.getAnimations().length===0 && row.classList.contains(\'row-pending\')==='+JSON.stringify(kind!=='complete')+';})()'),true,'repair status changes immediately without an animation');
     };
     const assertAnimatedDismissal = async (openExpression, modalId, dismiss, artifact) => {
       const target=JSON.stringify('#'+modalId);
@@ -194,127 +180,35 @@ async function main() {
       await call('Page.navigate', { url: url + '/' + page });
       await waitFor("document.readyState==='complete' && !!document.querySelector('#accountMount button')");
     };
-    const checkTaskMotionContinuity = async () => {
-      const original=await evaluate("localStorage.getItem('szvk_schedule_local_data')");
-      for(const width of [390,1440]) {
-        await call('Emulation.setDeviceMetricsOverride',{width,height:900,deviceScaleFactor:1,mobile:width<768});
-        await navigate('index.html');
-        await evaluate(`(()=>{
-          const data=JSON.parse(localStorage.getItem('szvk_schedule_local_data'));
-          data.dayNotes['2026-10-20']=[{id:'motion-stable',text:'Залишити',done:false},{id:'motion-remove',text:'Прибрати',done:false}];
-          localStorage.setItem('szvk_schedule_local_data',JSON.stringify(data));window.dispatchEvent(new StorageEvent('storage',{key:'szvk_schedule_local_data'}));
-          document.querySelector('.day-card[data-date="2026-10-20"]').click();
-          return Promise.allSettled(document.getAnimations().map(animation=>animation.finished));
-        })()`);
-        const sample=await evaluate(`new Promise(resolve=>{
-          const row=document.querySelector('#modalDayTasksList [data-task-id="motion-stable"]');
-          const start=row.getBoundingClientRect().top;
-          document.querySelector('#modalDayTasksList [data-task-id="motion-remove"] .delete-task').click();
-          const immediate=row.getBoundingClientRect().top;const positions=[immediate];const begun=performance.now();let contained=true;
-          const frame=now=>{
-            positions.push(row.getBoundingClientRect().top);
-            const ghost=document.querySelector('.list-motion-ghost');
-            if(ghost) {const clip=ghost.getBoundingClientRect();const list=document.querySelector('#modalDayTasksList').getBoundingClientRect();contained=contained && clip.top>=list.top-1 && clip.bottom<=list.bottom+1;}
-            if(now-begun<500)requestAnimationFrame(frame);else resolve({start,immediate,positions,contained});
-          };
-          requestAnimationFrame(frame);
-        })`);
-        assert.ok(Math.abs(sample.immediate-sample.start)<1,width+': deleting a row must not jump the retained row on the first frame: '+JSON.stringify(sample));
-        const end=sample.positions.at(-1);const direction=Math.sign(end-sample.start);
-        assert.ok(Math.abs(end-sample.start)>5,'the centred dialog actually changes height in this regression fixture');
-        assert.ok(sample.positions.every((position,index)=>!index || (position-sample.positions[index-1])*direction>=-0.5),width+': the centred dialog moves continuously without reversing direction');
-        assert.ok(Math.abs(end-sample.positions.at(-2))<1,width+': finishing the list animation must not cause a final layout jump');
-        assert.equal(sample.contained,true,width+': the fading row stays clipped to the moving list without overlapping the dialog heading or form');
-        const rapid=await evaluate(`new Promise(resolve=>{
-          document.querySelector('#modalNewTaskInput').value='Швидка зміна';document.querySelector('#modalAddNewTaskBtn').click();
-          setTimeout(()=>{
-            const row=document.querySelector('#modalDayTasksList [data-task-id="motion-stable"]');const before=row.getBoundingClientRect().top;
-            const list=document.querySelector('#modalDayTasksList');
-            window.SZVKShared.markListChange('task','unrelated-layout-update','add');
-            window.SZVKShared.animateListUpdate(list,'task','[data-task-id]','data-task-id',()=>{});
-            const unrelated=row.getBoundingClientRect().top;
-            [...document.querySelectorAll('#modalDayTasksList [data-task-id]')].find(item=>item.dataset.taskId!=='motion-stable').querySelector('.delete-task').click();
-            const after=row.getBoundingClientRect().top;resolve({before,unrelated,after});
-          },90);
-        })`);
-        assert.ok(Math.abs(rapid.after-rapid.before)<1,width+': a quick reversal continues from the displayed geometry: '+JSON.stringify(rapid));
-        assert.ok(Math.abs(rapid.unrelated-rapid.before)<1,width+': an update to another task list must not interrupt the current motion');
-        await evaluate("Promise.allSettled(document.getAnimations().map(animation=>animation.finished))");
-        await evaluate("document.querySelector('#modalNewTaskInput').value='Під час натискання';document.querySelector('#modalAddNewTaskBtn').click();document.querySelector('#modalDayTasksList').scrollTop=0");
-        if(width<768) await call('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:1});
-        const point=await evaluate("(()=>{const rect=document.querySelector('#modalDayTasksList [data-task-id=\"motion-stable\"] .task-modal-checkbox').getBoundingClientRect();return {x:rect.left+rect.width/2,y:rect.top+rect.height/2};})()");
-        if(width<768) {
-          await call('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[point]});
-          await sleep(120);
-          await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
-          await call('Emulation.setTouchEmulationEnabled',{enabled:false});
-        } else {
-          await call('Input.dispatchMouseEvent',{type:'mousePressed',...point,button:'left',clickCount:1});
-          await sleep(120);
-          await call('Input.dispatchMouseEvent',{type:'mouseReleased',...point,button:'left',clickCount:1});
-        }
-        assert.equal(await evaluate("window.dayNotes['2026-10-20'].find(task=>task.id==='motion-stable').done"),true,width+': a single held pointer click completes the task while the list is resizing');
-        await evaluate("Promise.allSettled(document.getAnimations().map(animation=>animation.finished));document.querySelector('#modalDayCloseX').click()");
-        await evaluate(`localStorage.setItem('szvk_schedule_local_data',${JSON.stringify(original)});window.dispatchEvent(new StorageEvent('storage',{key:'szvk_schedule_local_data'}))`);
-      }
-      await call('Emulation.setDeviceMetricsOverride',{width:320,height:800,deviceScaleFactor:1,mobile:true});
-      await navigate('index.html');
-    };
-    const checkCalendarTaskMotions = async () => {
-      const original=await evaluate("localStorage.getItem('szvk_schedule_local_data')");
-      const card='.day-card[data-date="2026-10-20"]';
-      const assertCalendarMotion = async (kind, view, width) => {
-        await waitFor(`document.querySelector(${JSON.stringify(card)}).dataset.taskMotion===${JSON.stringify(kind)}`);
-        const sample=await evaluate(`new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))).then(()=>{
-          const card=document.querySelector(${JSON.stringify(card)});const counter=card.querySelector('.day-task-counter.${view}');
-          const ghost=card.querySelector('.calendar-task-ghost');
-          return {highlight:card.getAnimations().length>0,counter:counter?counter.getAnimations().length>0:true,
-            exit:${kind==='add'?'true':"!!ghost && Number(getComputedStyle(ghost).opacity)>0 && Number(getComputedStyle(ghost).opacity)<1"},
-            safe:!ghost || (ghost.inert && ghost.getAttribute('aria-hidden')==='true' && !ghost.matches('.day-task-counter') && !ghost.querySelector('[id], [data-task-view], .counter-value'))};
-        })`);
-        assert.deepEqual(sample,{highlight:true,counter:true,exit:true,safe:true},kind+': calendar highlights the changed day and animates its counters after the dialog closes');
-        const shot=await call('Page.captureScreenshot',{format:'png'});
-        fs.writeFileSync(path.join(artifacts,'calendar-'+kind+'-'+width+'.png'),Buffer.from(shot.data,'base64'));
-        await waitFor(`!document.querySelector(${JSON.stringify(card)}).dataset.taskMotion`);
-      };
-      for(const width of [390,1440]) {
-        await call('Emulation.setDeviceMetricsOverride',{width,height:900,deviceScaleFactor:1,mobile:width<768});
-        await navigate('index.html');
-        await evaluate(`document.querySelector(${JSON.stringify(card)}).scrollIntoView({block:'center'});Promise.allSettled(document.getAnimations().map(animation=>animation.finished))`);
-        await clickPointer(card);
-        await evaluate("Promise.allSettled(document.getAnimations().map(animation=>animation.finished));document.querySelector('#modalNewTaskInput').value='Анімація календаря';document.querySelector('#modalAddNewTaskBtn').click()");
-        const id=await evaluate("document.querySelector('#modalDayTasksList [data-task-id]').dataset.taskId");
-        await assertListEntry('#modalDayTasksList [data-task-id="'+id+'"]',0);
-        assert.equal(await evaluate(`document.querySelector(${JSON.stringify(card)}).getAnimations().length`),0,'calendar animation waits while the day dialog covers it');
-        await clickPointer('#modalDayCloseX');
-        await assertCalendarMotion('add','active',width);
-        await clickPointer(card);
-        await evaluate("Promise.allSettled(document.getAnimations().map(animation=>animation.finished));document.querySelector('#modalDayTasksList .task-modal-checkbox').click()");
-        await assertListExit('task',id,null,'complete');
-        await clickPointer('#modalDayCloseX');
-        await assertCalendarMotion('complete','done',width);
-        assert.equal(await evaluate(`!!document.querySelector(${JSON.stringify(card)}).querySelector('.day-task-counter.active')`),false,'completion removes the live active counter');
-        await clickPointer(card);
-        await evaluate("Promise.allSettled(document.getAnimations().map(animation=>animation.finished));document.querySelector('#modalDayTasksList .completed-tasks').open=true;document.querySelector('#modalDayTasksList .task-modal-checkbox').click()");
-        await assertListEntry('#modalDayTasksList [data-task-id="'+id+'"]',0);
-        await clickPointer('#modalDayCloseX');
-        await assertCalendarMotion('reopen','active',width);
-        await clickPointer(card);
-        await evaluate("Promise.allSettled(document.getAnimations().map(animation=>animation.finished));document.querySelector('#modalDayTasksList .delete-task').click()");
-        await assertListExit('task',id);
-        await clickPointer('#modalDayCloseX');
-        await assertCalendarMotion('delete','active',width);
-        assert.equal(await evaluate(`document.querySelector(${JSON.stringify(card)}).querySelectorAll('.day-task-counter, .calendar-task-ghost').length`),0,'deleting the last note leaves no counters or decorative copies');
-      }
-      await call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
-      await clickPointer(card);
-      await evaluate("document.querySelector('#modalNewTaskInput').value='Без руху';document.querySelector('#modalAddNewTaskBtn').click();document.querySelector('#modalDayCloseX').click()");
-      assert.equal(await evaluate(`document.querySelector(${JSON.stringify(card)}).getAnimations().length===0 && !document.querySelector('.calendar-task-ghost')`),true,'reduced motion updates the calendar immediately without queued animations');
-      await evaluate(`localStorage.setItem('szvk_schedule_local_data',${JSON.stringify(original)});window.dispatchEvent(new StorageEvent('storage',{key:'szvk_schedule_local_data'}))`);
-      await call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'no-preference'}]});
-      await call('Emulation.setDeviceMetricsOverride',{width:320,height:800,deviceScaleFactor:1,mobile:true});
-      await navigate('index.html');
-    };
+    const checkImmediateTaskUpdates = async function checkImmediateTaskUpdates() {
+  const original = await evaluate("localStorage.getItem('szvk_schedule_local_data')");
+  for (const width of [390, 1440]) {
+    await call('Emulation.setDeviceMetricsOverride', { width, height: 900, deviceScaleFactor: 1, mobile: width < 768 });
+    await navigate('index.html');
+    await evaluate("document.querySelector('.day-card[data-date=\"2026-10-20\"]').click();Promise.allSettled(document.getAnimations().map(animation=>animation.finished))");
+    await evaluate("document.querySelector('#modalNewTaskInput').value='Immediate task update';document.querySelector('#modalAddNewTaskBtn').click()");
+    const id = await evaluate("document.querySelector('#modalDayTasksList [data-task-id]').dataset.taskId");
+    const row = '#modalDayTasksList [data-task-id="' + id + '"]';
+    await assertListEntry(row, 0);
+    await clickPointer(row + ' .task-modal-checkbox');
+    assert.equal(await evaluate("window.dayNotes['2026-10-20'][0].done"), true, 'one click completes immediately');
+    await assertListExit('task', id, null, 'complete');
+    assert.equal(await evaluate("document.querySelector('.day-card[data-date=\"2026-10-20\"] .day-task-counter.done .counter-value').textContent"), '1');
+    await evaluate("document.querySelector('#modalDayTasksList .completed-tasks').open=true;Promise.allSettled(document.getAnimations().map(animation=>animation.finished))");
+    await clickPointer(row + ' .task-modal-checkbox');
+    assert.equal(await evaluate("window.dayNotes['2026-10-20'][0].done"), false, 'one click reopens immediately');
+    await assertListEntry(row, 0);
+    await clickPointer(row + ' .delete-task');
+    await assertListExit('task', id);
+    assert.equal(await evaluate("document.querySelectorAll('.day-card[data-date=\"2026-10-20\"] .day-task-counter').length"), 0);
+    assert.equal(await evaluate("Array.from(document.querySelectorAll('#activeTasksPanel [data-task-id], #modalDayTasksList [data-task-id], .day-task-counter')).every(node=>node.getAnimations().every(animation=>animation.constructor.name!=='Animation'))"), true, 'task and calendar updates start no scripted animations');
+    await clickPointer('#modalDayCloseX');
+    await evaluate("Promise.allSettled(document.getAnimations().map(animation=>animation.finished))");
+  }
+  await evaluate("localStorage.setItem('szvk_schedule_local_data'," + JSON.stringify(original) + ");window.dispatchEvent(new StorageEvent('storage',{key:'szvk_schedule_local_data'}))");
+  await call('Emulation.setDeviceMetricsOverride', { width: 320, height: 800, deviceScaleFactor: 1, mobile: true });
+  await navigate('index.html');
+};
     const checkTaskPanelLayout = async module => {
       console.log('Checking task panel layout in ' + module);
       const originalSchedule = await evaluate("localStorage.getItem('szvk_schedule_local_data')");
@@ -423,12 +317,12 @@ async function main() {
       const siblingId=completedId+'-sibling';
       assert.equal(await evaluate(`(()=>{
         const selector='.active-task-item[data-task-id="'+${JSON.stringify(completedId)}+'"]';
-        const row=document.querySelector(selector);const animation=row.getAnimations()[0];
+        const row=document.querySelector(selector);
         const data=JSON.parse(localStorage.getItem('szvk_schedule_local_data'));
         data.dayNotes['2026-10-14'].push({id:${JSON.stringify(siblingId)},text:'Паралельне оновлення списку',done:false});
         localStorage.setItem('szvk_schedule_local_data',JSON.stringify(data));window.dispatchEvent(new StorageEvent('storage',{key:'szvk_schedule_local_data'}));
-        return !!animation && document.querySelector(selector)===row && row.getAnimations().includes(animation) && animation.playState!=='idle';
-      })()`),true,module+': a concurrent task update preserves the row and its appearance animation');
+        return document.querySelector(selector)===row && row.getAnimations().length===0;
+      })()`),true,module+': a concurrent task update preserves the row and its controls without animation');
       await evaluate("Promise.allSettled(document.getAnimations().map(animation=>animation.finished))");
       await clickPointer(`.active-task-item[data-task-id="${completedId}"] input`);
       await assertListExit('task',completedId,'task-complete-'+module+'-desktop.png','complete');
@@ -488,37 +382,22 @@ async function main() {
     const syncedNoteId=await evaluate("[...document.querySelectorAll('#modalDayTasksList [data-task-id]')].find(row=>row.textContent.includes('Анімація під час синхронізації')).dataset.taskId");
     assert.equal(await evaluate(`(()=>{
       const row=document.querySelector('#modalDayTasksList [data-task-id="'+${JSON.stringify(syncedNoteId)}+'"]');
-      const animation=row.getAnimations()[0];
       window.dispatchEvent(new StorageEvent('storage',{key:'szvk_schedule_local_data'}));
       const current=document.querySelector('#modalDayTasksList [data-task-id="'+${JSON.stringify(syncedNoteId)}+'"]');
-      return current===row && current.getAnimations().includes(animation);
-    })()`),true,'a repeated saved snapshot must preserve the note and its running appearance animation');
+      return current===row && current.getAnimations().length===0;
+    })()`),true,'a repeated saved snapshot must preserve the note and its controls without animation');
     assert.equal(await evaluate(`(()=>{
       const row=document.querySelector('#modalDayTasksList [data-task-id="'+${JSON.stringify(syncedNoteId)}+'"]');
-      const animation=row.getAnimations()[0];
       document.querySelector('#modalNewTaskInput').value='Інша нотатка під час появи';document.querySelector('#modalAddNewTaskBtn').click();
       const current=document.querySelector('#modalDayTasksList [data-task-id="'+${JSON.stringify(syncedNoteId)}+'"]');
-      return current===row && current.getAnimations().includes(animation) && animation.playState!=='idle';
-    })()`),true,'adding another note must not cancel the first note appearance animation');
+      return current===row && current.getAnimations().length===0;
+    })()`),true,'adding another note must not cancel the first note controls');
     await assertListEntry('#modalDayTasksList [data-task-id="'+syncedNoteId+'"]',0,'note-sync-midway.png');
     await evaluate(`document.querySelector('#modalDayTasksList [data-task-id="'+${JSON.stringify(syncedNoteId)}+'"] .delete-task').click()`);
     await assertListExit('task',syncedNoteId);
     assert.equal(await evaluate(`!window.dayNotes['2026-10-14'].some(task=>String(task.id)===${JSON.stringify(syncedNoteId)}) && window.dayNotes['2026-10-14'].some(task=>task.text==='Інша нотатка під час появи')`),true,'a reused note deletes from the latest saved array without deleting concurrent notes');
     await evaluate(`localStorage.setItem('szvk_schedule_local_data',${JSON.stringify(originalMotionSchedule)});window.dispatchEvent(new StorageEvent('storage',{key:'szvk_schedule_local_data'}));document.querySelector('#modalDayCloseX').click();Promise.allSettled(document.getAnimations().map(animation=>animation.finished))`);
-    assert.equal(await evaluate(`(()=>{
-      const list=document.createElement('ul');list.id='emptyMotionList';
-      list.style.cssText='position:fixed;left:20px;top:100px;width:200px;margin:0;padding:0;overflow:hidden;z-index:200';
-      document.body.appendChild(list);const emptyHeight=list.getBoundingClientRect().height;
-      window.SZVKShared.markListChange('task','empty-first','add');
-      window.SZVKShared.animateListUpdate(list,'task','[data-task-id]','data-task-id',()=>{
-        list.innerHTML='<li data-task-id="empty-first" style="padding:16px">Перше завдання</li>';
-      });
-      return emptyHeight;
-    })()`),0,'an empty list starts with zero height');
-    await assertListEntry('#emptyMotionList [data-task-id="empty-first"]',0);
-    await evaluate("document.querySelector('#emptyMotionList').remove()");
-    await checkTaskMotionContinuity();
-    await checkCalendarTaskMotions();
+    await checkImmediateTaskUpdates();
     assert.equal(await evaluate("!!document.querySelector('.module-transition')"), false, 'direct visits do not show a module loader');
     holdModuleLoad = true;
     assert.deepEqual(await evaluate(`(()=>{
@@ -1136,7 +1015,7 @@ async function main() {
     await call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'no-preference'}]});
     await evaluate("new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))");
     await evaluate("document.querySelector('#modalNewTaskTimeMount details').open=true;document.querySelector('#modalNewTaskTimeMount [data-task-time=\"14:00\"]').click();document.querySelector('#modalNewTaskInput').value='Запланований виклик';document.querySelector('#modalAddNewTaskBtn').click()");
-    assert.equal(await evaluate("[...document.querySelectorAll('#modalDayTasksList [data-task-id]')].find(row=>row.textContent.includes('Запланований виклик')).getAnimations().some(animation=>animation.effect.getKeyframes().some(frame=>Number(frame.opacity)===0))"),true,'adding a note starts its own short fade and movement');
+    assert.equal(await evaluate("[...document.querySelectorAll('#modalDayTasksList [data-task-id]')].find(row=>row.textContent.includes('Запланований виклик')).getAnimations().length===0"),true,'adding a note is immediate');
     const addedNoteId=await evaluate("[...document.querySelectorAll('#modalDayTasksList [data-task-id]')].find(row=>row.textContent.includes('Запланований виклик')).dataset.taskId");
     await assertListEntry('#modalDayTasksList [data-task-id="'+addedNoteId+'"]',0,'note-add-midway.png');
     assert.equal(await evaluate("window.dayNotes['2026-10-14'].find(task=>task.text==='Запланований виклик').time"), '14:00');
