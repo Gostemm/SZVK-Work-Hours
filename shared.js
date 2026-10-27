@@ -164,6 +164,32 @@
   function openModal(modal) { return animateModal(modal, true); }
   function closeModal(modal) { return animateModal(modal, false); }
 
+  function stabilizeTaskControls(container) {
+    let pressed = false;
+    container.addEventListener('pointerdown', event => {
+      const control = event.target.closest('.task-modal-checkbox, .active-task-check');
+      if (pressed || !control) return;
+      const animations = document.getAnimations().filter(animation => animation.playState === 'running' &&
+        animation.effect?.target?.contains?.(control));
+      if (!animations.length) return;
+      pressed = true;
+      animations.forEach(animation => animation.pause());
+      const release = () => {
+        document.removeEventListener('pointerup', release, true);
+        document.removeEventListener('pointercancel', release, true);
+        window.removeEventListener('blur', release);
+        pressed = false;
+        // Let the native click/change finish before moving its hit target again.
+        window.requestAnimationFrame(() => animations.forEach(animation => {
+          if (animation.playState === 'paused') animation.play();
+        }));
+      };
+      document.addEventListener('pointerup', release, true);
+      document.addEventListener('pointercancel', release, true);
+      window.addEventListener('blur', release);
+    });
+  }
+
   const viewTransitions = new WeakMap();
   function transitionViews(previousView, nextView, update, { retainPrevious = false } = {}) {
     const host = nextView.parentElement;
@@ -1237,6 +1263,7 @@
     };
     let data = read(cacheKey, {});
     let syncing = null;
+    let hasRemoteSnapshot = false;
     function accept(next) {
       data = { ...next, dayNotes: next.dayNotes || {}, overrides: next.overrides || {} };
       applyPendingScheduleTaskChanges(data.dayNotes);
@@ -1255,9 +1282,7 @@
     }
     function save(change) {
       if (db && scheduleDoc) {
-        const pending = read(pendingKey, []);
-        pending.push({ ...change, id: Date.now() + '-' + Math.random().toString(36).slice(2) });
-        localStorage.setItem(pendingKey, JSON.stringify(pending));
+        queueScheduleTaskChange(change);
       }
       localStorage.setItem(cacheKey, JSON.stringify(data));
       onChange();
@@ -1274,6 +1299,9 @@
     document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
     window.setInterval(refresh, 60000);
     if (scheduleDoc) scheduleDoc.onSnapshot(snapshot => {
+      const fromCache = snapshot.metadata?.fromCache;
+      if (fromCache && hasRemoteSnapshot) return;
+      if (!fromCache && snapshot.exists) hasRemoteSnapshot = true;
       if (snapshot.exists) accept(snapshot.data());
       flush();
     }, onError);
@@ -1285,6 +1313,26 @@
   function pendingScheduleTaskChanges() {
     try { return JSON.parse(localStorage.getItem('szvk_pending_schedule_tasks') || '[]'); }
     catch (error) { return []; }
+  }
+
+  function queueScheduleTaskChange(change) {
+    const pending = pendingScheduleTaskChanges();
+    pending.push({ ...change, id: Date.now() + '-' + Math.random().toString(36).slice(2) });
+    localStorage.setItem('szvk_pending_schedule_tasks', JSON.stringify(pending));
+  }
+
+  function mergeScheduleTaskCompletions(dayNotes, remoteNotes) {
+    const latest = new Map(Object.values(remoteNotes || {}).filter(Array.isArray).flat().filter(Boolean).map(task => [String(task.id), task]));
+    for (const tasks of Object.values(dayNotes)) {
+      if (!Array.isArray(tasks)) continue;
+      for (const task of tasks) {
+        const remote = latest.get(String(task.id));
+        if (remote && task.repairId == null && remote.repairId == null) task.done = Boolean(remote.done);
+      }
+    }
+    // Whole-calendar saves own schedule fields, not another writer's task status.
+    applyPendingScheduleTaskChanges(dayNotes);
+    return dayNotes;
   }
 
   function applyPendingScheduleTaskChanges(dayNotes) {
@@ -1576,6 +1624,7 @@
 
     const activeTasksHost = document.getElementById('activeTasksHost');
     const activeTasksPanel = document.getElementById('activeTasksPanel');
+    stabilizeTaskControls(activeTasksPanel);
     const activeTasksSheet = document.getElementById('activeTasksSheet');
     const activeTasksDock = document.getElementById('activeTasksDock');
     const activeTasksToggle = document.getElementById('activeTasksToggle');
@@ -2066,6 +2115,7 @@
     setHtmlIfChanged,
     openModal,
     closeModal,
+    stabilizeTaskControls,
     transitionViews,
     markListChange,
     animateListUpdate,
@@ -2093,6 +2143,8 @@
     syncLocalRepairTasks,
     activeTaskGroups,
     applyScheduleTaskChange,
+    queueScheduleTaskChange,
+    mergeScheduleTaskCompletions,
     deleteManualTask,
     applyPendingScheduleTaskChanges,
     flushScheduleTaskChanges,

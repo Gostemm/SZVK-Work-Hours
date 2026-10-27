@@ -8,7 +8,7 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg" sizes="any">
   <link rel="apple-touch-icon" href="apple-touch-icon.png" sizes="180x180">
 
-  <script src="shared.js?v=d70a8312490f"></script>
+  <script src="shared.js?v=8953dbbe2ff1"></script>
 
   <link rel="stylesheet" href="shared.css?v=e259a52277cd">
 
@@ -1616,7 +1616,7 @@
 <script>
 document.addEventListener("DOMContentLoaded", function () {
   const requiredSharedMethods = ['readAuthSession', 'saveAuthSession', 'clearAuthSession', 'fetchLoginAccounts', 'mountAccountMenu', 'updateAccount', 'escapeHtml', 'formatHistoryTime', 'initThemeSwitcher', 'updateTask', 'restoreTaskMove', 'debounce', 'setHtmlIfChanged', 'shiftInfo', 'calendarMonthDays', 'taskTimePickerHtml', 'initTaskTimePickers', 'reconcileRepairTasks', 'setRepairCompletion', 'flushRepairCompletions', 'syncRepairTasksToCloud', 'carryForwardTasks', 'rollOverTasksInCloud'];
-  requiredSharedMethods.push('openModal', 'closeModal', 'transitionViews', 'activeTaskGroups', 'mountTaskWorkspace', 'taskCarryLabel', 'applyPendingScheduleTaskChanges', 'flushScheduleTaskChanges', 'repairTaskHref', 'repairTaskControlHtml', 'markListChange', 'animateListUpdate', 'animateTaskCounters');
+  requiredSharedMethods.push('openModal', 'closeModal', 'stabilizeTaskControls', 'transitionViews', 'activeTaskGroups', 'mountTaskWorkspace', 'taskCarryLabel', 'applyPendingScheduleTaskChanges', 'flushScheduleTaskChanges', 'queueScheduleTaskChange', 'mergeScheduleTaskCompletions', 'repairTaskHref', 'repairTaskControlHtml', 'markListChange', 'animateListUpdate', 'animateTaskCounters');
   if (!window.SZVKShared || requiredSharedMethods.some(name => typeof window.SZVKShared[name] !== 'function')) {
     const message = document.getElementById('loginErrorMessage');
     message.textContent = 'Не вдалося завантажити оновлення сервісу. Оновіть сторінку.';
@@ -1761,6 +1761,7 @@ document.addEventListener("DOMContentLoaded", function () {
   let unsubscribeRepairs = null;
   let linkedRepairs = readLocalRepairs();
   let hasRemoteRepairs = false;
+  let hasRemoteSchedule = false;
   let repairCloudSync = null;
   let taskRolloverSync = null;
   let pendingTaskSync = null;
@@ -2280,6 +2281,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (unsubscribeSchedule) unsubscribeSchedule();
     unsubscribeSchedule = DB_SCHEDULE_DOC.onSnapshot((docSnapshot) => {
+      const fromCache = docSnapshot.metadata?.fromCache;
+      if (fromCache && hasRemoteSchedule) return;
+      if (!fromCache && docSnapshot.exists) hasRemoteSchedule = true;
       if (docSnapshot.exists) {
         const data = docSnapshot.data();
         if (data) {
@@ -2374,7 +2378,12 @@ document.addEventListener("DOMContentLoaded", function () {
     saveDebounceTimer = setTimeout(async () => {
       try {
         updateSyncIndicator("syncing", "Збереження...");
-        await DB_SCHEDULE_DOC.set(payload);
+        await db.runTransaction(async transaction => {
+          const snapshot = await transaction.get(DB_SCHEDULE_DOC);
+          const next = JSON.parse(JSON.stringify(payload));
+          window.SZVKShared.mergeScheduleTaskCompletions(next.dayNotes, snapshot.exists ? snapshot.data().dayNotes : {});
+          transaction.set(DB_SCHEDULE_DOC, next);
+        });
         updateSyncIndicator("synced");
       } catch(err) {
         console.warn("Error pushing schedule to Firestore:", err);
@@ -2411,12 +2420,16 @@ document.addEventListener("DOMContentLoaded", function () {
     }, 300);
   }
 
-  function saveLocalData() {
+  function saveLocalData(taskChange) {
     reconcileScheduleRepairs(window.dayNotes, hasRemoteRepairs || !isFirebaseReady);
     const carried = carryScheduleTasks(window.dayNotes);
     monthlyCountCache.clear();
     lastScheduleSignature = scheduleSignature({ overrides: window.overrides, dayNotes: window.dayNotes });
-    pushScheduleToFirestore();
+    if (taskChange && isFirebaseReady && currentUser) {
+      window.SZVKShared.queueScheduleTaskChange(taskChange);
+      cacheSchedule();
+      syncPendingTaskChanges();
+    } else pushScheduleToFirestore();
     if (carried) queueMicrotask(refreshOpenDayTasks);
   }
 
@@ -2576,7 +2589,7 @@ document.addEventListener("DOMContentLoaded", function () {
             description: `Відкочено статус завдання на ${dateKey}`,
             details: `«${target.text}» ➔ ${prevDone ? 'Виконано' : 'В роботі'}`
           });
-          saveLocalData();
+          saveLocalData({ kind: 'done', taskId: target.id, done: prevDone });
           renderApp();
           alert(`✅ Статус завдання повернено: ${prevDone ? 'Виконано' : 'В роботі'}!`);
           return;
@@ -3237,13 +3250,14 @@ document.addEventListener("DOMContentLoaded", function () {
     logAction('task_toggle', `${done ? 'Виконано' : 'Повернуто в роботу'} завдання на ${dateKey}`, `«${task.text}»`, {
       dateKey, taskId: task.id, prevDone: !done
     }, { editRef: { module: 'schedule', type: 'task', dateKey, taskId: task.id } });
-    saveLocalData();
+    saveLocalData({ kind: 'done', taskId: task.id, done });
     refreshOpenDayTasks();
     renderApp();
   }
 
   let modalTasksSignature = '';
   const modalTaskRows = new Map();
+  window.SZVKShared.stabilizeTaskControls(document.getElementById('modalDayTasksList'));
 
   function renderModalTasks(tasks, dateKey) {
     const list = document.getElementById('modalDayTasksList');

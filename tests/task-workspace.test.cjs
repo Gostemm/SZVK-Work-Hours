@@ -45,13 +45,50 @@ function fixture(seed, remote = seed) {
   let errors = 0;
   const createStore = () => shared.createScheduleTaskStore({ db, scheduleDoc: doc, onChange() {}, onError() { errors++; } });
   return { shared, cloud, storage, createStore, db, doc, setOffline(value) { offline = value; },
-    snapshot(data) { snapshotListener({ exists: true, data: () => copy(data) }); },
+    snapshot(data, fromCache = false) { snapshotListener({ exists: true, metadata: { fromCache }, data: () => copy(data) }); },
     get errors() { return errors; }, get writes() { return writes; } };
 }
 
 const seed = () => ({
   dayNotes: { '2099-01-04': [{ id: 7, text: 'Original', time: '08:15', done: false, author: 'Operator', extra: 'keep' }] },
   overrides: { '2099-01-04': 'Артем' }, monthlyDebts: { '2099-01': 'keep monthly note' }
+});
+
+test('an acknowledged completion cannot be reverted by an older cache snapshot', async () => {
+  const f = fixture(seed());
+  const store = f.createStore();
+  f.snapshot(seed());
+  const change = { kind: 'done', taskId: 7, done: true };
+  f.shared.applyScheduleTaskChange(store.getData().dayNotes, change);
+  await store.save(change);
+  f.snapshot(seed(), true);
+  assert.equal(store.getData().dayNotes['2099-01-04'][0].done, true);
+  assert.equal(f.cloud.dayNotes['2099-01-04'][0].done, true);
+  assert.deepEqual(JSON.parse(f.storage.get('szvk_pending_schedule_tasks') || '[]'), []);
+  f.snapshot(seed());
+  assert.equal(store.getData().dayNotes['2099-01-04'][0].done, false, 'a later real server change can still reopen the task');
+});
+
+test('an unrelated calendar save preserves a concurrent completion by task ID', () => {
+  const f = fixture(seed());
+  const local = seed().dayNotes;
+  local['2099-01-04'][0].text = 'Locally edited text';
+  const remote = { '2099-02-01': [{ ...seed().dayNotes['2099-01-04'][0], done: true }] };
+  f.shared.mergeScheduleTaskCompletions(local, remote);
+  assert.equal(local['2099-01-04'][0].done, true);
+  assert.equal(local['2099-01-04'][0].text, 'Locally edited text');
+  assert.equal(local['2099-01-04'][0].time, '08:15');
+});
+
+test('an explicit queued reopening takes precedence over a completed remote task', () => {
+  const f = fixture(seed());
+  f.shared.queueScheduleTaskChange({ kind: 'done', taskId: 7, done: false });
+  const local = seed().dayNotes;
+  const remote = copy(local);
+  remote['2099-01-04'][0].done = true;
+  f.shared.mergeScheduleTaskCompletions(local, remote);
+  assert.equal(local['2099-01-04'][0].done, false);
+  assert.equal(JSON.parse(f.storage.get('szvk_pending_schedule_tasks')).length, 1);
 });
 
 test('repair notes open a report before completion and show an automatic read-only check after completion', () => {

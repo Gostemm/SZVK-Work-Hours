@@ -239,6 +239,21 @@ async function main() {
         })`);
         assert.ok(Math.abs(rapid.after-rapid.before)<1,width+': a quick reversal continues from the displayed geometry: '+JSON.stringify(rapid));
         assert.ok(Math.abs(rapid.unrelated-rapid.before)<1,width+': an update to another task list must not interrupt the current motion');
+        await evaluate("Promise.allSettled(document.getAnimations().map(animation=>animation.finished))");
+        await evaluate("document.querySelector('#modalNewTaskInput').value='Під час натискання';document.querySelector('#modalAddNewTaskBtn').click();document.querySelector('#modalDayTasksList').scrollTop=0");
+        if(width<768) await call('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:1});
+        const point=await evaluate("(()=>{const rect=document.querySelector('#modalDayTasksList [data-task-id=\"motion-stable\"] .task-modal-checkbox').getBoundingClientRect();return {x:rect.left+rect.width/2,y:rect.top+rect.height/2};})()");
+        if(width<768) {
+          await call('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[point]});
+          await sleep(120);
+          await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+          await call('Emulation.setTouchEmulationEnabled',{enabled:false});
+        } else {
+          await call('Input.dispatchMouseEvent',{type:'mousePressed',...point,button:'left',clickCount:1});
+          await sleep(120);
+          await call('Input.dispatchMouseEvent',{type:'mouseReleased',...point,button:'left',clickCount:1});
+        }
+        assert.equal(await evaluate("window.dayNotes['2026-10-20'].find(task=>task.id==='motion-stable').done"),true,width+': a single held pointer click completes the task while the list is resizing');
         await evaluate("Promise.allSettled(document.getAnimations().map(animation=>animation.finished));document.querySelector('#modalDayCloseX').click()");
         await evaluate(`localStorage.setItem('szvk_schedule_local_data',${JSON.stringify(original)});window.dispatchEvent(new StorageEvent('storage',{key:'szvk_schedule_local_data'}))`);
       }
@@ -1267,6 +1282,17 @@ async function main() {
     await navigate('index.html');
     await waitFor("!!window.__cloudListeners.trackers && !!window.__cloudData.trackers");
     await waitFor("JSON.parse(localStorage.getItem('szvk_trackers_data')).repairs.some(repair=>repair.id===555)");
+    await evaluate("{const data=structuredClone(window.__cloudData.schedule);data.dayNotes['2026-10-14'].push({id:'single-click-completion',text:'Виконання з першого натискання',done:false});window.__emitCloud('schedule',data);window.__completionBefore=structuredClone(data);window.__cloudOffline=true;document.querySelector('.day-card[data-date=\"2026-10-14\"]').click();}");
+    await evaluate("Promise.allSettled(document.getAnimations().map(animation=>animation.finished))");
+    await clickPointer('#modalDayTasksList [data-task-id="single-click-completion"] .task-modal-checkbox');
+    assert.equal(await evaluate("window.dayNotes['2026-10-14'].find(task=>task.id==='single-click-completion').done"),true,'one actual pointer click completes the note immediately');
+    await evaluate("window.__emitCloud('schedule',window.__completionBefore,true)");
+    assert.equal(await evaluate("window.dayNotes['2026-10-14'].find(task=>task.id==='single-click-completion').done"),true,'an old cached response cannot undo the first completion click');
+    await evaluate("window.__emitCloud('schedule',window.__completionBefore)");
+    assert.equal(await evaluate("window.dayNotes['2026-10-14'].find(task=>task.id==='single-click-completion').done"),true,'an unconfirmed completion survives an older server response while offline');
+    await evaluate("window.__cloudOffline=false;window.dispatchEvent(new Event('online'))");
+    await waitFor("window.__cloudData.schedule.dayNotes['2026-10-14'].find(task=>task.id==='single-click-completion').done && JSON.parse(localStorage.getItem('szvk_pending_schedule_tasks') || '[]').length===0");
+    await evaluate("{const data=structuredClone(window.__cloudData.schedule);data.dayNotes['2026-10-14']=data.dayNotes['2026-10-14'].filter(task=>task.id!=='single-click-completion');window.__emitCloud('schedule',data);document.querySelector('#modalDayCloseX').click();}");
     assert.equal(await evaluate("window.dayNotes['2026-10-16'].find(task=>task.repairId===555).time"), '11:45', 'stale tracker cache must preserve cloud task transfers');
     assert.equal(await evaluate("window.dayNotes['2026-10-14'].some(task=>task.repairId===555)"), false);
     await evaluate("localStorage.removeItem('szvk_mock_cloud_only_repair')");
