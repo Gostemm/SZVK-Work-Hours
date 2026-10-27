@@ -194,6 +194,57 @@ async function main() {
       await call('Page.navigate', { url: url + '/' + page });
       await waitFor("document.readyState==='complete' && !!document.querySelector('#accountMount button')");
     };
+    const checkTaskMotionContinuity = async () => {
+      const original=await evaluate("localStorage.getItem('szvk_schedule_local_data')");
+      for(const width of [390,1440]) {
+        await call('Emulation.setDeviceMetricsOverride',{width,height:900,deviceScaleFactor:1,mobile:width<768});
+        await navigate('index.html');
+        await evaluate(`(()=>{
+          const data=JSON.parse(localStorage.getItem('szvk_schedule_local_data'));
+          data.dayNotes['2026-10-20']=[{id:'motion-stable',text:'Залишити',done:false},{id:'motion-remove',text:'Прибрати',done:false}];
+          localStorage.setItem('szvk_schedule_local_data',JSON.stringify(data));window.dispatchEvent(new StorageEvent('storage',{key:'szvk_schedule_local_data'}));
+          document.querySelector('.day-card[data-date="2026-10-20"]').click();
+          return Promise.allSettled(document.getAnimations().map(animation=>animation.finished));
+        })()`);
+        const sample=await evaluate(`new Promise(resolve=>{
+          const row=document.querySelector('#modalDayTasksList [data-task-id="motion-stable"]');
+          const start=row.getBoundingClientRect().top;
+          document.querySelector('#modalDayTasksList [data-task-id="motion-remove"] .delete-task').click();
+          const immediate=row.getBoundingClientRect().top;const positions=[immediate];const begun=performance.now();let contained=true;
+          const frame=now=>{
+            positions.push(row.getBoundingClientRect().top);
+            const ghost=document.querySelector('.list-motion-ghost');
+            if(ghost) {const clip=ghost.getBoundingClientRect();const list=document.querySelector('#modalDayTasksList').getBoundingClientRect();contained=contained && clip.top>=list.top-1 && clip.bottom<=list.bottom+1;}
+            if(now-begun<500)requestAnimationFrame(frame);else resolve({start,immediate,positions,contained});
+          };
+          requestAnimationFrame(frame);
+        })`);
+        assert.ok(Math.abs(sample.immediate-sample.start)<1,width+': deleting a row must not jump the retained row on the first frame: '+JSON.stringify(sample));
+        const end=sample.positions.at(-1);const direction=Math.sign(end-sample.start);
+        assert.ok(Math.abs(end-sample.start)>5,'the centred dialog actually changes height in this regression fixture');
+        assert.ok(sample.positions.every((position,index)=>!index || (position-sample.positions[index-1])*direction>=-0.5),width+': the centred dialog moves continuously without reversing direction');
+        assert.ok(Math.abs(end-sample.positions.at(-2))<1,width+': finishing the list animation must not cause a final layout jump');
+        assert.equal(sample.contained,true,width+': the fading row stays clipped to the moving list without overlapping the dialog heading or form');
+        const rapid=await evaluate(`new Promise(resolve=>{
+          document.querySelector('#modalNewTaskInput').value='Швидка зміна';document.querySelector('#modalAddNewTaskBtn').click();
+          setTimeout(()=>{
+            const row=document.querySelector('#modalDayTasksList [data-task-id="motion-stable"]');const before=row.getBoundingClientRect().top;
+            const list=document.querySelector('#modalDayTasksList');
+            window.SZVKShared.markListChange('task','unrelated-layout-update','add');
+            window.SZVKShared.animateListUpdate(list,'task','[data-task-id]','data-task-id',()=>{});
+            const unrelated=row.getBoundingClientRect().top;
+            [...document.querySelectorAll('#modalDayTasksList [data-task-id]')].find(item=>item.dataset.taskId!=='motion-stable').querySelector('.delete-task').click();
+            const after=row.getBoundingClientRect().top;resolve({before,unrelated,after});
+          },90);
+        })`);
+        assert.ok(Math.abs(rapid.after-rapid.before)<1,width+': a quick reversal continues from the displayed geometry: '+JSON.stringify(rapid));
+        assert.ok(Math.abs(rapid.unrelated-rapid.before)<1,width+': an update to another task list must not interrupt the current motion');
+        await evaluate("Promise.allSettled(document.getAnimations().map(animation=>animation.finished));document.querySelector('#modalDayCloseX').click()");
+        await evaluate(`localStorage.setItem('szvk_schedule_local_data',${JSON.stringify(original)});window.dispatchEvent(new StorageEvent('storage',{key:'szvk_schedule_local_data'}))`);
+      }
+      await call('Emulation.setDeviceMetricsOverride',{width:320,height:800,deviceScaleFactor:1,mobile:true});
+      await navigate('index.html');
+    };
     const checkCalendarTaskMotions = async () => {
       const original=await evaluate("localStorage.getItem('szvk_schedule_local_data')");
       const card='.day-card[data-date="2026-10-20"]';
@@ -451,6 +502,7 @@ async function main() {
     })()`),0,'an empty list starts with zero height');
     await assertListEntry('#emptyMotionList [data-task-id="empty-first"]',0);
     await evaluate("document.querySelector('#emptyMotionList').remove()");
+    await checkTaskMotionContinuity();
     await checkCalendarTaskMotions();
     assert.equal(await evaluate("!!document.querySelector('.module-transition')"), false, 'direct visits do not show a module loader');
     holdModuleLoad = true;

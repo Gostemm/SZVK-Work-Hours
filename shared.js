@@ -291,6 +291,7 @@
   const listChangeSeen = new WeakMap();
   const listTransitions = new WeakMap();
   const activeListTransitions = new Set();
+  const taskMotionTiming = { duration: 340, easing: 'cubic-bezier(0.4, 0, 0.2, 1)' };
   let listChangeSequence = 0;
   const listMotionNow = () => window.performance?.now() ?? Date.now();
 
@@ -403,32 +404,40 @@
       return visible(item.bounds) ? { ...item, change, snapshot: listExitSnapshot(item.element) } : null;
     }).filter(Boolean);
     const sizeHost = container.tagName === 'TBODY' ? container.closest('table').parentElement : container;
-    const startHeight = sizeHost.getBoundingClientRect().height;
-    for (const state of activeListTransitions) {
-      if (state.container === container && changes.some(change => state.keys.has(change.id))) state.cleanup();
-    }
+    const startBounds = sizeHost.getBoundingClientRect();
+    const startHeight = startBounds.height;
     const result = update();
     const after = new Map([...container.querySelectorAll(selector)].map(element => [element.getAttribute(keyAttribute), element]));
     const entries = changes.filter(change => after.has(change.id) &&
       ((change.kind === 'add' && !before.has(change.id)) || change.kind === 'reopen' || (category === 'task' && change.kind === 'complete')));
-    const revealed = revealListEntry(container, category, entries.filter(change => change.kind !== 'complete'), selector, keyAttribute);
     const removals = exits.filter(item => item.change.kind === 'complete' || !after.has(item.change.id));
     const statusChanges = category === 'repair' ? changes.filter(change => ['complete', 'reopen'].includes(change.kind) && after.has(change.id)) : [];
     if (!entries.length && !removals.length && !statusChanges.length) return result;
+    // A change in another list must not interrupt this list's current layout.
+    listTransitions.get(container)?.cleanupLayout();
+    for (const state of activeListTransitions) {
+      if (state.container === container && changes.some(change => state.keys.has(change.id))) state.cleanup();
+    }
+    const revealed = revealListEntry(container, category, entries.filter(change => change.kind !== 'complete'), selector, keyAttribute);
     const delay = Math.max(...entries.map(change => change.delay), ...removals.map(item => item.change.delay), ...statusChanges.map(change => change.delay), 0);
-    const timing = { duration: 320, delay, easing: 'cubic-bezier(0.2, 0.65, 0.3, 1)', fill: 'both' };
-    // Let an outgoing task fade before its neighbours and the form fill its space.
-    const layoutTiming = category === 'task' && removals.length ? { ...timing, delay: delay + 160, duration: 240 } : timing;
-    const entryClip = listClipBounds(container);
+    const timing = { ...taskMotionTiming, delay, fill: 'both' };
     const animations = [];
+    const layoutAnimations = [];
     const ghosts = [];
+    const entryClip = listClipBounds(container);
+    const entryBounds = new Map(entries.map(change => [change.id, after.get(change.id).getBoundingClientRect()]));
+    // Restore the displayed height before measuring row offsets. A centred dialog
+    // otherwise shifts once during measurement and a second time when height animates.
+    const endBounds = sizeHost.getBoundingClientRect();
+    const endHeight = endBounds.height;
+    if (!revealed && Math.abs(startHeight - endHeight) > 1) layoutAnimations.push(sizeHost.animate([{ height: startHeight + 'px' }, { height: endHeight + 'px' }], timing));
     for (const change of entries) {
       const element = after.get(change.id);
-      if (!visible(element.getBoundingClientRect(), entryClip)) continue;
+      if (!visible(entryBounds.get(change.id), entryClip)) continue;
       animations.push(element.animate([
-        { opacity: 0, translate: '0 12px', filter: 'brightness(1.16)' },
-        { opacity: getComputedStyle(element).opacity, translate: '0 0', filter: 'brightness(1)' }
-      ], change.kind === 'complete' ? layoutTiming : timing));
+        { opacity: 0, translate: '0 4px' },
+        { opacity: getComputedStyle(element).opacity, translate: '0 0' }
+      ], timing));
     }
     for (const item of removals) {
       const ghost = document.createElement('div');
@@ -438,59 +447,69 @@
       ghost.dataset.motionKind = item.change.kind;
       ghost.inert = true;
       ghost.setAttribute('aria-hidden', 'true');
-      Object.assign(ghost.style, { position: 'fixed', left: clip.left + 'px', top: clip.top + 'px', width: Math.max(0, clip.right - clip.left) + 'px', height: Math.max(0, clip.bottom - clip.top) + 'px', overflow: 'hidden', pointerEvents: 'none', zIndex: '50' });
+      const ghostBounds = (area, bounds) => {
+        const left = Math.max(area.left, bounds.left);
+        const top = Math.max(area.top, bounds.top);
+        return { left: left + 'px', top: top + 'px', width: Math.max(0, Math.min(area.right, bounds.right) - left) + 'px', height: Math.max(0, Math.min(area.bottom, bounds.bottom) - top) + 'px' };
+      };
+      const from = ghostBounds(clip, startBounds);
+      const to = ghostBounds(entryClip, endBounds);
+      Object.assign(ghost.style, from, { position: 'fixed', overflow: 'hidden', pointerEvents: 'none', zIndex: '50' });
       const copy = item.snapshot.element;
-      Object.assign(copy.style, { position: 'absolute', left: (item.bounds.left - clip.left) + 'px', top: (item.bounds.top - clip.top) + 'px', width: item.bounds.width + 'px', height: item.bounds.height + 'px' });
+      Object.assign(copy.style, { position: 'absolute', left: (item.bounds.left - parseFloat(from.left)) + 'px', top: (item.bounds.top - parseFloat(from.top)) + 'px', width: item.bounds.width + 'px', height: item.bounds.height + 'px' });
       ghost.appendChild(copy);
       (container.closest('dialog[open], .modal-overlay.active') || document.body).appendChild(ghost);
       ghosts.push(ghost);
+      // Follow the list as a centred dialog resizes, clipping the fading row away
+      // from its heading and form instead of leaving a fixed copy over them.
+      animations.push(ghost.animate([from, to], timing));
       const completed = item.change.kind === 'complete';
-      if (completed) copy.querySelectorAll('.active-task-text, .task-modal-text').forEach(text => { text.style.textDecoration = 'line-through'; });
-      animations.push(copy.animate(completed ? [
-        { opacity: item.snapshot.opacity, translate: '0 0', boxShadow: 'inset 3px 0 #10b981' },
-        { opacity: item.snapshot.opacity, translate: '0 0', boxShadow: 'inset 3px 0 #10b981', offset: 0.3 },
-        { opacity: 0, translate: '12px 0', boxShadow: 'inset 3px 0 #10b981' }
-      ] : [
+      if (completed) {
+        copy.style.boxShadow = 'inset 2px 0 rgba(16, 185, 129, 0.35)';
+        copy.querySelectorAll('.active-task-text, .task-modal-text').forEach(text => { text.style.textDecoration = 'line-through'; });
+      }
+      animations.push(copy.animate([
         { opacity: item.snapshot.opacity, translate: '0 0' },
-        { opacity: 0, translate: '12px 0' }
-      ], { ...timing, duration: completed ? 380 : 280 }));
+        { opacity: 0, translate: '0 -2px' }
+      ], timing));
     }
     for (const change of statusChanges) {
       const element = after.get(change.id);
       if (!visible(element.getBoundingClientRect(), entryClip)) continue;
       animations.push(element.animate([
-        { opacity: 0.45, filter: 'brightness(1.3)', boxShadow: 'inset 3px 0 ' + (change.kind === 'complete' ? '#10b981' : 'var(--accent)') },
-        { opacity: 1, filter: 'brightness(1)', boxShadow: 'inset 0 0 transparent' }
-      ], { ...timing, duration: 380 }));
+        { opacity: 0.8, boxShadow: 'inset 2px 0 ' + (change.kind === 'complete' ? 'rgba(16, 185, 129, 0.35)' : 'rgba(59, 130, 246, 0.35)') },
+        { opacity: 1, boxShadow: 'inset 0 0 transparent' }
+      ], timing));
     }
     for (const [key, element] of after) {
       if (!before.has(key) || entries.some(change => change.id === key)) continue;
       const rect = element.getBoundingClientRect();
       const offset = before.get(key).bounds.top - rect.top;
-      if (!revealed && Math.abs(offset) > 1 && visible(rect)) animations.push(element.animate([{ translate: '0 ' + offset + 'px' }, { translate: '0 0' }], layoutTiming));
+      if (!revealed && Math.abs(offset) > 1 && visible(rect)) layoutAnimations.push(element.animate([{ translate: '0 ' + offset + 'px' }, { translate: '0 0' }], timing));
     }
     const message = container.querySelector('.completed-tasks > summary, .active-tasks-empty');
     if (message && removals.length && visible(message.getBoundingClientRect(), entryClip)) {
       const offset = previousMessageBounds ? previousMessageBounds.top - message.getBoundingClientRect().top : 8;
-      animations.push(message.animate([
+      layoutAnimations.push(message.animate([
         { opacity: previousMessageBounds ? 1 : 0, translate: '0 ' + offset + 'px' },
         { opacity: 1, translate: '0 0' }
-      ], layoutTiming));
+      ], previousMessageBounds ? timing : { ...timing, delay: delay + 90, duration: timing.duration - 90 }));
     }
-    const endHeight = sizeHost.getBoundingClientRect().height;
-    if (!revealed && Math.abs(startHeight - endHeight) > 1) animations.push(sizeHost.animate([{ height: startHeight + 'px' }, { height: endHeight + 'px' }], layoutTiming));
     let timer;
-    const state = { container, keys: new Set([...entries, ...statusChanges, ...removals.map(item => item.change)].map(change => change.id)), cleanup() {
+    const state = { container, keys: new Set([...entries, ...statusChanges, ...removals.map(item => item.change)].map(change => change.id)), cleanupLayout() {
+      layoutAnimations.forEach(animation => animation.cancel());
+      if (listTransitions.get(container) === state) listTransitions.delete(container);
+    }, cleanup() {
       window.clearTimeout(timer);
       animations.forEach(animation => animation.cancel());
       ghosts.forEach(ghost => ghost.remove());
       activeListTransitions.delete(state);
-      if (listTransitions.get(container) === state) listTransitions.delete(container);
+      state.cleanupLayout();
     } };
     listTransitions.set(container, state);
     activeListTransitions.add(state);
-    timer = window.setTimeout(state.cleanup, delay + 520);
-    Promise.allSettled(animations.map(animation => animation.finished)).then(state.cleanup);
+    timer = window.setTimeout(state.cleanup, delay + timing.duration + 120);
+    Promise.allSettled([...animations, ...layoutAnimations].map(animation => animation.finished)).then(state.cleanup);
     return result;
   }
 
@@ -512,23 +531,21 @@
       const clip = listClipBounds(card);
       if (!bounds.width || !bounds.height || bounds.bottom <= clip.top || bounds.top >= clip.bottom || bounds.right <= clip.left || bounds.left >= clip.right) continue;
       taskCounterMotions.get(card)?.cleanup();
-      const timing = { duration: 380, easing: 'cubic-bezier(0.2, 0.65, 0.3, 1)', fill: 'both' };
-      const color = job.kind === 'complete' ? '#10b981' : job.kind === 'delete' ? '#ef4444' : '#38bdf8';
+      const timing = { ...taskMotionTiming, fill: 'both' };
+      const color = job.kind === 'complete' ? '16, 185, 129' : job.kind === 'delete' ? '239, 68, 68' : '56, 189, 248';
       const shadow = getComputedStyle(card).boxShadow;
-      const highlight = 'inset 0 0 0 2px ' + color + ', 0 0 12px ' + color;
+      const highlight = 'inset 0 0 0 1px rgba(' + color + ', 0.28)';
       const animations = [card.animate([
         { boxShadow: shadow },
-        { boxShadow: highlight, offset: 0.25 },
-        { boxShadow: highlight, offset: 0.55 },
+        { boxShadow: highlight, offset: 0.45 },
         { boxShadow: shadow }
-      ], { ...timing, duration: 480, easing: 'ease-in-out' })];
+      ], timing)];
       card.dataset.taskMotion = job.kind;
       card.querySelectorAll('.day-task-counter').forEach(counter => {
         if (job.previous[counter.dataset.taskView] === job.next[counter.dataset.taskView]) return;
         animations.push(counter.animate([
-          { opacity: 0, scale: '0.75', translate: '0 6px' },
-          { opacity: 1, scale: '1.08', translate: '0 0', offset: 0.65 },
-          { opacity: 1, scale: '1', translate: '0 0' }
+          { opacity: 0, translate: '0 2px' },
+          { opacity: 1, translate: '0 0' }
         ], timing));
       });
       const ghosts = job.snapshots.map(snapshot => {
@@ -537,9 +554,9 @@
         Object.assign(copy.style, { position: 'absolute', left: snapshot.left + 'px', top: snapshot.top + 'px', width: snapshot.width + 'px', height: snapshot.height + 'px', zIndex: '2' });
         card.appendChild(copy);
         animations.push(copy.animate([
-          { opacity: snapshot.opacity, scale: '1', translate: '0 0' },
-          { opacity: 0, scale: '0.8', translate: '0 -6px' }
-        ], { ...timing, duration: 260 }));
+          { opacity: snapshot.opacity, translate: '0 0' },
+          { opacity: 0, translate: '0 -2px' }
+        ], timing));
         return copy;
       });
       const state = { cleanup() {
